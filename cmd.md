@@ -16,6 +16,8 @@ gcloud run deploy shopping-ex --source . --region asia-northeast3 --max-instance
 배포 시에 브라우저에서 GCP 결제 계정 관리 페이지에 프로젝트를 연결해야 함
 https://console.cloud.google.com/billing/projects
 
+- 환경변수 등록
+gcloud run deploy shopping-ex --source . --region asia-northeast3 --max-instances 1 --set-env-vars "SUPABASE_URL=https://qwnloeffdnifwljnwshd.supabase.co,SUPABASE_SECRET_KEY=!!!!!!"
 
 ## 일반적은 워크플로우(아직 Docker X)
 1. localhost로 express routing test 진행.
