@@ -1,10 +1,13 @@
 import 'dotenv/config';
 import express, { type Request, type Response } from 'express';
+import cors from 'cors';
 import inventoryRoutes from './routes/inventory.routes.js';
 
 const app = express();
 const PORT: number = Number(process.env['PORT']) || 8080;
 
+// Middleware
+app.use(cors());
 app.use(express.json());
 
 // 서버 확인
