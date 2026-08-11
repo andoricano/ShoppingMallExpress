@@ -5,6 +5,9 @@
     "build": "turbo run build",
     "dev": "turbo run dev",
     "dev:pwa": "pnpm --filter client-pwa dev",
+    "dev:express": "pnpm --filter api dev",
+    "dev:server": "pnpm --filter api dev",
+    "dev:all-pwa": "pnpm --filter client-pwa --filter api dev",
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "check-types": "turbo run check-types"

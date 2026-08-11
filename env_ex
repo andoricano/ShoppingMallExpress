@@ -1,0 +1,5 @@
+path : /apps/api/.env
+
+# mall/.env
+SUPABASE_URL=https://your-supabase-project.supabase.co
+SUPABASE_SECRET_KEY=your-anon-key
