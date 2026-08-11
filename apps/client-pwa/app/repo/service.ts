@@ -1,6 +1,7 @@
 // app/repositories/inventory.repository.ts
 
-import type { InventoryItem } from '../types/Store';
+import { InventoryItem } from "@mall/types";
+
 
 export const API_BASE_URL = 'https://shopping-ex-kz5p4lagfq-du.a.run.app';
 

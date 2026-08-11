@@ -1,6 +1,6 @@
 // app/repositories/inventory.repository.ts
 
-import type { InventoryItem } from '../types/Store';
+import { InventoryItem } from '@mall/types';
 import { API_BASE_URL } from './service';
 
 
