@@ -1,24 +1,33 @@
-### 내가 지금 어떤 GCP 프로젝트를 바라보고 있는지 헷갈릴 때
-- gcloud config get-value project
+# GCP Cloud Run 배포 명령어 모음
+
+## 1. GCP 프로젝트 확인 및 설정
+gcloud config get-value project
+gcloud config set project shopping-ex-server
+
+## 2. Mac에서 GCP 서버용(amd64) Docker 이미지 빌드
+docker build --platform linux/amd64 -t shopping-ex .
+
+## 3. GCP Container Registry로 이미지 업로드
+gcloud auth configure-docker
+docker tag shopping-ex gcr.io/shopping-ex-server/shopping-ex:latest
+docker push gcr.io/shopping-ex-server/shopping-ex:latest
+
+## 4. Cloud Run 서비스 배포 (기존 서비스 대체)
+gcloud run deploy shopping-ex \
+  --image gcr.io/shopping-ex-server/shopping-ex:latest \
+  --region asia-northeast3 \
+  --platform managed \
+  --max-instances 1 \
+  --allow-unauthenticated \
+  --set-env-vars "SUPABASE_URL=YOUR_URL,SUPABASE_SECRET_KEY=YOUR_KEY,DATABASE_URL=YOUR_DB_URL"
 
 
-### 1. 프로젝트 생성 및 지정
-gcloud projects create name --name="name"
-gcloud config set project name
 
-### 2. Cloud Run 배포
-- 일반 배포
-gcloud run deploy name --source . --region asia-northeast3
-
-- 저가 배포
-gcloud run deploy shopping-ex --source . --region asia-northeast3 --max-instances 1
-
-배포 시에 브라우저에서 GCP 결제 계정 관리 페이지에 프로젝트를 연결해야 함
-https://console.cloud.google.com/billing/projects
-
-- 환경변수 등록
-gcloud run deploy shopping-ex --source . --region asia-northeast3 --max-instances 1 --set-env-vars "SUPABASE_URL=https://qwnloeffdnifwljnwshd.supabase.co,SUPABASE_SECRET_KEY=!!!!!!"
-
-## 일반적은 워크플로우(아직 Docker X)
-1. localhost로 express routing test 진행.
-2. 그 다음 위 배포 명령어 진행
+ex
+  gcloud run deploy shopping-ex \
+  --image gcr.io/shopping-ex-server/shopping-ex:latest \
+  --region asia-northeast3 \
+  --platform managed \
+  --max-instances 1 \
+  --allow-unauthenticated \
+  --set-env-vars "SUPABASE_URL=[],SUPABASE_SECRET_KEY=[],DATABASE_URL=[]"
