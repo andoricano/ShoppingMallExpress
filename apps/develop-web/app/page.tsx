@@ -8,7 +8,6 @@ import { PaymentDevSection } from "@/components/payment/PaymentDevSection";
 import { ProductDevSection } from "@/components/product/ProductDevSection";
 import { useState } from "react";
 
-// [수정] JSX 객체(<AuthDevSection />) 대신 컴포넌트 자체(AuthDevSection)를 전달하여 불필요한 미리보기 렌더링 방지
 const PRD_DEV_ITEMS = [
   { id: "auth", label: "Auth", docName: "Auth.md", component: AuthDevSection },
   { id: "inventory", label: "Inventory", docName: "Inventory.md", component: InventoryDevSection },
