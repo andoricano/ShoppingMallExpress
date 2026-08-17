@@ -2,7 +2,8 @@
 "use client";
 
 import { useState } from "react";
-import { AdjustmentReason, InventoryItem, StockStatus } from "./useInventoryDev";
+
+import { AdjustmentReason, InventoryItem, InventoryLog, StockStatus } from "@/types/devTypes";
 
 // 재고 상태 배지
 function StatusBadge({ status }: { status: StockStatus }) {

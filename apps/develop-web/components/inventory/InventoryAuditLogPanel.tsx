@@ -1,7 +1,8 @@
 // @/components/inventory/InventoryAuditLogPanel.tsx
 "use client";
 
-import { InventoryLog } from "./useInventoryDev";
+
+import { AdjustmentReason, InventoryItem, InventoryLog, StockStatus } from "@/types/devTypes";
 
 
 interface InventoryAuditLogPanelProps {

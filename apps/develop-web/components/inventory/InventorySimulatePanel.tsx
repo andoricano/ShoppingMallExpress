@@ -1,7 +1,7 @@
 // @/components/inventory/InventorySimulatePanel.tsx
 "use client";
 
-import { InventoryItem, StockStatus } from "./useInventoryDev";
+import { AdjustmentReason, InventoryItem, InventoryLog, StockStatus } from "@/types/devTypes";
 
 
 // 내부 전용 상태 배지 컴포넌트
