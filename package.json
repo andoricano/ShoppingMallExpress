@@ -4,6 +4,7 @@
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",
+    "dev:web": "pnpm --filter develop-web dev",
     "dev:pwa": "pnpm --filter client-pwa dev",
     "dev:express": "pnpm --filter api dev",
     "dev:server": "pnpm --filter api dev",
