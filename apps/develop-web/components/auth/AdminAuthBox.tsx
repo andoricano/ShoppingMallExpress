@@ -1,20 +1,12 @@
 // @/components/auth/UserAuthBox.tsx
 "use client";
 
+import { UserProfile } from "@mall/types"; 
 import { AuthButton } from "./AuthButton";
 
-// [수정] 유저 데이터 타입 정의
-export interface AuthUser {
-    id: string;
-    email: string;
-    name?: string;
-    role: string;
-}
-
-// [수정] UserAuthBox Props (type: "Client" | "Admin" 추가)
 interface UserAuthBoxProps {
     type: "Client" | "Admin";
-    user: AuthUser | null;
+    user: UserProfile | null; 
     onSignUp: () => void;
     onSignIn: () => void;
     onGoogleSignIn: () => void;
@@ -33,7 +25,6 @@ export function UserAuthBox({
     onSignOut,
     onDeleteAccount,
 }: UserAuthBoxProps) {
-    // [수정] type(Client/Admin)에 따른 UI 테마 설정
     const isAdmin = type === "Admin";
 
     const badgeStyle = isAdmin
@@ -46,7 +37,7 @@ export function UserAuthBox({
 
     return (
         <div className="p-5 rounded-xl border border-zinc-800 bg-zinc-950 flex flex-col gap-5">
-            {/* [수정] 상단 헤더 (type에 따른 뱃지 및 타이틀 변경) */}
+            {/* 상단 헤더 */}
             <div className="flex items-center justify-between border-b border-zinc-800/80 pb-3">
                 <div className="flex items-center gap-2">
                     <span className={`text-xs font-bold px-2 py-0.5 rounded border ${badgeStyle}`}>
@@ -61,7 +52,7 @@ export function UserAuthBox({
                 </span>
             </div>
 
-            {/* [수정] 유저 정보 박스 (빈 와꾸 유지) */}
+            {/* 유저 정보 박스 */}
             <div className="p-3.5 rounded-lg bg-zinc-900/60 border border-zinc-800/60 flex flex-col gap-2 text-xs font-mono">
                 <div className="flex justify-between">
                     <span className="text-zinc-500">ID:</span>
@@ -89,7 +80,7 @@ export function UserAuthBox({
                 </div>
             </div>
 
-            {/* 2x3 버튼 영역 (동일 구성 유지) */}
+            {/* 2x3 버튼 영역 */}
             <div className="grid grid-cols-3 gap-2">
                 <AuthButton label="1. 회원가입" onClick={onSignUp} />
                 <AuthButton label="2. 로그인" onClick={onSignIn} />
