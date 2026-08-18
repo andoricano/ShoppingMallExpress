@@ -17,7 +17,6 @@ interface DevSelectedAuthBoxProps {
   onModeChange: (mode: AuthMode) => void;
   onProviderChange: (provider: ThirdPartyProvider) => void;
 
-  // 제출 버튼 클릭 이벤트 핸들러
   onSubmit: () => void;
 }
 

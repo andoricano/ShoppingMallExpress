@@ -1,24 +1,41 @@
+// apps/develop-web/components/auth/AuthDevSection.tsx
 "use client";
 
 import { DevSelectedAuthBox } from "./DevSelectedAuthBox";
-import { UserAuthBox } from "./AdminAuthBox";
+import { UserProfileCard } from "./UserProfileCard";
+import { ClientOnboardingForm } from "./ClientOnboardingForm";
+import { UserProfile } from "@mall/types";
 import { useAuthDev } from "./useAuthDev";
+
+// 임시 테스트용 유저 프로필 데이터
+const MOCK_PROFILE: UserProfile = {
+  id: "usr_12345",
+  email: "test@mall.com",
+  name: "테스트 유저",
+  role: "CLIENT",
+  createdAt: "2026-03-18T10:00:00Z",
+  updatedAt: "2026-03-18T10:00:00Z",
+  recipientName: "홍길동",
+  phone: "010-1234-5678",
+  isOnboarded: true,
+  address: {
+    zonecode: "06134",
+    address: "서울시 강남구 테헤란로 123",
+    detail: "401호",
+  },
+};
 
 export function AuthDevSection() {
   const {
-    role,
-    setRole,
-    mode,
-    setMode,
-    provider,
-    setProvider,
-    hasUser,
+    role, setRole,
+    mode, setMode,
+    provider, setProvider,
+    hasUser, setHasUser,
     handleSubmit,
   } = useAuthDev();
 
   return (
     <section className="flex flex-col gap-6 max-w-md w-full mx-auto p-4">
-      {/* 1. 컨트롤 패널 (Role, Mode, Provider 선택 덤브 컴포넌트) */}
       <DevSelectedAuthBox
         role={role}
         mode={mode}
@@ -29,25 +46,21 @@ export function AuthDevSection() {
         onSubmit={handleSubmit}
       />
 
-      {/* 2. 결과 분기 (유저 존재 여부에 따른 UI 출력) */}
-      <div className="p-4 rounded-xl bg-zinc-950 border border-zinc-800">
+      <div className="flex flex-col gap-2">
         {hasUser ? (
-          <div className="flex flex-col gap-2">
-            <h4 className="text-xs font-semibold text-emerald-400 uppercase tracking-wider">
-              Profile View (User Found)
-            </h4>
-            {/* [주석] 유저가 존재할 때 기존 UserAuthBox 렌더링 */}
-            {/* <UserAuthBox /> */}
-          </div>
+          /* 유저가 존재할 때: 전체 정보 조회 카드 */
+          <UserProfileCard
+            profile={MOCK_PROFILE}
+            onSignOut={() => setHasUser(false)}
+          />
         ) : (
-          <div className="flex flex-col gap-2">
-            <h4 className="text-xs font-semibold text-amber-400 uppercase tracking-wider">
-              Registration View (User Not Found)
-            </h4>
-            <p className="text-xs text-zinc-400">
-              선택한 조건의 유저가 없습니다. 회원가입 절차를 진행해 주세요.
-            </p>
-          </div>
+          /* 유저가 없을 때: 회원가입(온보딩) 폼 */
+          <ClientOnboardingForm
+            onSubmit={(data) => {
+              console.log("[AuthDev] 온보딩 제출 데이터:", data);
+              setHasUser(true); // 온보딩 후 유저 상태 전환 테스트
+            }}
+          />
         )}
       </div>
     </section>
