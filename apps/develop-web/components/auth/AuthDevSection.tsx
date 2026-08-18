@@ -1,59 +1,55 @@
-// @/components/auth/AuthDevSection.tsx
 "use client";
 
-import { useState } from "react";
-import { UserProfile } from "@mall/types"; // [수정] 공통 타입 적용
-import { useAdminAuthStore } from "@/store/useAdminAuth";
+import { DevSelectedAuthBox } from "./DevSelectedAuthBox";
 import { UserAuthBox } from "./AdminAuthBox";
+import { useAuthDev } from "./useAuthDev";
 
 export function AuthDevSection() {
-    // [수정] Admin은 Zustand 스토어 구독
-    const {
-        user: adminUser,
-        signUp: onAdminSignUp,
-        signIn: onAdminSignIn,
-        googleSignIn: onAdminGoogleSignIn,
-        getSession: onAdminGetSession,
-        signOut: onAdminSignOut,
-        deleteAccount: onAdminDeleteAccount,
-    } = useAdminAuthStore();
+  const {
+    role,
+    setRole,
+    mode,
+    setMode,
+    provider,
+    setProvider,
+    hasUser,
+    handleSubmit,
+  } = useAuthDev();
 
-    // Client 쪽은 차후 useClientAuthStore 붙이기 전까지 임시 상태로 유지
-    const [clientUser, setClientUser] = useState<UserProfile | null>(null);
+  return (
+    <section className="flex flex-col gap-6 max-w-md w-full mx-auto p-4">
+      {/* 1. 컨트롤 패널 (Role, Mode, Provider 선택 덤브 컴포넌트) */}
+      <DevSelectedAuthBox
+        role={role}
+        mode={mode}
+        provider={provider}
+        onRoleChange={setRole}
+        onModeChange={setMode}
+        onProviderChange={setProvider}
+        onSubmit={handleSubmit}
+      />
 
-    return (
-        <div className="flex flex-col gap-6">
-            {/* 타이틀 영역 */}
-            <div>
-                <h2 className="text-lg font-bold text-white">Auth API & UI Test Section</h2>
-                <p className="text-sm text-zinc-400">인증/권한 테스트 영역입니다.</p>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* 1. 관리자(Admin) 인증 박스 (Zustand 스토어연동) */}
-                <UserAuthBox
-                    type="Admin"
-                    user={adminUser}
-                    onSignUp={onAdminSignUp}
-                    onSignIn={onAdminSignIn}
-                    onGoogleSignIn={onAdminGoogleSignIn}
-                    onGetSession={onAdminGetSession}
-                    onSignOut={onAdminSignOut}
-                    onDeleteAccount={onAdminDeleteAccount}
-                />
-
-                {/* 2. 일반 유저(Client) 인증 박스 호출 */}
-                <UserAuthBox
-                    type="Client"
-                    user={clientUser}
-                    onSignUp={() => console.log("Client 회원가입")}
-                    onSignIn={() => console.log("Client 로그인")}
-                    onGoogleSignIn={() => console.log("Client Google 로그인")}
-                    onGetSession={() => console.log("Client 세션 확인")}
-                    onSignOut={() => setClientUser(null)}
-                    onDeleteAccount={() => setClientUser(null)}
-                />
-            </div>
-        </div>
-    );
+      {/* 2. 결과 분기 (유저 존재 여부에 따른 UI 출력) */}
+      <div className="p-4 rounded-xl bg-zinc-950 border border-zinc-800">
+        {hasUser ? (
+          <div className="flex flex-col gap-2">
+            <h4 className="text-xs font-semibold text-emerald-400 uppercase tracking-wider">
+              Profile View (User Found)
+            </h4>
+            {/* [주석] 유저가 존재할 때 기존 UserAuthBox 렌더링 */}
+            {/* <UserAuthBox /> */}
+          </div>
+        ) : (
+          <div className="flex flex-col gap-2">
+            <h4 className="text-xs font-semibold text-amber-400 uppercase tracking-wider">
+              Registration View (User Not Found)
+            </h4>
+            <p className="text-xs text-zinc-400">
+              선택한 조건의 유저가 없습니다. 회원가입 절차를 진행해 주세요.
+            </p>
+          </div>
+        )}
+      </div>
+    </section>
+  );
 }
