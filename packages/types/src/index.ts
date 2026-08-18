@@ -1,2 +1,4 @@
-export * from './warehouse';
-export * from './auth';
+// packages/types/src/index.ts
+
+export * from './inventory.js';
+export * from './auth.js';

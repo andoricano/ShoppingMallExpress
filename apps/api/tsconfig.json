@@ -1,29 +1,18 @@
 {
-  // Visit https://aka.ms/tsconfig to read more about this file
   "compilerOptions": {
-    // File Layout
-    /* Custom modification: 빌드 출력 및 소스 경로 지정 */
     "rootDir": "./src",
     "outDir": "./dist",
-
-    // Environment Settings
     "module": "nodenext",
     "moduleResolution": "nodenext",
     "target": "esnext",
-
-    /* Custom modification: Node.js 및 기본 라이브러리 타입 자동 로드를 위해 types 옵션 제거 및 lib 추가 */
-    "lib": ["esnext"],
-
-    // Other Outputs
+    "lib": [
+      "esnext"
+    ],
     "sourceMap": true,
     "declaration": true,
     "declarationMap": true,
-
-    // Stricter Typechecking Options
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
-
-    // Recommended Options
     "strict": true,
     "verbatimModuleSyntax": true,
     "isolatedModules": true,
@@ -31,6 +20,7 @@
     "moduleDetection": "force",
     "skipLibCheck": true
   },
-  /* Custom modification: 컴파일 대상 소스 폴더 지정 */
-  "include": ["src/**/*"]
+  "include": [
+    "src/**/*"
+  ]
 }

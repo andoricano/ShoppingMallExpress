@@ -3,13 +3,13 @@
 
 import { useState } from "react";
 
-import { AdjustmentReason, InventoryItem, InventoryLog, StockStatus } from "@/types/devTypes";
 import { DevTabItem, DevTopbar } from "../ui/DevTopbar";
 import { InventoryOverviewPanel } from "./InventoryOverviewPanel";
 import { InventoryCreatePanel } from "./InventoryCreatePanel";
 import { InventorySimulatePanel } from "./InventorySimulatePanel";
 import { InventoryAuditLogPanel } from "./InventoryAuditLogPanel";
 import { useInventoryDev } from "./useInventoryDev";
+import { StockStatus } from "@mall/types";
 // 분리한 DevTopbar 및 타입 import
 
 // 탭 ID 타입 정의

@@ -1,9 +1,9 @@
 // @/components/inventory/InventoryOverviewPanel.tsx
 "use client";
 
+import { AdjustmentReason, InventoryItem, StockStatus } from "@mall/types";
 import { useState } from "react";
 
-import { AdjustmentReason, InventoryItem, InventoryLog, StockStatus } from "@/types/devTypes";
 
 // 재고 상태 배지
 function StatusBadge({ status }: { status: StockStatus }) {
