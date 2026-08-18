@@ -6,7 +6,8 @@ import { InventoryDevSection } from "@/components/inventory/InventoryDevSection"
 import { OrderDevSection } from "@/components/order/OrderDevSection";
 import { PaymentDevSection } from "@/components/payment/PaymentDevSection";
 import { ProductDevSection } from "@/components/product/ProductDevSection";
-import { useState } from "react";
+import { useAdminAuthStore } from "@/store/useAdminAuth";
+import { useEffect, useEffectEvent, useState } from "react";
 
 const PRD_DEV_ITEMS = [
   { id: "auth", label: "Auth", docName: "Auth.md", component: AuthDevSection },
@@ -20,8 +21,16 @@ const PRD_DEV_ITEMS = [
 export default function DevScreen() {
   const [selectedId, setSelectedId] = useState<string>(PRD_DEV_ITEMS[0].id);
 
+  const getSession = useAdminAuthStore((state) => state.getSession);
+
+  useEffect(() => {
+    getSession();
+  }, [getSession]);
+
   const currentItem = PRD_DEV_ITEMS.find((item) => item.id === selectedId) ?? PRD_DEV_ITEMS[0];
   const ActiveComponent = currentItem.component;
+
+
 
   return (
     <div className="flex h-screen w-full bg-zinc-900 text-zinc-100 font-sans">

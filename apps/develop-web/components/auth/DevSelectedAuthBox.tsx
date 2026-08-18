@@ -1,21 +1,19 @@
-// apps/develop-web/components/auth/DevSelectedAuthBox.tsx
 "use client";
 
 import { SelectGroup, SelectOption } from "./SelectGroup";
 import { AuthButton } from "./AuthButton";
 import { UserRole } from "@mall/types";
-import { AuthMode, ThirdPartyProvider } from "./useAuthDev";
+import { AuthMode } from "./useAuthDev";
+import { OAuthProvider } from "@/store/useAdminAuth";
 
 interface DevSelectedAuthBoxProps {
-  // 선택된 상태값 (외부에서 주입)
   role: UserRole;
   mode: AuthMode;
-  provider: ThirdPartyProvider;
+  provider: OAuthProvider;
 
-  // 상태 변경 핸들러
   onRoleChange: (role: UserRole) => void;
   onModeChange: (mode: AuthMode) => void;
-  onProviderChange: (provider: ThirdPartyProvider) => void;
+  onProviderChange: (provider: OAuthProvider) => void;
 
   onSubmit: () => void;
 }
@@ -30,10 +28,10 @@ const MODE_OPTIONS: SelectOption<AuthMode>[] = [
   { label: "Sign Up", value: "signUp" },
 ];
 
-const PROVIDER_OPTIONS: SelectOption<ThirdPartyProvider>[] = [
+const PROVIDER_OPTIONS: SelectOption<OAuthProvider>[] = [
   { label: "Google", value: "google" },
   { label: "Kakao", value: "kakao" },
-  { label: "GitHub", value: "github" },
+  { label: "Insta", value: "facebook" },
 ];
 
 export function DevSelectedAuthBox({
@@ -68,7 +66,7 @@ export function DevSelectedAuthBox({
       />
 
       {/* 3. ThirdParty Provider 선택 */}
-      <SelectGroup<ThirdPartyProvider>
+      <SelectGroup<OAuthProvider>
         title="Provider"
         options={PROVIDER_OPTIONS}
         selectedValue={provider}
