@@ -1,0 +1,55 @@
+// 백엔드 내부용 DB 테이블, 컬럼명 및 Enum 정의
+
+// 1. DB 테이블명 상수
+export const DB_TABLES = {
+    // 1-1. 재고 모듈
+    INVENTORY_ITEMS: 'inventory_items',
+    INVENTORY_LOGS: 'inventory_logs',
+
+    // 1-2. 상품 및 카테고리 모듈
+    PRODUCTS: 'products',                       // 상품 마스터
+    PRODUCT_OPTIONS: 'product_options',         // 상품 옵션 및 SKU 매핑
+    CATEGORIES: 'categories',                   // 카테고리 마스터 (계층형)
+    PRODUCT_CATEGORIES: 'product_categories',   // 상품-카테고리 다중 매핑
+    WISHLISTS: 'wishlists',                     // 관심상품 (위시리스트)
+} as const;
+
+
+// 2. 주요 DB 컬럼명 상수 (선택 - 오탈자 방지용) 주석: 자주 쓰이는 PK/FK 및 정렬 컬럼명 상수화
+export const DB_COLUMNS = {
+    CATEGORIES: {
+        CATEGORY_ID: 'category_id',
+        PARENT_ID: 'parent_id',
+        DISPLAY_ORDER: 'display_order', // 주석: sort_order와 혼동 방지
+        DEPTH: 'depth',
+    },
+    PRODUCTS: {
+        PRODUCT_ID: 'product_id',
+        STATUS: 'status',
+        SORT_ORDER: 'sort_order',
+    },
+    PRODUCT_CATEGORIES: {
+        PRODUCT_ID: 'product_id',
+        CATEGORY_ID: 'category_id',
+    },
+} as const;
+
+
+// 3. 상품 진열 상태 Enum 상수 주석: 상품 status 값 상수화
+export const PRODUCT_STATUS = {
+    DISPLAY: 'DISPLAY',   // 진열중
+    HIDDEN: 'HIDDEN',     // 숨김
+    SOLD_OUT: 'SOLD_OUT', // 품절
+    DELETED: 'DELETED',   // 삭제(Soft Delete)
+} as const;
+
+export type ProductStatus = typeof PRODUCT_STATUS[keyof typeof PRODUCT_STATUS];
+
+
+// 4. 할인 유형 Enum 상수 주석: 상품 discount_type 값 상수화
+export const DISCOUNT_TYPE = {
+    FIXED_AMOUNT: 'FIXED_AMOUNT', // 정액 할인
+    PERCENTAGE: 'PERCENTAGE',     // 정률 할인
+} as const;
+
+export type DiscountType = typeof DISCOUNT_TYPE[keyof typeof DISCOUNT_TYPE];

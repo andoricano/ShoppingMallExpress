@@ -5,40 +5,18 @@ import { useState } from "react";
 import { DevTabItem, DevTopbar } from "../ui/DevTopbar";
 import { useProductAdmin } from "./useProductAdmin";
 import { useInventoryDev } from "../inventory/useInventoryDev";
-import { ProductStatus } from "@mall/types";
 import { ProductOverviewPanel } from "./ProductOverviewPanel";
 import { ProductCreatePanel } from "./ProductCreatePanel";
 import { ProductCategoryPanel } from "./ProductCategoryPanel";
+import { useProductCategory } from "./category/useProductCategory";
 
 // 탭 ID 타입 정의
 type TabType = "list" | "create" | "category";
 
-export function StatusBadge({ status }: { status: ProductStatus }) {
-    const statusStyles: Record<ProductStatus, string> = {
-        DISPLAY: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",  // 진열중
-        HIDDEN: "bg-zinc-800 text-zinc-400 border-zinc-700",                 // 숨김
-        SOLD_OUT: "bg-rose-500/10 text-rose-400 border-rose-500/20",         // 품절
-        DELETED: "bg-red-950 text-red-600 border-red-900/50 line-through",    // 삭제됨
-    };
-
-    const statusLabels: Record<ProductStatus, string> = {
-        DISPLAY: "진열중",
-        HIDDEN: "숨김",
-        SOLD_OUT: "품절",
-        DELETED: "삭제됨",
-    };
-
-    return (
-        <span className={`px-2 py-0.5 text-xs font-medium rounded border ${statusStyles[status]}`}>
-            {statusLabels[status] || status}
-        </span>
-    );
-}
-
 export function ProductDevSection() {
     const [activeTab, setActiveTab] = useState<TabType>("list");
 
-    // 1. Product 어드민 훅
+    // 1. Product 어드민 훅 (상품 CRUD 및 일괄 처리)
     const {
         productList,
         pagination,
@@ -51,7 +29,15 @@ export function ProductDevSection() {
         batchUpdateCategory,
     } = useProductAdmin();
 
-    // 2. Inventory 훅 (상품 등록 시 SKU 매핑용 드롭다운 데이터 제공)
+    // 2. Product 카테고리 훅 (카테고리 메타데이터 트리 CRUD) 주석: 카테고리 전용 훅 호출
+    const {
+        categoryList,
+        createCategory,
+        updateCategory,
+        deleteCategory,
+    } = useProductCategory();
+
+    // 3. Inventory 훅 (상품 등록 시 SKU 매핑용 드롭다운 데이터 제공)
     const { inventoryList } = useInventoryDev();
 
     const navTabs: DevTabItem<TabType>[] = [
@@ -104,7 +90,12 @@ export function ProductDevSection() {
 
                 {/* [TAB 3] 대/중/소 계층형 카테고리 트리 관리 패널 */}
                 {activeTab === "category" && (
-                    <ProductCategoryPanel />
+                    <ProductCategoryPanel
+                        categoryList={categoryList}
+                        onCreateCategory={createCategory} 
+                        onUpdateCategory={updateCategory} 
+                        onDeleteCategory={deleteCategory} 
+                    />
                 )}
             </div>
         </div>

@@ -4,9 +4,9 @@ import {
     getInventoryItems,
     createInventoryItem,
     updateInventoryItem,
-    adjustInventoryStock, // [추가] 수동 입출고 조정 (+/-) 및 감사로그 적재
-    toggleInventoryStatus, // [추가] 비활성화(Disabled) 논리적 삭제 처리
-    getInventoryLogs,     // [추가] 감사 로그 조회
+    adjustInventoryStock, 
+    toggleInventoryStatus, 
+    getInventoryLogs,    
 } from '../controllers/inventory.controller.js';
 
 const router: Router = Router();

@@ -6,6 +6,7 @@ import cors from 'cors';
 
 import inventoryRoutes from './routes/inventory.routes.js';
 import productRoutes from './routes/product.routes.js';
+import categoryRoutes from './routes/category.routes.js'; // 주석: 카테고리 라우터 모듈 추가
 
 const app = express();
 const PORT: number = Number(process.env['PORT']) || 8080;
@@ -33,7 +34,7 @@ app.get('/', (req: Request, res: Response) => {
 // - DELETE /api/inventory-items/:uuid  : SKU 비활성화
 app.use('/api/inventory-items', inventoryRoutes);
 
-// 모듈 3: 상품 관리 API [추가]
+// 모듈 3: 상품 관리 API 
 // - GET    /api/products/client        : 클라이언트 상품 목록 조회 (진열중)
 // - POST   /api/products/wishlist      : 관심상품 토글
 // - GET    /api/products/admin         : 어드민 상품 목록 조회
@@ -44,6 +45,13 @@ app.use('/api/inventory-items', inventoryRoutes);
 // - PATCH  /api/products/:id           : 상품 정보 수정
 // - DELETE /api/products/:id           : 상품 삭제 (Soft Delete)
 app.use('/api/products', productRoutes);
+
+// 모듈 4: 카테고리 관리 API 
+// - GET    /api/categories               : 전체 카테고리 목록 조회
+// - POST   /api/categories/admin         : 카테고리 신규 생성
+// - PATCH  /api/categories/admin/:id     : 카테고리 정보 수정
+// - DELETE /api/categories/admin/:id     : 카테고리 삭제
+app.use('/api/categories', categoryRoutes);
 
 // [5. 서버 실행]
 app.listen(PORT, () => {
