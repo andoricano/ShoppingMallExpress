@@ -1,37 +1,20 @@
 // @/components/inventory/InventoryOverviewPanel.tsx
 "use client";
 
-import { AdjustmentReason, InventoryItem, StockStatus } from "@mall/types";
+import { AdjustmentReason, InventoryItem } from "@mall/types";
 import { useState } from "react";
+import { InventoryTable } from "./InventoryTable"; // [수정] 덤 컴포넌트 임포트
 
-
-// 재고 상태 배지
-function StatusBadge({ status }: { status: StockStatus }) {
-    const statusStyles: Record<StockStatus, string> = {
-        IN_STOCK: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
-        LOW_STOCK: "bg-amber-500/10 text-amber-400 border-amber-500/20",
-        SOLD_OUT: "bg-rose-500/10 text-rose-400 border-rose-500/20",
-        DISABLED: "bg-zinc-800 text-zinc-500 border-zinc-700",
-    };
-
-    return (
-        <span className={`px-2 py-0.5 text-xs font-medium rounded border ${statusStyles[status]}`}>
-            {status}
-        </span>
-    );
-}
-
-// 실제 사용하는 3가지 Props만 명시
 interface InventoryOverviewPanelProps {
-    inventoryList: InventoryItem[]; // 1. 표출용 데이터
-    onAdjustStock: ( // 2. 수동 조정 함수
+    inventoryList: InventoryItem[];
+    onAdjustStock: (
         skuId: string,
         deltaQty: number,
         reason: AdjustmentReason,
         memo: string,
         adminId: string
     ) => void;
-    onToggleSkuStatus: (skuId: string) => void; // 3. 비활성화/활성화 토글 함수
+    onToggleSkuStatus: (skuId: string) => void;
 }
 
 export function InventoryOverviewPanel({
@@ -39,17 +22,15 @@ export function InventoryOverviewPanel({
     onAdjustStock,
     onToggleSkuStatus,
 }: InventoryOverviewPanelProps) {
-    // 수동 조정 폼에서 필요한 내부 입력 상태만 관리
     const [selectedSku, setSelectedSku] = useState("SKU-001");
     const [adjustQty, setAdjustQty] = useState(1);
     const [adjustReason, setAdjustReason] = useState<AdjustmentReason>("INCOMING");
     const [adjustMemo, setAdjustMemo] = useState("");
 
-    // 수동 조정 제출 시 필요한 인자만 묶어서 상위 함수 호출
     const handleAdjustSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         onAdjustStock(selectedSku, adjustQty, adjustReason, adjustMemo, "ADMIN_DEV");
-        setAdjustMemo(""); // 제출 후 메모만 초기화
+        setAdjustMemo("");
     };
 
     return (
@@ -59,41 +40,11 @@ export function InventoryOverviewPanel({
                 <h3 className="text-md font-semibold text-white mb-4">
                     실시간 SKU 재고 현황
                 </h3>
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left text-xs text-zinc-300">
-                        <thead className="bg-zinc-800 text-zinc-400 uppercase">
-                            <tr>
-                                <th className="p-2">SKU ID</th>
-                                <th className="p-2">상품명</th>
-                                <th className="p-2">현재고</th>
-                                <th className="p-2">안전재고</th>
-                                <th className="p-2">상태</th>
-                                <th className="p-2">액션</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-zinc-800">
-                            {inventoryList.map((item) => (
-                                <tr key={item.skuId}>
-                                    <td className="p-2 font-mono text-zinc-400">{item.skuId}</td>
-                                    <td className="p-2 text-white font-medium">{item.productName}</td>
-                                    <td className="p-2 font-bold">{item.currentStock}</td>
-                                    <td className="p-2 text-zinc-400">{item.safetyStock}</td>
-                                    <td className="p-2">
-                                        <StatusBadge status={item.status} />
-                                    </td>
-                                    <td className="p-2">
-                                        <button
-                                            onClick={() => onToggleSkuStatus(item.skuId)}
-                                            className="text-xs px-2 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded"
-                                        >
-                                            {item.status === "DISABLED" ? "활성화" : "비활성화"}
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
+                {/* [수정] 기존 inline table을 독립된 덤 컴포넌트로 교체 */}
+                <InventoryTable
+                    inventoryList={inventoryList}
+                    onToggleSkuStatus={onToggleSkuStatus}
+                />
             </div>
 
             {/* 2. 수동 조정 적용 */}
