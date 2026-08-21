@@ -68,14 +68,6 @@ export interface ProductCategory {
     children?: ProductCategory[];  // 트리 구조 표현용
 }
 
-/** 관심상품 (위시리스트) 매핑 (PRD 2.2 & 3.7) */
-export interface Wishlist {
-    wishlistId: string;
-    userId: string;
-    productId: string;
-    createdAt: string;
-}
-
 
 // ==========================================
 // 4. API Request & Payload 타입

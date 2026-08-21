@@ -15,22 +15,6 @@ import { StockStatus } from "@mall/types";
 // 탭 ID 타입 정의
 type TabType = "list" | "create" | "simulate" | "logs";
 
-function StatusBadge({ status }: { status: StockStatus }) {
-    const statusStyles: Record<StockStatus, string> = {
-        IN_STOCK: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
-        LOW_STOCK: "bg-amber-500/10 text-amber-400 border-amber-500/20",
-        SOLD_OUT: "bg-rose-500/10 text-rose-400 border-rose-500/20",
-        DISABLED: "bg-zinc-800 text-zinc-500 border-zinc-700",
-    };
-
-    return (
-        <span
-            className={`px-2 py-0.5 text-xs font-medium rounded border ${statusStyles[status]}`}
-        >
-            {status}
-        </span>
-    );
-}
 
 export function InventoryDevSection() {
     const [activeTab, setActiveTab] = useState<TabType>("list");
