@@ -11,9 +11,8 @@ export function useInventoryDev() {
 
     const isAdmin = user?.role === "ADMIN";
     const currentAdminId = user?.id || "SYSTEM_ADMIN";
-    console.log("현재 user 상태:", user); // 이 로그 결과를 보여주세요!
+    console.log("현재 user 상태:", user);
     console.log("user.role 값:", user?.role);
-
 
     // 서버 데이터를 담을 상태
     const [inventoryList, setInventoryList] = useState<InventoryItem[]>([]);
@@ -36,34 +35,56 @@ export function useInventoryDev() {
 
             const responseData = await response.json();
 
-            // 수정: 백엔드 응답이 배열인지, 객체 안의 data 필드에 들어가 있는지 검증
+            let rawList: any[] = [];
             if (Array.isArray(responseData)) {
-                setInventoryList(responseData);
+                rawList = responseData;
             } else if (Array.isArray(responseData.data)) {
-                // 백엔드가 { success: true, data: [...] } 형태로 응답할 경우
-                setInventoryList(responseData.data);
+                rawList = responseData.data;
             } else {
                 console.error("[useInventory] 백엔드 응답이 배열 형식이 아닙니다:", responseData);
-                setInventoryList([]); // 수정: .map 에러 방지를 위한 빈 배열 안전장치
+                rawList = [];
             }
+
+            const formattedList: InventoryItem[] = rawList.map((item: any) => ({
+                skuId: item.sku_id ?? item.skuId,
+                productId: item.product_id ?? item.productId,
+                productName: item.product_name ?? item.productName,
+                category: item.category,
+                currentStock: item.current_stock ?? item.currentStock,
+                safetyStock: item.safety_stock ?? item.safetyStock,
+                status: item.status,
+            }));
+
+            setInventoryList(formattedList);
         } catch (err: any) {
             console.error("[useInventory] fetchInventoryList 오류:", err);
             setError(err.message || "서버 통신 오류");
-            setInventoryList([]); // 수정: 통신 실패 시 빈 배열로 안전하게 초기화
+            setInventoryList([]); // 통신 실패 시 빈 배열로 안전하게 처리
         } finally {
             setLoading(false);
         }
     }, []);
+
     // [2] 감사 로그 서버 조회 (GET /api/inventory-items/logs)
     const fetchLogs = useCallback(async () => {
         try {
             const response = await fetch(`${API_BASE_URL}/api/inventory-items/logs`);
             if (!response.ok) throw new Error("감사 로그를 불러오는데 실패했습니다.");
 
-            const data: InventoryLog[] = await response.json();
-            setLogs(data);
+            const data = await response.json();
+
+            // 수정: 백엔드 응답이 배열인지 확인 후 state 설정
+            if (Array.isArray(data)) {
+                setLogs(data);
+            } else if (Array.isArray(data.data)) {
+                setLogs(data.data);
+            } else {
+                console.error("[useInventory] logs 응답이 배열 형식이 아닙니다:", data);
+                setLogs([]); // 배열이 아니면 빈 배열로 안전하게 설정
+            }
         } catch (err: any) {
             console.error("[useInventory] fetchLogs 오류:", err);
+            setLogs([]); // 에러 발생 시 빈 배열 처리
         }
     }, []);
 
@@ -88,7 +109,7 @@ export function useInventoryDev() {
                 body: JSON.stringify(newItem),
             });
 
-            if (!response.ok) throw new Error("SKU 생율에 실패했습니다.");
+            if (!response.ok) throw new Error("SKU 생성에 실패했습니다.");
 
             // 성공 시 서버 최신 목록 재조회
             await fetchInventoryList();
