@@ -2,3 +2,4 @@
 
 export * from './inventory.js';
 export * from './auth.js';
+export * from './product.js';
