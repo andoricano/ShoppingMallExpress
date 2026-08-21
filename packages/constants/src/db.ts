@@ -12,6 +12,10 @@ export const DB_TABLES = {
     CATEGORIES: 'categories',                   // 카테고리 마스터 (계층형)
     PRODUCT_CATEGORIES: 'product_categories',   // 상품-카테고리 다중 매핑
     WISHLISTS: 'wishlists',                     // 관심상품 (위시리스트)
+
+    // 1-3. 주문 모듈 [추가]
+    ORDERS: 'orders',                           // 주문 마스터
+    ORDER_ITEMS: 'order_items',                 // 주문 상세 품목
 } as const;
 
 
@@ -31,6 +35,20 @@ export const DB_COLUMNS = {
     PRODUCT_CATEGORIES: {
         PRODUCT_ID: 'product_id',
         CATEGORY_ID: 'category_id',
+    },
+    // [추가] 주문 관련 주요 컬럼명 상수화
+    ORDERS: {
+        ORDER_ID: 'order_id',
+        USER_ID: 'user_id',
+        ORDER_STATUS: 'order_status',
+        HOLD_EXPIRES_AT: 'hold_expires_at',
+    },
+    ORDER_ITEMS: {
+        ORDER_ITEM_ID: 'order_item_id',
+        ORDER_ID: 'order_id',
+        PRODUCT_ID: 'product_id',
+        OPTION_ID: 'option_id',
+        SKU_ID: 'sku_id',
     },
 } as const;
 
@@ -53,3 +71,14 @@ export const DISCOUNT_TYPE = {
 } as const;
 
 export type DiscountType = typeof DISCOUNT_TYPE[keyof typeof DISCOUNT_TYPE];
+
+
+// 5. 주문 상태 Enum 상수 [추가] 주석: orders의 order_status 값 상수화
+export const ORDER_STATUS = {
+    PAYMENT_PENDING: 'PAYMENT_PENDING', // 결제 대기
+    ORDER_RECEIVED: 'ORDER_RECEIVED',   // 주문 접수
+    CANCELLED: 'CANCELLED',             // 취소/만료
+    COMPLETED: 'COMPLETED',             // 완료
+} as const;
+
+export type OrderStatus = typeof ORDER_STATUS[keyof typeof ORDER_STATUS];
