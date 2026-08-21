@@ -4,7 +4,7 @@
 import type { CreateProductPayload, InventoryItem, ProductCategory } from "@mall/types";
 import { useState } from "react";
 import { ProductInventoryTable } from "./ProductInventoryTable";
-import { ProductInputForm } from "./ProductInputForm"; // ProductInputForm 컴포넌트 추가
+import { ProductInputForm } from "./ProductInputForm";
 
 interface ProductCreatePanelProps {
     inventoryList: InventoryItem[]; 
@@ -19,7 +19,7 @@ export function ProductCreatePanel({
 }: ProductCreatePanelProps) {
     const [selectedSku, setSelectedSku] = useState<InventoryItem | null>(null);
 
-    // 테이블에서 '>' 또는 '+' 클릭 시 선택 처리
+    // 1. 테이블에서 '>' 또는 '+' 클릭 시 선택 처리
     const handleSelectSku = (item: InventoryItem) => {
         setSelectedSku(item);
     };

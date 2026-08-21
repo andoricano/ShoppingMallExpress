@@ -22,9 +22,8 @@ function StatusBadge({ status }: { status: ProductStatus }) {
 
     return (
         <span
-            className={`px-2 py-0.5 text-xs font-medium rounded border ${
-                statusStyles[status] || "bg-zinc-800 text-zinc-400"
-            }`}
+            className={`px-2 py-0.5 text-xs font-medium rounded border ${statusStyles[status] || "bg-zinc-800 text-zinc-400"
+                }`}
         >
             {statusLabels[status] || status}
         </span>
@@ -303,15 +302,15 @@ export function ProductOverviewPanel({
                         ) : (
                             productList.map((product) => {
                                 const isSelected = selectedProductIds.includes(product.productId);
-                                const hasDiscount =
-                                    product.price.discountedPrice < product.price.basePrice;
+                                const basePrice = product?.price?.basePrice ?? 0;
+                                const discountedPrice = product?.price?.discountedPrice ?? basePrice;
+                                const hasDiscount = discountedPrice < basePrice;
 
                                 return (
                                     <tr
                                         key={product.productId}
-                                        className={`hover:bg-zinc-800/40 transition-colors ${
-                                            isSelected ? "bg-blue-950/20" : ""
-                                        }`}
+                                        className={`hover:bg-zinc-800/40 transition-colors ${isSelected ? "bg-blue-950/20" : ""
+                                            }`}
                                     >
                                         {/* 선택 체크박스 */}
                                         <td className="p-2.5">
@@ -372,8 +371,9 @@ export function ProductOverviewPanel({
                                                     )}
                                                 </div>
                                             ) : (
+                                                // 1. product.price 및 basePrice 안전 접근 처리
                                                 <span className="font-medium text-zinc-200">
-                                                    {product.price.basePrice.toLocaleString()}원
+                                                    {(product.price?.basePrice ?? 0).toLocaleString()}원
                                                 </span>
                                             )}
                                         </td>

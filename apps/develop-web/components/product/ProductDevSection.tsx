@@ -29,7 +29,7 @@ export function ProductDevSection() {
         batchUpdateCategory,
     } = useProductAdmin();
 
-    // 2. Product 카테고리 훅 (카테고리 메타데이터 트리 CRUD) 주석: 카테고리 전용 훅 호출
+    // 2. Product 카테고리 훅 (카테고리 메타데이터 트리 CRUD)
     const {
         categoryList,
         createCategory,
@@ -80,10 +80,11 @@ export function ProductDevSection() {
                     />
                 )}
 
-                {/* [TAB 2] 원천 재고(inventoryList)를 불러와 매핑하는 상품 등록 패널 */}
+                {/* [TAB 2] 원천 재고(inventoryList) 및 카테고리 목록*/}
                 {activeTab === "create" && (
                     <ProductCreatePanel
-                        inventoryList={inventoryList} // Inventory SKU 목록 전달
+                        inventoryList={inventoryList}
+                        categoryList={categoryList} 
                         onCreateProduct={createProduct}
                     />
                 )}
