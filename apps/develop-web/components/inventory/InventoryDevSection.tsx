@@ -40,7 +40,6 @@ export function InventoryDevSection() {
         logs,
         adjustStock,
         toggleSkuStatus,
-        simulateOrderEvent,
         createSku
     } = useInventoryDev();
 
@@ -93,7 +92,6 @@ export function InventoryDevSection() {
                 {activeTab === "simulate" && (
                     <InventorySimulatePanel
                         inventoryList={inventoryList}
-                        onSimulateOrderEvent={simulateOrderEvent}
                     />
                 )}
 
