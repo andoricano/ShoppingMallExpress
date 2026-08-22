@@ -35,12 +35,10 @@ export function OrderDevSection() {
         handleRemoveWishlistItem,
     } = useOrderDev();
 
-    // [수정] 현재 선택된 주문 아이디로 모달에 전달할 주문 데이터 찾기
     const selectedOrder = orders.find((o) => o.orderId === selectedOrderId) || null;
 
     return (
         <div className="p-6 space-y-6 max-w-7xl mx-auto">
-            {/* [수정] 탭 전환 네비게이션 영역 */}
             <div className="flex border-b border-gray-200 gap-2 bg-gray-50/50 p-1.5 rounded-xl border">
                 {[
                     { id: "overview", label: "📊 주문 현황 대시보드" },
