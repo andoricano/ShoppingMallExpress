@@ -1,5 +1,9 @@
 - developement-web
 pnpm dev:web
 
--api
+- api
 pnpm --filter @mall/api dev
+
+
+- client
+pnpm --filter @mall/client-web dev
