@@ -1,54 +1,58 @@
 // @/types/inventory.ts
 
-// 1. 재고 상태
 export type StockStatus = "IN_STOCK" | "LOW_STOCK" | "SOLD_OUT" | "DISABLED";
-
-// 2. 어드민 수동 조정 사유 (3.3절 요구사항 반영)
 export type AdjustmentReason = "INCOMING" | "AUDIT" | "DAMAGED" | "OTHER";
 
-// 3. 재고 변동 전체 유형 (3.6절 감사 로그 요구사항 반영)
-// 주문 자동 차감/취소 복구/어드민 수동 조정 등 로그 분류용
 export type InventoryChangeType =
     | "ORDER_DEDUCT"    // 주문 차감
     | "CANCEL_RESTORE"  // 취소/반품 복구
     | "ADMIN_ADJUST";   // 어드민 수동 조정
 
-// 4. SKU 재고 아이템 (2.2 & 2.3절)
-export interface InventoryItem {
-    skuId: string;
-    productId: string;
-    productName: string;
-    category?: string;       // 3.2절 검색 필터용 (선택)
-    currentStock: number;
-    safetyStock: number;
-    status: StockStatus;
+/**
+ * 개별 옵션/사이즈(SKU) 재고 아이템
+ */
+export interface SkuInventory {
+    skuId: string;           // 예: "SHOE-01-250"
+    optionName: string;      // 예: "250", "255", "S", "XL"
+    currentStock: number;    // 해당 옵션의 현재 재고
+    safetyStock: number;     // 안전 재고
+    status: StockStatus;     // 해당 옵션의 재고 상태
 }
 
-// 5. 어드민 수동 조정 요청 Payload (3.3절)
+/**
+ * 상품 단위 재고 아이템 (Admin 목록 표시용)
+ */
+export interface InventoryItem {
+    productId: string;       // 예: "PROD-SHOE-01"
+    productName: string;     // 예: "나이키 운동화"
+    category?: string;       // 예: "SHOES", "CLOTHES"
+    totalStock: number;      // 옵션 전체 재고 합계
+    skus: SkuInventory[];    // 사이즈/옵션별 SKU 목록
+}
+
 export interface AdjustStockPayload {
     skuId: string;
-    adjustmentQty: number;   // 양수(+) 입고, 음수(-) 차감
+    adjustmentQty: number;
     reasonType: AdjustmentReason;
     reasonMemo?: string;
     adminId: string;
 }
 
-// 6. 어드민 감사 로그 (3.6절)
 export interface InventoryLog {
     id: string;
-    timestamp: string;      // 또는 Date
+    timestamp: string;
     skuId: string;
+    optionName?: string;     // 로그 확인용 옵션명 (선택)
     beforeQty: number;
     afterQty: number;
     changeType: InventoryChangeType;
-    reasonType?: AdjustmentReason; // 수동 조정 시 사용된 사유
-    adminId: string;        // 시스템 자동 변동일 경우 "SYSTEM" 등
+    reasonType?: AdjustmentReason;
+    adminId: string;
     reasonMemo?: string;
 }
 
-// 7. 대시보드 위젯/필터용 타입 (3.2절)
 export interface InventoryFilterParams {
-    searchQuery?: string;   // 상품명, SKU 코드
+    searchQuery?: string;
     status?: StockStatus;
     category?: string;
 }
