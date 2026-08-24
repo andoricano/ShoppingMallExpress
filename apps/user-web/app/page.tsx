@@ -1,69 +1,103 @@
-import Image from "next/image";
+// app/page.tsx
+'use client';
 
-export default function Home() {
+import { DashboardCard } from '@/component/main/DashboardCard';
+import { AdminOverviewData } from '@/types/admin';
+import React from 'react';
+
+// 임시 Mock 데이터
+const MOCK_OVERVIEW_DATA: AdminOverviewData = {
+  design: {
+    activeThemeName: 'SUMMER_PROMO_V1',
+    lastEditedAt: '2026.08.24',
+  },
+  order: {
+    pendingDeliveryCount: 12,
+  },
+  claim: {
+    pendingCancelCount: 2,
+    pendingReturnCount: 1,
+  },
+  sales: {
+    todayTotalAmount: 1250000,
+    todayOrderCount: 18,
+  },
+  inventory: {
+    lowStockCount: 4,
+    outOfStockCount: 1,
+    alertThumbnails: [
+      'https://via.placeholder.com/150',
+      'https://via.placeholder.com/150',
+    ],
+  },
+  product: {
+    activeProductCount: 48,
+    representativeThumbnail: 'https://via.placeholder.com/150',
+  },
+  user: {
+    totalUserCount: 1240,
+    todayNewUserCount: 8,
+  },
+};
+
+export default function AdminDashboardPage() {
+  const data = MOCK_OVERVIEW_DATA; // 데이터 바인딩
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+        gap: '20px',
+        padding: '24px',
+      }}
+    >
+      <DashboardCard
+        title="스토어 디자인/레이아웃"
+        mainText={data.design.activeThemeName}
+        subText={`최종 수정: ${data.design.lastEditedAt}`}
+        href="/admin/design"
+      />
+      <DashboardCard
+        title="주문 / 배송 관리"
+        mainText={`미배송 ${data.order.pendingDeliveryCount}건`}
+        badgeCount={data.order.pendingDeliveryCount}
+        badgeColor="#228be6"
+        href="/admin/orders"
+      />
+      <DashboardCard
+        title="취소 / 반품 승인"
+        mainText={`요청 ${data.claim.pendingCancelCount + data.claim.pendingReturnCount}건`}
+        badgeCount={data.claim.pendingCancelCount + data.claim.pendingReturnCount}
+        badgeColor="#ff4d4f"
+        href="/admin/claims"
+      />
+      <DashboardCard
+        title="오늘의 매출"
+        mainText={`${data.sales.todayTotalAmount.toLocaleString()}원`}
+        subText={`총 ${data.sales.todayOrderCount}건 결제`}
+        href="/admin/analytics"
+      />
+      <DashboardCard
+        title="재고 관리"
+        mainText={`품절 임박 ${data.inventory.lowStockCount}개`}
+        thumbnails={data.inventory.alertThumbnails}
+        badgeCount={data.inventory.lowStockCount}
+        badgeColor="#f59f00"
+        href="/admin/inventory"
+      />
+      <DashboardCard
+        title="상품 관리"
+        mainText={`전시 중 ${data.product.activeProductCount}개`}
+        thumbnails={data.product.representativeThumbnail ? [data.product.representativeThumbnail] : []}
+        href="/admin/products"
+      />
+      <DashboardCard
+        title="회원 관리"
+        mainText={`전체 ${data.user.totalUserCount}명`}
+        subText={`오늘 신규 가입 +${data.user.todayNewUserCount}명`}
+        href="/admin/users"
+      />
     </div>
   );
 }

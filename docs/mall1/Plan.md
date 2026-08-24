@@ -27,7 +27,6 @@
 * **결제 / 이력 / 리워드**
   * Payment Module 개발 `[08/24 ~ 08/26]`
   * History Module 개발 `[08/24 ~ 08/26]`
-  * Reward Module 개발 `[08/24 ~ 08/26]`
 
 * **고객 서비스 / 서비스 모듈**
   * Customer Service Module 개발 `[08/31 ~ 09/02]`
