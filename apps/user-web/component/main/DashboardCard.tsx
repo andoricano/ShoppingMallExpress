@@ -1,14 +1,16 @@
-// components/DashboardCard.tsx
+'use client';
+
 import React from 'react';
+import { useRouter } from 'next/navigation';
 
 export interface DashboardCardProps {
   title: string;
   icon?: React.ReactNode;
-  badgeCount?: number;         // 긴급 알림 배지 (취소/반품, 품절임박 등)
+  badgeCount?: number;
   badgeColor?: string;
-  mainText: string;            // 핵심 지표 (예: "미배송 12건", "신규 +8명")
-  subText?: string;            // 부가 정보 (예: "오늘 누적 1,200,000원")
-  thumbnails?: string[];       // 재고/상품 카드용 썸네일 리스트
+  mainText: string;
+  subText?: string;
+  thumbnails?: string[];
   href: string;                // 이동할 페이지 라우트 경로
   onClick?: () => void;
 }
@@ -24,9 +26,20 @@ export const DashboardCard: React.FC<DashboardCardProps> = ({
   href,
   onClick,
 }) => {
+  const router = useRouter();
+
+  const handleClick = () => {
+    if (onClick) {
+      onClick();
+    }
+    if (href) {
+      router.push(href);
+    }
+  };
+
   return (
     <div
-      onClick={onClick}
+      onClick={handleClick}
       style={{
         position: 'relative',
         padding: '20px',

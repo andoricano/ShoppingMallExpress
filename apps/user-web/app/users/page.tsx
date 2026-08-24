@@ -60,13 +60,20 @@ export default function UserManagementPage() {
     handleRoleChange,
   } = useUserManagement();
 
-  // 최초 로드 시 MOCK 데이터 세팅 (실제 환경에서는 Supabase/API 호출)
   useEffect(() => {
     setUsers(MOCK_USERS);
   }, [setUsers]);
 
   return (
-    <div style={{ padding: '32px', maxWidth: '1400px', margin: '0 auto' }}>
+    <div
+      style={{
+        padding: '32px',
+        maxWidth: '1400px',
+        margin: '0 auto',
+        width: '100%',
+        boxSizing: 'border-box',
+      }}
+    >
       {/* 1. 페이지 타이틀 영역 */}
       <div style={{ marginBottom: '24px' }}>
         <h1 style={{ fontSize: '24px', fontWeight: 700, margin: '0 0 8px 0' }}>
@@ -86,10 +93,10 @@ export default function UserManagementPage() {
         onReset={handleResetFilters}
       />
 
-      {/* 3. 메인 콘텐츠 (테이블 + 우측 상세 패널 2-Pane) */}
-      <div style={{ display: 'flex', gap: '24px', alignItems: 'flex-start' }}>
-        {/* 회원 테이블 (좌측 70%) */}
-        <div style={{ flex: 1, minWidth: 0 }}>
+      {/* 3. 메인 콘텐츠 */}
+      <div style={{ display: 'flex', gap: '24px', alignItems: 'flex-start', width: '100%' }}>
+        {/* 회원 테이블 영역 (부모 영역 100% 가득 채움) */}
+        <div style={{ flex: 1, minWidth: 0, width: '100%' }}>
           <UserTable
             users={users}
             selectedUserId={selectedUser?.id}
@@ -98,14 +105,33 @@ export default function UserManagementPage() {
           />
         </div>
 
-        {/* 선택된 유저 상세 정보 패널 (우측 30%) */}
-        {selectedUser && (
-          <UserDetailPanel
-            user={selectedUser}
-            onClose={handleCloseDetail}
-            onRoleChange={handleRoleChange}
-          />
-        )}
+        {/* 우측 상세 패널 영역 (380px 상시 고정) */}
+        <div style={{ width: '380px', flexShrink: 0 }}>
+          {selectedUser ? (
+            <UserDetailPanel
+              user={selectedUser}
+              onClose={handleCloseDetail}
+              onRoleChange={handleRoleChange}
+            />
+          ) : (
+            <div
+              style={{
+                width: '380px',
+                height: '200px',
+                border: '1px dashed #ced4da',
+                borderRadius: '8px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#868e96',
+                fontSize: '14px',
+                boxSizing: 'border-box',
+              }}
+            >
+              목록에서 회원을 선택하면 상세 정보가 표시됩니다.
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
