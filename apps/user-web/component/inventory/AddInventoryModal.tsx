@@ -1,23 +1,19 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-
-interface SkuInput {
-  skuId: string;
-  optionName: string; // 예: "250", "XL"
-  initialStock: number;
-  safetyStock: number;
-}
+import React, { useState } from "react";
+import { InventoryItem, SkuInventory } from "@mall/types";
 
 interface AddInventoryModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: {
-    productId: string;
-    productName: string;
-    category: string;
-    skus: SkuInput[];
-  }) => Promise<void>;
+  onSubmit: (data: InventoryItem) => Promise<void>;
+}
+
+// 등록 시점에 사용자에게 입력받는 SKU 양식 (id, status는 자동 계산/생성)
+interface SkuFormInput {
+  optionName: string;
+  currentStock: number;
+  safetyStock: number;
 }
 
 export const AddInventoryModal: React.FC<AddInventoryModalProps> = ({
@@ -25,39 +21,29 @@ export const AddInventoryModal: React.FC<AddInventoryModalProps> = ({
   onClose,
   onSubmit,
 }) => {
-  const [productId, setProductId] = useState('');
-  const [productName, setProductName] = useState('');
-  const [category, setCategory] = useState('SHOES');
-  const [skus, setSkus] = useState<SkuInput[]>([
-    { skuId: '', optionName: '250', initialStock: 10, safetyStock: 2 },
+  const [id, setId] = useState("");
+  const [name, setName] = useState("");
+  const [category, setCategory] = useState("SHOES");
+  const [skus, setSkus] = useState<SkuFormInput[]>([
+    { optionName: "250", currentStock: 10, safetyStock: 2 },
   ]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!isOpen) return null;
 
-  // 옵션 항목 추가
   const handleAddSkuRow = () => {
-    setSkus((prev) => [
-      ...prev,
-      { skuId: '', optionName: '', initialStock: 0, safetyStock: 0 },
-    ]);
+    setSkus((prev) => [...prev, { optionName: "", currentStock: 0, safetyStock: 0 }]);
   };
 
-  // 옵션 항목 삭제
   const handleRemoveSkuRow = (index: number) => {
     if (skus.length === 1) {
-      alert('최소 1개 이상의 옵션(SKU)이 필요합니다.');
+      alert("최소 1개 이상의 옵션(SKU)이 필요합니다.");
       return;
     }
     setSkus((prev) => prev.filter((_, i) => i !== index));
   };
 
-  // 옵션 필드 변경
-  const handleSkuChange = (
-    index: number,
-    field: keyof SkuInput,
-    value: string | number
-  ) => {
+  const handleSkuChange = (index: number, field: keyof SkuFormInput, value: string | number) => {
     setSkus((prev) => {
       const updated = [...prev];
       updated[index] = { ...updated[index], [field]: value };
@@ -67,223 +53,177 @@ export const AddInventoryModal: React.FC<AddInventoryModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!productId || !productName) {
-      alert('상품 ID와 상품명을 입력해주세요.');
+    if (!id || !name) {
+      alert("재고 그룹 식별자(ID)와 아이템명을 입력해주세요.");
       return;
     }
 
+    // 입력 데이터를 정확한 InventoryItem 규격으로 변환
+    const formattedSkus: SkuInventory[] = skus.map((sku, index) => {
+      const current = Number(sku.currentStock);
+      const safety = Number(sku.safetyStock);
+
+      return {
+        id: `${id}-${sku.optionName || index + 1}`,
+        optionName: sku.optionName,
+        currentStock: current,
+        safetyStock: safety,
+        status: current === 0 ? "SOLD_OUT" : current <= safety ? "LOW_STOCK" : "IN_STOCK",
+      };
+    });
+
+    const totalStock = formattedSkus.reduce((sum, item) => sum + item.currentStock, 0);
+
+    const payload: InventoryItem = {
+      id,
+      name,
+      category,
+      totalStock,
+      skus: formattedSkus,
+    };
+
     try {
       setIsSubmitting(true);
-      await onSubmit({
-        productId,
-        productName,
-        category,
-        skus,
-      });
+      await onSubmit(payload);
       onClose();
-    } catch (err: any) {
-      alert(err.message || '재고 등록 중 오류가 발생했습니다.');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "재고 등록 중 오류가 발생했습니다.";
+      alert(message);
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: 'rgba(0,0,0,0.5)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 1000,
-      }}
-    >
-      <div
-        style={{
-          backgroundColor: '#fff',
-          borderRadius: '8px',
-          width: '650px',
-          maxWidth: '90%',
-          maxHeight: '90vh',
-          overflowY: 'auto',
-          padding: '24px',
-          boxSizing: 'border-box',
-        }}
-      >
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
-          <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 700 }}>신규 상품 및 옵션 재고 등록</h2>
-          <button
-            onClick={onClose}
-            style={{ border: 'none', background: 'none', fontSize: '18px', cursor: 'pointer' }}
-          >
-            ✕
-          </button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="w-full max-w-2xl max-h-[90vh] bg-white rounded-xl shadow-2xl flex flex-col overflow-hidden border border-slate-100">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+          <div>
+            <h2 className="text-lg font-bold text-slate-800">신규 재고 아이템 등록</h2>
+            <p className="text-xs text-slate-500">InventoryItem 규격에 맞게 재고 그룹과 SKU 정보를 등록합니다.</p>
+          </div>
+          <button onClick={onClose} className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg">✕</button>
         </div>
 
-        <form onSubmit={handleSubmit}>
-          {/* 1. 기본 상품 정보 */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
-            <div>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '6px' }}>
-                상품 ID (Product ID) *
-              </label>
-              <input
-                type="text"
-                placeholder="예: PROD-SHOE-01"
-                value={productId}
-                onChange={(e) => setProductId(e.target.value)}
-                style={{ width: '100%', padding: '8px 12px', borderRadius: '4px', border: '1px solid #ced4da', boxSizing: 'border-box' }}
-                required
-              />
-            </div>
-
-            <div>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '6px' }}>
-                카테고리 *
-              </label>
-              <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                style={{ width: '100%', padding: '8px 12px', borderRadius: '4px', border: '1px solid #ced4da', boxSizing: 'border-box' }}
-              >
-                <option value="SHOES">신발 (SHOES)</option>
-                <option value="CLOTHES">의류 (CLOTHES)</option>
-                <option value="ACC">잡화 (ACC)</option>
-              </select>
-            </div>
-
-            <div style={{ gridColumn: 'span 2' }}>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '6px' }}>
-                상품명 *
-              </label>
-              <input
-                type="text"
-                placeholder="예: 에어 러닝화"
-                value={productName}
-                onChange={(e) => setProductName(e.target.value)}
-                style={{ width: '100%', padding: '8px 12px', borderRadius: '4px', border: '1px solid #ced4da', boxSizing: 'border-box' }}
-                required
-              />
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-6">
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1.5">재고 그룹 식별자 (id) *</label>
+                <input
+                  type="text"
+                  placeholder="예: INV-SHOE-01"
+                  value={id}
+                  onChange={(e) => setId(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1.5">카테고리 (category)</label>
+                <select
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                >
+                  <option value="SHOES">SHOES</option>
+                  <option value="CLOTHES">CLOTHES</option>
+                  <option value="ACC">ACC</option>
+                </select>
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-xs font-semibold text-slate-600 mb-1.5">아이템명 (name) *</label>
+                <input
+                  type="text"
+                  placeholder="예: 나이키 운동화"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  required
+                />
+              </div>
             </div>
           </div>
 
-          <hr style={{ border: 'none', borderTop: '1px solid #e9ecef', margin: '20px 0' }} />
-
-          {/* 2. 옵션(SKU)별 재고 설정 */}
-          <div style={{ marginBottom: '24px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 600 }}>사이즈 / 옵션 목록 (SKU)</h3>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-slate-700">SKU 목록 (skus)</h3>
               <button
                 type="button"
                 onClick={handleAddSkuRow}
-                style={{
-                  padding: '6px 12px',
-                  borderRadius: '4px',
-                  backgroundColor: '#e7f5ff',
-                  color: '#1c7ed6',
-                  border: 'none',
-                  fontSize: '13px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                }}
+                className="px-3 py-1.5 text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg"
               >
                 + 옵션 추가
               </button>
             </div>
 
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
-              <thead>
-                <tr style={{ backgroundColor: '#f8f9fa', borderBottom: '1px solid #dee2e6', textAlign: 'left' }}>
-                  <th style={{ padding: '8px' }}>옵션/사이즈명</th>
-                  <th style={{ padding: '8px' }}>SKU 코드 (선택)</th>
-                  <th style={{ padding: '8px', width: '90px' }}>초기 재고</th>
-                  <th style={{ padding: '8px', width: '90px' }}>안전 재고</th>
-                  <th style={{ padding: '8px', width: '50px', textAlign: 'center' }}>삭제</th>
-                </tr>
-              </thead>
-              <tbody>
-                {skus.map((sku, index) => (
-                  <tr key={index} style={{ borderBottom: '1px solid #e9ecef' }}>
-                    <td style={{ padding: '8px' }}>
-                      <input
-                        type="text"
-                        placeholder="예: 250, XL"
-                        value={sku.optionName}
-                        onChange={(e) => handleSkuChange(index, 'optionName', e.target.value)}
-                        style={{ width: '100%', padding: '6px 8px', borderRadius: '4px', border: '1px solid #ced4da', boxSizing: 'border-box' }}
-                        required
-                      />
-                    </td>
-                    <td style={{ padding: '8px' }}>
-                      <input
-                        type="text"
-                        placeholder={`${productId}-${sku.optionName || index}`}
-                        value={sku.skuId}
-                        onChange={(e) => handleSkuChange(index, 'skuId', e.target.value)}
-                        style={{ width: '100%', padding: '6px 8px', borderRadius: '4px', border: '1px solid #ced4da', boxSizing: 'border-box' }}
-                      />
-                    </td>
-                    <td style={{ padding: '8px' }}>
-                      <input
-                        type="number"
-                        min="0"
-                        value={sku.initialStock}
-                        onChange={(e) => handleSkuChange(index, 'initialStock', Number(e.target.value))}
-                        style={{ width: '100%', padding: '6px 8px', borderRadius: '4px', border: '1px solid #ced4da', boxSizing: 'border-box' }}
-                      />
-                    </td>
-                    <td style={{ padding: '8px' }}>
-                      <input
-                        type="number"
-                        min="0"
-                        value={sku.safetyStock}
-                        onChange={(e) => handleSkuChange(index, 'safetyStock', Number(e.target.value))}
-                        style={{ width: '100%', padding: '6px 8px', borderRadius: '4px', border: '1px solid #ced4da', boxSizing: 'border-box' }}
-                      />
-                    </td>
-                    <td style={{ padding: '8px', textAlign: 'center' }}>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveSkuRow(index)}
-                        style={{ border: 'none', background: 'none', color: '#fa5252', cursor: 'pointer', fontWeight: 700 }}
-                      >
-                        ✕
-                      </button>
-                    </td>
+            <div className="border border-slate-200 rounded-lg overflow-hidden bg-white">
+              <table className="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold">
+                    <th className="p-3">옵션명 (optionName) *</th>
+                    <th className="p-3 w-28">현재 재고 (currentStock)</th>
+                    <th className="p-3 w-28">안전 재고 (safetyStock)</th>
+                    <th className="p-3 w-12 text-center">삭제</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {skus.map((sku, index) => (
+                    <tr key={index}>
+                      <td className="p-2">
+                        <input
+                          type="text"
+                          placeholder="예: 250, XL"
+                          value={sku.optionName}
+                          onChange={(e) => handleSkuChange(index, "optionName", e.target.value)}
+                          className="w-full px-2.5 py-1.5 border border-slate-200 rounded"
+                          required
+                        />
+                      </td>
+                      <td className="p-2">
+                        <input
+                          type="number"
+                          min="0"
+                          value={sku.currentStock}
+                          onChange={(e) => handleSkuChange(index, "currentStock", Number(e.target.value))}
+                          className="w-full px-2.5 py-1.5 border border-slate-200 rounded text-right"
+                        />
+                      </td>
+                      <td className="p-2">
+                        <input
+                          type="number"
+                          min="0"
+                          value={sku.safetyStock}
+                          onChange={(e) => handleSkuChange(index, "safetyStock", Number(e.target.value))}
+                          className="w-full px-2.5 py-1.5 border border-slate-200 rounded text-right"
+                        />
+                      </td>
+                      <td className="p-2 text-center">
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveSkuRow(index)}
+                          className="p-1 text-rose-500 hover:bg-rose-50 rounded"
+                        >
+                          ✕
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
 
-          {/* 3. 하단 액션 버튼 */}
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
-            <button
-              type="button"
-              onClick={onClose}
-              style={{ padding: '10px 16px', borderRadius: '4px', border: '1px solid #ced4da', backgroundColor: '#fff', cursor: 'pointer' }}
-            >
+          <div className="flex items-center justify-end gap-2 pt-2">
+            <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-slate-600 bg-white border border-slate-200 rounded-lg">
               취소
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              style={{
-                padding: '10px 20px',
-                borderRadius: '4px',
-                border: 'none',
-                backgroundColor: '#1c7ed6',
-                color: '#fff',
-                fontWeight: 600,
-                cursor: isSubmitting ? 'not-allowed' : 'pointer',
-              }}
+              className="px-4 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg disabled:bg-blue-300"
             >
-              {isSubmitting ? '등록 중...' : '재고 등록 완료'}
+              {isSubmitting ? "등록 중..." : "재고 등록 완료"}
             </button>
           </div>
         </form>

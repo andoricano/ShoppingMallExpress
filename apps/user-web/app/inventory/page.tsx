@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useAdminInventory } from "@/hooks/useAdminInventory";
 import { InventoryHeader } from "@/component/inventory/InventoryHeader";
 import { InventoryTabNavigation, InventoryTabType } from "@/component/inventory/InventoryTabNavigation";
@@ -9,6 +9,7 @@ import { InventoryTable } from "@/component/inventory/InventoryTable";
 import { InventoryAuditLogTable } from "@/component/inventory/InventoryAuditLogTable";
 import { AddInventoryModal } from "@/component/inventory/AddInventoryModal";
 import { AdjustStockModal } from "@/component/inventory/AdjustStockModal";
+import { InventoryItem, AdjustmentReason, StockStatus } from "@mall/types";
 
 export default function AdminInventoryPage() {
     const {
@@ -17,14 +18,46 @@ export default function AdminInventoryPage() {
         loading,
         error,
         fetchInventoryList,
-        createProductInventory,
+        fetchLogs,
+        createInventoryItem,
         adjustStock,
-        toggleSkuStatus,
+        updateSkuStatus,
     } = useAdminInventory();
 
     const [activeTab, setActiveTab] = useState<InventoryTabType>("inventory");
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [adjustTargetSku, setAdjustTargetSku] = useState<{ skuId: string; currentQty: number } | null>(null);
+
+    // 1. 페이지 초기 로딩 및 탭 전환 시 자동 데이터 조회
+    useEffect(() => {
+        if (activeTab === "inventory") {
+            fetchInventoryList();
+        } else if (activeTab === "logs") {
+            fetchLogs();
+        }
+    }, [activeTab, fetchInventoryList, fetchLogs]);
+
+    const handleCreateInventory = async (data: InventoryItem) => {
+        await createInventoryItem(data);
+        setIsAddModalOpen(false);
+    };
+
+    // 3. 재고 수동 조정 제출 핸들러
+    const handleAdjustStock = async (
+        skuId: string,
+        adjustmentQty: number,
+        reasonType: AdjustmentReason,
+        reasonMemo?: string
+    ) => {
+        await adjustStock({
+            skuId,
+            adjustmentQty,
+            reasonType,
+            reasonMemo,
+            adminId: "ADMIN", // adminId 필수값 누락 방지
+        });
+        setAdjustTargetSku(null);
+    };
 
     return (
         <div style={{ padding: "32px", maxWidth: "1400px", margin: "0 auto", fontFamily: "sans-serif" }}>
@@ -52,7 +85,7 @@ export default function AdminInventoryPage() {
                         items={inventoryList}
                         isLoading={loading}
                         onAdjustStock={(skuId, currentQty) => setAdjustTargetSku({ skuId, currentQty })}
-                        onToggleSkuStatus={toggleSkuStatus}
+                        onUpdateSkuStatus={(skuId, status: StockStatus) => updateSkuStatus(skuId, status)}
                     />
                 </>
             ) : (
@@ -63,7 +96,7 @@ export default function AdminInventoryPage() {
             <AddInventoryModal
                 isOpen={isAddModalOpen}
                 onClose={() => setIsAddModalOpen(false)}
-                onSubmit={createProductInventory}
+                onSubmit={handleCreateInventory}
             />
 
             <AdjustStockModal
@@ -71,7 +104,7 @@ export default function AdminInventoryPage() {
                 skuId={adjustTargetSku?.skuId || ""}
                 currentQty={adjustTargetSku?.currentQty || 0}
                 onClose={() => setAdjustTargetSku(null)}
-                onSubmit={adjustStock}
+                onSubmit={handleAdjustStock}
             />
         </div>
     );

@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@mall/types": "workspace:*",
+    "@mall/constants": "workspace:*",
     "@supabase/ssr": "^0.12.4",
     "@supabase/supabase-js": "^2.49.1",
     "next": "16.3.0",

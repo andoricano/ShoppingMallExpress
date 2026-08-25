@@ -7,7 +7,7 @@ interface InventoryTableProps {
     items: InventoryItem[];
     isLoading?: boolean;
     onAdjustStock?: (skuId: string, currentQty: number) => void;
-    onToggleSkuStatus?: (skuId: string) => void;
+    onUpdateSkuStatus?: (skuId: string, status: StockStatus) => void;
 }
 
 const renderStatusBadge = (status: StockStatus) => {
@@ -40,7 +40,7 @@ export const InventoryTable: React.FC<InventoryTableProps> = ({
     items = [],
     isLoading = false,
     onAdjustStock,
-    onToggleSkuStatus,
+    onUpdateSkuStatus,
 }) => {
     const [expandedProducts, setExpandedProducts] = useState<Record<string, boolean>>({});
 
@@ -228,10 +228,13 @@ export const InventoryTable: React.FC<InventoryTableProps> = ({
                                                                 수량 조정
                                                             </button>
                                                         )}
-                                                        {onToggleSkuStatus && (
+                                                        {onUpdateSkuStatus && (
                                                             <button
                                                                 type="button"
-                                                                onClick={() => onToggleSkuStatus(sku.id)}
+                                                                onClick={() => {
+                                                                    const nextStatus: StockStatus = sku.status === "DISABLED" ? "IN_STOCK" : "DISABLED";
+                                                                    onUpdateSkuStatus(sku.id, nextStatus);
+                                                                }}
                                                                 style={{
                                                                     padding: "3px 8px",
                                                                     fontSize: "12px",

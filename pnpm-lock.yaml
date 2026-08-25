@@ -202,6 +202,9 @@ importers:
 
   apps/user-web:
     dependencies:
+      '@mall/constants':
+        specifier: workspace:*
+        version: link:../../packages/constants
       '@mall/types':
         specifier: workspace:*
         version: link:../../packages/types

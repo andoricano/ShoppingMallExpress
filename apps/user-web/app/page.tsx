@@ -83,7 +83,7 @@ export default function MainPage() {
         />
         <DashboardCard
           title="재고 관리"
-          mainText={`품절 임박 ${data.inventory.lowStockCount}개`}
+          mainText={`품절 임박 0개`}
           thumbnails={data.inventory.alertThumbnails}
           badgeCount={data.inventory.lowStockCount}
           badgeColor="#f59f00"
