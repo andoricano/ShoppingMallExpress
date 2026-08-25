@@ -4,153 +4,92 @@ import { useAdminAuthStore } from "@/store/useAdminAuth";
 import {
     AdjustmentReason,
     InventoryFilterParams,
-    InventoryItem,
     InventoryLog,
     SkuInventory,
 } from "@mall/types";
-import { useCallback, useEffect, useState } from "react";
-
-const INITIAL_MOCK_INVENTORY: InventoryItem[] = [
-    {
-        productId: "PROD-SHOE-01",
-        productName: "나이키 에어 포스 1",
-        category: "SHOES",
-        totalStock: 35,
-        skus: [
-            { skuId: "SHOE-01-250", optionName: "250", currentStock: 10, safetyStock: 3, status: "IN_STOCK" },
-            { skuId: "SHOE-01-255", optionName: "255", currentStock: 2, safetyStock: 5, status: "LOW_STOCK" },
-            { skuId: "SHOE-01-260", optionName: "260", currentStock: 23, safetyStock: 5, status: "IN_STOCK" },
-            { skuId: "SHOE-01-265", optionName: "265", currentStock: 0, safetyStock: 3, status: "SOLD_OUT" },
-        ],
-    },
-    {
-        productId: "PROD-TOP-01",
-        productName: "오버핏 후드 티셔츠",
-        category: "CLOTHES",
-        totalStock: 50,
-        skus: [
-            { skuId: "TOP-01-M", optionName: "M", currentStock: 20, safetyStock: 5, status: "IN_STOCK" },
-            { skuId: "TOP-01-L", optionName: "L", currentStock: 30, safetyStock: 5, status: "IN_STOCK" },
-            { skuId: "TOP-01-XL", optionName: "XL", currentStock: 0, safetyStock: 2, status: "DISABLED" },
-        ],
-    },
-];
-
-const INITIAL_MOCK_LOGS: InventoryLog[] = [
-    {
-        id: "LOG-001",
-        timestamp: new Date().toISOString(),
-        skuId: "SHOE-01-255",
-        optionName: "255",
-        beforeQty: 5,
-        afterQty: 2,
-        changeType: "ADMIN_ADJUST",
-        reasonType: "AUDIT",
-        adminId: "admin-01",
-        reasonMemo: "실사용 재고 조사 반영",
-    },
-];
+import { useCallback, useState } from "react";
 
 export function useAdminInventory() {
     const { user } = useAdminAuthStore();
 
     const isAdmin = user?.role === "ADMIN";
-    const currentAdminId = user?.id || "admin-default";
+    const currentAdminId = user?.id || "";
 
-    const [inventoryList, setInventoryList] = useState<InventoryItem[]>(INITIAL_MOCK_INVENTORY);
-    const [logs, setLogs] = useState<InventoryLog[]>(INITIAL_MOCK_LOGS);
+    const [inventoryList, setInventoryList] = useState<SkuInventory[]>([]);
+    const [logs, setLogs] = useState<InventoryLog[]>([]);
     const [loading, setLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
 
-    // [1] 재고 목록 필터링 조회 (Mock)
+    // [1] 재고 목록 API 조회
     const fetchInventoryList = useCallback(async (params?: InventoryFilterParams) => {
         setLoading(true);
         setError(null);
 
         try {
-            // 네트워크 지연 모사 (200ms)
-            await new Promise((resolve) => setTimeout(resolve, 200));
+            const queryParams = new URLSearchParams();
+            if (params?.searchQuery) queryParams.append("searchQuery", params.searchQuery);
+            if (params?.status) queryParams.append("status", params.status);
+            if (params?.category) queryParams.append("category", params.category);
 
-            let filtered = [...inventoryList];
+            const res = await fetch(`/api/admin/inventory?${queryParams.toString()}`);
+            if (!res.ok) throw new Error("재고 목록을 불러오지 못했습니다.");
 
-            if (params?.searchQuery) {
-                const q = params.searchQuery.toLowerCase();
-                filtered = filtered.filter(
-                    (item) =>
-                        item.productName.toLowerCase().includes(q) ||
-                        item.productId.toLowerCase().includes(q) ||
-                        item.skus.some((sku) => sku.skuId.toLowerCase().includes(q))
-                );
-            }
-
-            if (params?.category) {
-                filtered = filtered.filter((item) => item.category === params.category);
-            }
-
-            if (params?.status) {
-                filtered = filtered.filter((item) =>
-                    item.skus.some((sku) => sku.status === params.status)
-                );
-            }
-
-            setInventoryList(filtered);
+            const data: SkuInventory[] = await res.json();
+            setInventoryList(data);
         } catch (err: any) {
-            setError("재고 목록을 불러오는데 실패했습니다.");
+            setError(err.message || "재고 목록을 불러오는데 실패했습니다.");
         } finally {
             setLoading(false);
         }
-    }, [inventoryList]);
+    }, []);
 
-    // [2] 감사 로그 조회 (Mock)
+    // [2] 감사 로그 API 조회
     const fetchLogs = useCallback(async () => {
-        setLogs([...logs]);
-    }, [logs]);
+        setLoading(true);
+        setError(null);
 
-    // [3] 상품 및 SKU 신규 등록 (Mock)
-    const createProductInventory = async (data: {
-        productId: string;
-        productName: string;
-        category: string;
-        skus: {
-            skuId: string;
-            optionName: string;
-            initialStock: number;
-            safetyStock: number;
-        }[];
+        try {
+            const res = await fetch("/api/admin/inventory/logs");
+            if (!res.ok) throw new Error("감사 로그를 불러오지 못했습니다.");
+
+            const data: InventoryLog[] = await res.json();
+            setLogs(data);
+        } catch (err: any) {
+            setError(err.message || "감사 로그를 불러오는데 실패했습니다.");
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    // [3] SKU 신규 등록 API
+    const createSkuInventory = async (data: {
+        id: string;
+        optionName: string;
+        initialStock: number;
+        safetyStock: number;
     }) => {
         if (!isAdmin) throw new Error("관리자 권한이 필요합니다.");
+        setLoading(true);
 
-        const formattedSkus: SkuInventory[] = data.skus.map((sku, idx) => {
-            const currentStock = Number(sku.initialStock) || 0;
-            const safetyStock = Number(sku.safetyStock) || 0;
-            let status: SkuInventory["status"] = "IN_STOCK";
+        try {
+            const res = await fetch("/api/admin/inventory", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(data),
+            });
 
-            if (currentStock === 0) status = "SOLD_OUT";
-            else if (currentStock <= safetyStock) status = "LOW_STOCK";
+            if (!res.ok) throw new Error("SKU 등록에 실패했습니다.");
 
-            return {
-                skuId: sku.skuId || `${data.productId}-${sku.optionName || idx}`,
-                optionName: sku.optionName || "FREE",
-                currentStock,
-                safetyStock,
-                status,
-            };
-        });
-
-        const totalStock = formattedSkus.reduce((acc, curr) => acc + curr.currentStock, 0);
-
-        const newItem: InventoryItem = {
-            productId: data.productId,
-            productName: data.productName,
-            category: data.category,
-            totalStock,
-            skus: formattedSkus,
-        };
-
-        setInventoryList((prev) => [newItem, ...prev]);
+            await fetchInventoryList();
+        } catch (err: any) {
+            setError(err.message || "SKU 등록 중 오류가 발생했습니다.");
+            throw err;
+        } finally {
+            setLoading(false);
+        }
     };
 
-    // [4] 특정 SKU 수동 재고 조정 (Mock)
+    // [4] 특정 SKU 수동 재고 조정 API
     const adjustStock = async (
         skuId: string,
         deltaQty: number,
@@ -159,78 +98,50 @@ export function useAdminInventory() {
         adminId?: string
     ) => {
         if (!isAdmin) throw new Error("관리자 권한이 필요합니다.");
+        setLoading(true);
 
-        let targetSku: SkuInventory | null = null;
-        let beforeQty = 0;
-        let afterQty = 0;
+        try {
+            const res = await fetch(`/api/admin/inventory/${skuId}/adjust`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    deltaQty,
+                    reasonType: reason,
+                    reasonMemo: memo,
+                    adminId: adminId || currentAdminId,
+                }),
+            });
 
-        setInventoryList((prevList) =>
-            prevList.map((product) => {
-                const hasSku = product.skus.some((s) => s.skuId === skuId);
-                if (!hasSku) return product;
+            if (!res.ok) throw new Error("재고 조정에 실패했습니다.");
 
-                const updatedSkus = product.skus.map((sku) => {
-                    if (sku.skuId !== skuId) return sku;
-
-                    targetSku = sku;
-                    beforeQty = sku.currentStock;
-                    afterQty = Math.max(0, beforeQty + deltaQty);
-
-                    let status = sku.status;
-                    if (status !== "DISABLED") {
-                        if (afterQty === 0) status = "SOLD_OUT";
-                        else if (afterQty <= sku.safetyStock) status = "LOW_STOCK";
-                        else status = "IN_STOCK";
-                    }
-
-                    return { ...sku, currentStock: afterQty, status };
-                });
-
-                const totalStock = updatedSkus.reduce((acc, curr) => acc + curr.currentStock, 0);
-                return { ...product, totalStock, skus: updatedSkus };
-            })
-        );
-
-        if (targetSku) {
-            const newLog: InventoryLog = {
-                id: `LOG-${Date.now()}`,
-                timestamp: new Date().toISOString(),
-                skuId,
-                optionName: (targetSku as SkuInventory).optionName,
-                beforeQty,
-                afterQty,
-                changeType: "ADMIN_ADJUST",
-                reasonType: reason,
-                adminId: adminId || currentAdminId,
-                reasonMemo: memo,
-            };
-            setLogs((prev) => [newLog, ...prev]);
+            await Promise.all([fetchInventoryList(), fetchLogs()]);
+        } catch (err: any) {
+            setError(err.message || "재고 조정 중 오류가 발생했습니다.");
+            throw err;
+        } finally {
+            setLoading(false);
         }
     };
 
-    // [5] 특정 SKU 활성화 / 비활성화 토글 (Mock)
+    // [5] 특정 SKU 활성화 / 비활성화 토글 API
     const toggleSkuStatus = async (skuId: string) => {
         if (!isAdmin) throw new Error("관리자 권한이 필요합니다.");
+        setLoading(true);
 
-        setInventoryList((prevList) =>
-            prevList.map((product) => ({
-                ...product,
-                skus: product.skus.map((sku) => {
-                    if (sku.skuId !== skuId) return sku;
+        try {
+            const res = await fetch(`/api/admin/inventory/${skuId}/status`, {
+                method: "PATCH",
+            });
 
-                    let newStatus: SkuInventory["status"] = "IN_STOCK";
-                    if (sku.status === "DISABLED") {
-                        if (sku.currentStock === 0) newStatus = "SOLD_OUT";
-                        else if (sku.currentStock <= sku.safetyStock) newStatus = "LOW_STOCK";
-                        else newStatus = "IN_STOCK";
-                    } else {
-                        newStatus = "DISABLED";
-                    }
+            if (!res.ok) throw new Error("상태 변경에 실패했습니다.");
 
-                    return { ...sku, status: newStatus };
-                }),
-            }))
-        );
+            await fetchInventoryList();
+        } catch (err: any) {
+            setError(err.message || "상태 변경 중 오류가 발생했습니다.");
+            throw err;
+        } finally {
+            setLoading(false);
+        }
     };
 
     return {
@@ -242,7 +153,7 @@ export function useAdminInventory() {
         error,
         fetchInventoryList,
         fetchLogs,
-        createProductInventory,
+        createSkuInventory,
         adjustStock,
         toggleSkuStatus,
     };

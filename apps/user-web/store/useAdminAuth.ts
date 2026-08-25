@@ -1,6 +1,5 @@
-// apps/develop-web/store/useAdminAuth.ts
 import { create } from "zustand";
-import { ClientProfile, CreateUserInput, UserProfile } from "@mall/types";
+import { CreateUserInput, UserProfile } from "@mall/types";
 import { createClient } from "../lib/supabase/client";
 import { Provider } from "@supabase/supabase-js";
 
@@ -47,13 +46,6 @@ export const useAdminAuthStore = create<AdminAuthState>((set, get) => ({
       return;
     }
 
-    // Auth 세션 정보 확인
-    console.log("[AdminAuth] 1. Auth Session 유저:", {
-      id: session.user.id,
-      email: session.user.email,
-      user_metadata: session.user.user_metadata,
-    });
-
     // 2. public.users 테이블에서 해당 유저의 DB 프로필 조회
     const { data: profile, error: dbError } = await supabase
       .from("users")
@@ -67,47 +59,35 @@ export const useAdminAuthStore = create<AdminAuthState>((set, get) => ({
       return;
     }
 
-    // DB 원본 프로필 데이터 확인
-    console.log("[AdminAuth] 2. DB Profile 원본:", profile);
+    // ★ [핵심 추가] 관리자 권한 체크
+    // role이 ADMIN / SUPER_ADMIN이 아니면 세션을 종료하고 튕겨냅니다.
+    if (profile.role !== "ADMIN" && profile.role !== "SUPER_ADMIN") {
+      console.error("[AdminAuth] 접근 거부: 관리자 권한이 없습니다. (role:", profile.role, ")");
+      await supabase.auth.signOut();
+      set({ user: null });
+      return;
+    }
 
-    // 3. 주소 정보 객체 안전하게 생성
-    const hasAddressInfo = Boolean(profile.zonecode && profile.address);
-    const addressData = hasAddressInfo
-      ? {
-        zonecode: profile.zonecode ?? "",
-        address: profile.address ?? "",
-        detail: profile.address_detail ?? "",
-      }
-      : undefined;
-
-    // 4. ClientProfile 객체 생성 및 Zustand 상태 세팅
-    const clientUser: ClientProfile = {
+    // 3. UserProfile 타입 규격에 맞춰 매핑
+    const adminUser: UserProfile = {
       id: profile.id,
       email: profile.email,
       name: profile.name,
-      role: profile.role ?? "CLIENT",
-      recipientName: profile.recipient_name,
-      phone: profile.phone,
-      address: addressData,
-      isOnboarded: profile.is_onboarded ?? false,
+      role: profile.role,
       createdAt: profile.created_at,
       updatedAt: profile.updated_at,
     };
 
-    // 최종 Zustand 매핑 상태 확인
-    console.log("[AdminAuth] 3. Zustand 최종 매핑 객체:", clientUser);
+    console.log("[AdminAuth] Zustand 최종 매핑 객체:", adminUser);
 
-    set({ user: clientUser });
-    console.log("[AdminAuth] 로그인 및 프로필 로드 완료");
+    set({ user: adminUser });
+    console.log("[AdminAuth] 관리자 로그인 및 프로필 로드 완료");
   },
-
-  
 
   completeOnboarding: async (input: CreateUserInput) => {
     console.log("[AdminAuth] 온보딩 제출 시도:", input);
     const supabase = createClient();
 
-    // Supabase RPC 호출
     const { error } = await supabase.rpc("complete_onboarding", {
       p_recipient_name: input.recipientName,
       p_phone: input.phone,
@@ -125,7 +105,6 @@ export const useAdminAuthStore = create<AdminAuthState>((set, get) => ({
 
     console.log("[AdminAuth] 온보딩 완료. 세션 정보 갱신 중...");
 
-    // 온보딩 완료 후 유저 상태 다시 로드
     await get().getSession();
   },
 

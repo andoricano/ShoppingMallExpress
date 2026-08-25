@@ -2,9 +2,9 @@ import type { Request, Response } from 'express';
 import { supabase } from '../config/supabase.js';
 import type {
     StockStatus,
-    AdjustmentReason,
+    InventoryFilterParams,
     AdjustStockPayload,
-    InventoryFilterParams
+    AdjustmentReason
 } from '@mall/types';
 
 const calculateStatus = (currentStock: number, safetyStock: number, isCurrentlyDisabled: boolean): StockStatus => {
@@ -14,7 +14,7 @@ const calculateStatus = (currentStock: number, safetyStock: number, isCurrentlyD
     return "IN_STOCK";
 };
 
-// 1. 재고 목록 조회 (검색/필터 지원)
+// 1. 재고 목록 조회 (하위 SKU 조인 및 검색/필터 지원)
 export const getInventoryItems = async (
     req: Request<{}, {}, {}, InventoryFilterParams>,
     res: Response
@@ -22,14 +22,19 @@ export const getInventoryItems = async (
     try {
         const { searchQuery, status } = req.query;
 
-        let query = supabase.from('inventory_items').select('*');
+        // sku_inventories 관계 조인
+        let query = supabase
+            .from('inventory_items')
+            .select('*, skus:sku_inventories(*)');
 
         if (status) {
-            query = query.eq('status', status);
+            // 하위 sku_inventories의 status 필터링
+            query = query.eq('sku_inventories.status', status);
         }
 
         if (searchQuery) {
-            query = query.or(`product_name.ilike.%${searchQuery}%,sku_id.ilike.%${searchQuery}%`);
+            // 그룹명(name) 또는 SKU ID(id) 기준 검색
+            query = query.or(`name.ilike.%${searchQuery}%,id.ilike.%${searchQuery}%`);
         }
 
         const { data, error } = await query;
@@ -50,7 +55,7 @@ export const getInventoryItems = async (
     }
 };
 
-// 2. 감사 로그 조회 (PRD 3.6)
+// 2. 감사 로그 조회
 export const getInventoryLogs = async (req: Request, res: Response) => {
     try {
         const { data, error } = await supabase
@@ -74,11 +79,13 @@ export const getInventoryLogs = async (req: Request, res: Response) => {
     }
 };
 
-// 3. 신규 SKU 등록 및 초기 재고 설정 (PRD 3.1)
+// 3. 신규 SKU 및 재고 그룹 등록
 interface CreateItemPayload {
-    skuId: string;
-    productId: string;
-    productName: string;
+    inventoryItemId: string;   // 재고 그룹 ID (예: "INV-SHOE-01")
+    inventoryItemName: string; // 상품/그룹명 (예: "나이키 운동화")
+    category?: string;
+    skuId: string;             // 개별 SKU ID (예: "SHOE-01-250")
+    optionName: string;        // 옵션명 (예: "250")
     initialStock?: number;
     safetyStock?: number;
 }
@@ -88,19 +95,39 @@ export const createInventoryItem = async (
     res: Response
 ) => {
     try {
-        const { skuId, productId, productName, initialStock, safetyStock } = req.body;
+        const {
+            inventoryItemId,
+            inventoryItemName,
+            category,
+            skuId,
+            optionName,
+            initialStock,
+            safetyStock
+        } = req.body;
 
         const currentStock = Number(initialStock) || 0;
         const safety = Number(safetyStock) || 0;
         const status: StockStatus = calculateStatus(currentStock, safety, false);
 
-        // SKU 생성 및 저장
-        const { data, error } = await supabase
+        // 1) inventory_items 상위 그룹 등록 (없을 경우 생성)
+        const { error: itemError } = await supabase
             .from('inventory_items')
+            .upsert({
+                id: inventoryItemId,
+                name: inventoryItemName,
+                category: category || null,
+                total_stock: currentStock,
+            });
+
+        if (itemError) throw itemError;
+
+        // 2) sku_inventories 하위 개별 SKU 등록
+        const { data, error: skuError } = await supabase
+            .from('sku_inventories')
             .insert({
-                sku_id: skuId,
-                product_id: productId,
-                product_name: productName,
+                id: skuId,
+                inventory_item_id: inventoryItemId,
+                option_name: optionName,
                 current_stock: currentStock,
                 safety_stock: safety,
                 status: status,
@@ -108,7 +135,7 @@ export const createInventoryItem = async (
             .select()
             .single();
 
-        if (error) throw error;
+        if (skuError) throw skuError;
 
         res.status(201).json({
             success: true,
@@ -123,7 +150,6 @@ export const createInventoryItem = async (
         });
     }
 };
-
 // 4. 어드민 재고 수동 조정 (+ 감사 로그 생성) (PRD 3.3 & 3.6)
 interface ExtendedAdjustPayload extends Partial<AdjustStockPayload> {
     deltaQty?: number;
@@ -145,11 +171,11 @@ export const adjustInventoryStock = async (
             });
         }
 
-        // [STEP 1] 현재 재고 상태 조회
+        // [STEP 1] 현재 SKU 재고 상태 조회 (sku_inventories 대상)
         const { data: item, error: fetchError } = await supabase
-            .from('inventory_items')
+            .from('sku_inventories')
             .select('*')
-            .eq('sku_id', skuId)
+            .eq('id', skuId)
             .single();
 
         if (fetchError || !item) {
@@ -164,15 +190,15 @@ export const adjustInventoryStock = async (
         const afterQty = Math.max(0, beforeQty + Number(changeQty));
         const newStatus: StockStatus = calculateStatus(afterQty, item.safety_stock, item.status === 'DISABLED');
 
-        // [STEP 3] 재고 수량 업데이트
+        // [STEP 3] SKU 재고 수량 및 상태 업데이트
         const { data: updatedItem, error: updateError } = await supabase
-            .from('inventory_items')
+            .from('sku_inventories')
             .update({
                 current_stock: afterQty,
                 status: newStatus,
                 updated_at: new Date().toISOString(),
             })
-            .eq('sku_id', skuId)
+            .eq('id', skuId)
             .select()
             .single();
 
@@ -183,10 +209,11 @@ export const adjustInventoryStock = async (
             .from('inventory_logs')
             .insert({
                 sku_id: skuId,
+                option_name: item.option_name,
                 before_qty: beforeQty,
                 after_qty: afterQty,
                 change_type: 'ADMIN_ADJUST',
-                reason_type: reasonType as AdjustmentReason, // [수정] AdjustmentReason 타입 캐스팅
+                reason_type: reasonType as AdjustmentReason,
                 admin_id: adminId || 'SYSTEM_ADMIN',
                 reason_memo: reasonMemo ? `[${reasonType || 'ADJUST'}] ${reasonMemo}`.trim() : `[${reasonType || 'ADJUST'}]`,
             });
@@ -207,51 +234,51 @@ export const adjustInventoryStock = async (
     }
 };
 
-// 5. 단순 SKU 정보 업데이트 (안전재고 설정 변경 등)
-interface UpdateItemPayload {
-    productName?: string;
+// 5. 단순 SKU 정보 업데이트 (안전재고 및 옵션명 변경)
+interface UpdateSkuPayload {
+    optionName?: string;
     safetyStock?: number;
 }
 
 export const updateInventoryItem = async (
-    req: Request<{ uuid: string }, {}, UpdateItemPayload>,
+    req: Request<{ uuid: string }, {}, UpdateSkuPayload>,
     res: Response
 ) => {
     try {
-        const { uuid } = req.params; // sku_id 기준
-        const { productName, safetyStock } = req.body;
+        const { uuid } = req.params; // skuId 기준
+        const { optionName, safetyStock } = req.body;
 
-        // [STEP 1] 현재 아이템 상태 확인
-        const { data: currentItem, error: fetchError } = await supabase
-            .from('inventory_items')
+        // [STEP 1] 현재 SKU 상태 확인 (sku_inventories 대상)
+        const { data: currentSku, error: fetchError } = await supabase
+            .from('sku_inventories')
             .select('*')
-            .eq('sku_id', uuid)
+            .eq('id', uuid)
             .single();
 
-        if (fetchError || !currentItem) {
+        if (fetchError || !currentSku) {
             return res.status(404).json({
                 success: false,
                 message: '존재하지 않는 SKU입니다.',
             });
         }
 
-        const newSafetyStock = safetyStock !== undefined ? Number(safetyStock) : currentItem.safety_stock;
+        const newSafetyStock = safetyStock !== undefined ? Number(safetyStock) : currentSku.safety_stock;
         const newStatus: StockStatus = calculateStatus(
-            currentItem.current_stock,
+            currentSku.current_stock,
             newSafetyStock,
-            currentItem.status === 'DISABLED'
+            currentSku.status === 'DISABLED'
         );
 
-        // [STEP 2] 정보 업데이트
+        // [STEP 2] SKU 정보 업데이트
         const { data, error } = await supabase
-            .from('inventory_items')
+            .from('sku_inventories')
             .update({
-                product_name: productName ?? currentItem.product_name,
+                option_name: optionName ?? currentSku.option_name,
                 safety_stock: newSafetyStock,
                 status: newStatus,
                 updated_at: new Date().toISOString(),
             })
-            .eq('sku_id', uuid)
+            .eq('id', uuid)
             .select()
             .single();
 
@@ -277,13 +304,13 @@ export const toggleInventoryStatus = async (
     res: Response
 ) => {
     try {
-        const { uuid } = req.params; // sku_id
+        const { uuid } = req.params; // skuId 기준
 
-        // [STEP 1] 대상 조회
+        // [STEP 1] 대상 SKU 조회
         const { data: item, error: fetchError } = await supabase
-            .from('inventory_items')
+            .from('sku_inventories')
             .select('*')
-            .eq('sku_id', uuid)
+            .eq('id', uuid)
             .single();
 
         if (fetchError || !item) {
@@ -293,22 +320,21 @@ export const toggleInventoryStatus = async (
             });
         }
 
-        // [STEP 2] 물리 삭제 대신 DISABLED ↔ 활성화 상태 토글
+        // [STEP 2] DISABLED ↔ 기존 상태 토글
         const isCurrentlyDisabled = item.status === 'DISABLED';
-        // [수정] StockStatus 타입 지정
         const nextStatus: StockStatus = calculateStatus(
             item.current_stock,
             item.safety_stock,
-            !isCurrentlyDisabled // 토글 처리
+            !isCurrentlyDisabled
         );
 
         const { data, error } = await supabase
-            .from('inventory_items')
+            .from('sku_inventories')
             .update({
                 status: nextStatus,
                 updated_at: new Date().toISOString(),
             })
-            .eq('sku_id', uuid)
+            .eq('id', uuid)
             .select()
             .single();
 

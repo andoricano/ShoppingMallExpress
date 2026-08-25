@@ -10,14 +10,15 @@ interface InventoryTableProps {
     onToggleSkuStatus?: (skuId: string) => void;
 }
 
-// 상태별 뱃지 스타일 렌더러
 const renderStatusBadge = (status: StockStatus) => {
-    const config = {
+    const config: Record<StockStatus, { label: string; bg: string; color: string }> = {
         IN_STOCK: { label: "정상", bg: "#d3f9d8", color: "#2b8a3e" },
         LOW_STOCK: { label: "재고부족", bg: "#fff3bf", color: "#f59f00" },
         SOLD_OUT: { label: "품절", bg: "#ffe3e3", color: "#f03e3e" },
         DISABLED: { label: "비활성화", bg: "#f1f3f5", color: "#868e96" },
-    }[status] || { label: status, bg: "#f1f3f5", color: "#495057" };
+    };
+
+    const currentConfig = config[status] || { label: status, bg: "#f1f3f5", color: "#495057" };
 
     return (
         <span
@@ -26,28 +27,27 @@ const renderStatusBadge = (status: StockStatus) => {
                 borderRadius: "4px",
                 fontSize: "12px",
                 fontWeight: 600,
-                backgroundColor: config.bg,
-                color: config.color,
+                backgroundColor: currentConfig.bg,
+                color: currentConfig.color,
             }}
         >
-            {config.label}
+            {currentConfig.label}
         </span>
     );
 };
 
 export const InventoryTable: React.FC<InventoryTableProps> = ({
-    items,
+    items = [],
     isLoading = false,
     onAdjustStock,
     onToggleSkuStatus,
 }) => {
-    // 상품별 아코디언 펼침 상태 관리 (기본값: 모두 펼침)
     const [expandedProducts, setExpandedProducts] = useState<Record<string, boolean>>({});
 
-    const toggleExpand = (productId: string) => {
+    const toggleExpand = (itemId: string) => {
         setExpandedProducts((prev) => ({
             ...prev,
-            [productId]: prev[productId] === undefined ? false : !prev[productId],
+            [itemId]: prev[itemId] === undefined ? false : !prev[itemId],
         }));
     };
 
@@ -116,11 +116,11 @@ export const InventoryTable: React.FC<InventoryTableProps> = ({
                         </tr>
                     ) : (
                         items.map((item) => {
-                            const isExpanded = expandedProducts[item.productId] !== false;
+                            const isExpanded = expandedProducts[item.id] !== false;
 
                             return (
-                                <React.Fragment key={item.productId}>
-                                    {/* 1. 상품 메인 행 (Product Row) */}
+                                <React.Fragment key={item.id}>
+                                    {/* 1. 상품 메인 행 */}
                                     <tr
                                         style={{
                                             borderBottom: "1px solid #e9ecef",
@@ -131,7 +131,7 @@ export const InventoryTable: React.FC<InventoryTableProps> = ({
                                         <td style={{ padding: "12px 8px", textAlign: "center" }}>
                                             <button
                                                 type="button"
-                                                onClick={() => toggleExpand(item.productId)}
+                                                onClick={() => toggleExpand(item.id)}
                                                 style={{
                                                     border: "none",
                                                     background: "none",
@@ -144,9 +144,9 @@ export const InventoryTable: React.FC<InventoryTableProps> = ({
                                             </button>
                                         </td>
                                         <td style={{ padding: "12px 16px" }}>
-                                            <div style={{ color: "#212529" }}>{item.productName}</div>
+                                            <div style={{ color: "#212529" }}>{item.name}</div>
                                             <div style={{ fontSize: "12px", color: "#868e96", fontWeight: 400 }}>
-                                                {item.productId}
+                                                {item.id}
                                             </div>
                                         </td>
                                         <td style={{ padding: "12px 16px", color: "#495057", fontWeight: 400 }}>
@@ -156,7 +156,7 @@ export const InventoryTable: React.FC<InventoryTableProps> = ({
                                             <div style={{ display: "flex", gap: "4px", flexWrap: "wrap" }}>
                                                 {item.skus.map((sku) => (
                                                     <span
-                                                        key={sku.skuId}
+                                                        key={sku.id}
                                                         style={{
                                                             fontSize: "12px",
                                                             padding: "2px 6px",
@@ -180,11 +180,11 @@ export const InventoryTable: React.FC<InventoryTableProps> = ({
                                         </td>
                                     </tr>
 
-                                    {/* 2. 옵션별 상세 행 (SKU Rows) - 펼침 상태일 때 노출 */}
+                                    {/* 2. 옵션별 상세 행 (SKU Rows) */}
                                     {isExpanded &&
                                         item.skus.map((sku: SkuInventory) => (
                                             <tr
-                                                key={sku.skuId}
+                                                key={sku.id}
                                                 style={{
                                                     borderBottom: "1px solid #f1f3f5",
                                                     backgroundColor: "#fff",
@@ -198,7 +198,7 @@ export const InventoryTable: React.FC<InventoryTableProps> = ({
                                                         옵션: {sku.optionName}
                                                     </strong>
                                                     <div style={{ fontSize: "11px", color: "#adb5bd", paddingLeft: "16px" }}>
-                                                        SKU: {sku.skuId}
+                                                        SKU: {sku.id}
                                                     </div>
                                                 </td>
                                                 <td style={{ padding: "10px 16px", color: "#868e96" }}>
@@ -215,7 +215,7 @@ export const InventoryTable: React.FC<InventoryTableProps> = ({
                                                         {onAdjustStock && (
                                                             <button
                                                                 type="button"
-                                                                onClick={() => onAdjustStock(sku.skuId, sku.currentStock)}
+                                                                onClick={() => onAdjustStock(sku.id, sku.currentStock)}
                                                                 style={{
                                                                     padding: "3px 8px",
                                                                     fontSize: "12px",
@@ -231,7 +231,7 @@ export const InventoryTable: React.FC<InventoryTableProps> = ({
                                                         {onToggleSkuStatus && (
                                                             <button
                                                                 type="button"
-                                                                onClick={() => onToggleSkuStatus(sku.skuId)}
+                                                                onClick={() => onToggleSkuStatus(sku.id)}
                                                                 style={{
                                                                     padding: "3px 8px",
                                                                     fontSize: "12px",
