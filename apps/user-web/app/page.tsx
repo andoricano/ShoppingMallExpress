@@ -1,8 +1,8 @@
 'use client';
 
+import React from 'react';
 import { DashboardCard } from '@/component/main/DashboardCard';
 import { AdminOverviewData } from '@/types/admin';
-import React from 'react';
 
 // 테스트용 임시 데이터
 const MOCK_OVERVIEW_DATA: AdminOverviewData = {
@@ -43,18 +43,13 @@ export default function MainPage() {
   const data = MOCK_OVERVIEW_DATA;
 
   return (
-    <div style={{ padding: '32px', maxWidth: '1400px', margin: '0 auto' }}>
-      <h1 style={{ fontSize: '24px', fontWeight: 700, marginBottom: '24px' }}>
+    <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto">
+      {/* 타이틀 */}
+      <h1 className="text-xl sm:text-2xl font-bold text-slate-800 mb-6">
         관리자 메인 대시보드
       </h1>
 
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-          gap: '20px',
-        }}
-      >
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
         <DashboardCard
           title="스토어 디자인/레이아웃"
           mainText={data.design.activeThemeName}
@@ -83,7 +78,7 @@ export default function MainPage() {
         />
         <DashboardCard
           title="재고 관리"
-          mainText={`품절 임박 0개`}
+          mainText={`품절 임박 ${data.inventory.lowStockCount}개 / 품절 ${data.inventory.outOfStockCount}개`}
           thumbnails={data.inventory.alertThumbnails}
           badgeCount={data.inventory.lowStockCount}
           badgeColor="#f59f00"
