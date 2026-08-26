@@ -8,17 +8,15 @@ export interface ModalFrameProps {
   onClose: () => void;
   title: string;
   description?: string;
-  maxWidth?: "sm" | "md" | "lg" | "xl";
+  maxWidth?: "sm" | "md" | "lg" | "xl" | "2xl" | "3xl" | "4xl" | "5xl";
   children: React.ReactNode;
 
-  // --- Footer 관련 옵션들 (선택 사항) ---
-  /** 제출/확인 핸들러 (이 값이 넘어가면 기본 Footer가 자동으로 생성됨) */
+  // --- Footer 관련 옵션들 ---
   onSubmit?: () => void;
   submitText?: string;
   cancelText?: string;
   isSubmitting?: boolean;
   isSubmitDisabled?: boolean;
-  /** 완전히 커스텀된 Footer를 넣고 싶을 때 사용 (null 전달 시 Footer 숨김) */
   customFooter?: React.ReactNode;
 }
 
@@ -43,21 +41,25 @@ export const ModalFrame: React.FC<ModalFrameProps> = ({
     md: "max-w-md",
     lg: "max-w-lg",
     xl: "max-w-xl",
+    "2xl": "max-w-2xl", // ~672px
+    "3xl": "max-w-3xl", // ~768px
+    "4xl": "max-w-4xl", // ~896px
+    "5xl": "max-w-5xl", // ~1024px
   }[maxWidth];
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
       <div className={`w-full ${maxWidthClasses} max-h-[90vh] bg-white rounded-xl shadow-2xl flex flex-col overflow-hidden border border-slate-100`}>
-        
+
         {/* 1. Header (고정) */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex-shrink-0">
           <div>
             <h2 className="text-lg font-bold text-slate-800">{title}</h2>
             {description && <p className="text-xs text-slate-500 mt-0.5">{description}</p>}
           </div>
-          <button 
+          <button
             type="button"
-            onClick={onClose} 
+            onClick={onClose}
             className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg transition-colors"
           >
             ✕

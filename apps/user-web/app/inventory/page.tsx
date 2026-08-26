@@ -7,8 +7,8 @@ import { InventoryTabNavigation, InventoryTabType } from "@/component/inventory/
 import { InventorySearchToolbar } from "@/component/inventory/InventorySearchToolbar";
 import { InventoryTable } from "@/component/inventory/InventoryTable";
 import { InventoryAuditLogTable } from "@/component/inventory/InventoryAuditLogTable";
-import { AddInventoryModal } from "@/component/inventory/AddInventoryModal";
-import { AdjustStockModal } from "@/component/inventory/AdjustStockModal";
+import { AddInventoryModal } from "@/component/inventory/modals/AddInventoryModal";
+import { AdjustStockModal } from "@/component/inventory/modals/AdjustStockModal";
 import { InventoryItem, AdjustmentReason } from "@mall/types";
 
 interface AdjustTarget {

@@ -2,11 +2,11 @@
 
 import React, { useState, useEffect } from "react";
 import { AdjustmentReason } from "@mall/types";
-import { ModalFrame } from "../modal/ModalFrame";
-import { SummaryCard } from "../common/SummaryCard";
-import { StockQtyInput } from "../modal/StockQtyInput";
-import { OptionSelect } from "../common/OptionSelect";
-import { ModalLabelInput } from "../modal/ModalLabelInput";
+import { ModalFrame } from "../../modal/ModalFrame";
+import { SummaryCard } from "../../common/SummaryCard";
+import { StockQtyInput } from "../../modal/StockQtyInput";
+import { OptionSelect } from "../../common/OptionSelect";
+import { ModalLabelInput } from "../../modal/ModalLabelInput";
 
 interface AdjustStockModalProps {
   isOpen: boolean;
