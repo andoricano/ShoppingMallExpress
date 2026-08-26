@@ -3,107 +3,26 @@ import { supabase } from '../config/supabase.js';
 import type {
     StockStatus,
     InventoryFilterParams,
-    AdjustStockPayload,
     AdjustmentReason
 } from '@mall/types';
+import { toCamelCase } from '../utils/caseConverter.js';
 
-const calculateStatus = (currentStock: number, safetyStock: number, isCurrentlyDisabled: boolean): StockStatus => {
-    if (isCurrentlyDisabled) return "DISABLED";
-    if (currentStock <= 0) return "SOLD_OUT";
-    if (currentStock <= safetyStock) return "LOW_STOCK";
-    return "IN_STOCK";
-};
+// ==========================================
+// Types & Helpers
+// ==========================================
 
-// [공통 헬퍼] 하위 SKU 재고 합산 후 상위 inventory_items.total_stock 동기화
-const syncTotalStock = async (inventoryItemId: string) => {
-    if (!inventoryItemId) return;
+interface LogQueryParams {
+    page?: string;
+    limit?: string;
+}
 
-    const { data: skus } = await supabase
-        .from('sku_inventories')
-        .select('current_stock')
-        .eq('inventory_item_id', inventoryItemId);
-
-    if (skus) {
-        const totalStock = skus.reduce((sum, sku) => sum + (sku.current_stock || 0), 0);
-        await supabase
-            .from('inventory_items')
-            .update({ total_stock: totalStock, updated_at: new Date().toISOString() })
-            .eq('id', inventoryItemId);
-    }
-};
-
-// 1. 재고 목록 조회 (하위 SKU 조인 및 검색/필터 지원)
-export const getInventoryItems = async (
-    req: Request<{}, {}, {}, InventoryFilterParams>,
-    res: Response
-) => {
-    try {
-        const { searchQuery, status } = req.query;
-
-        // status 필터 적용 시 !inner 조인을 사용해 해당 상태를 가진 SKU가 포함된 그룹만 필터링
-        const selectQuery = status
-            ? '*, skus:sku_inventories!inner(*)'
-            : '*, skus:sku_inventories(*)';
-
-        let query = supabase.from('inventory_items').select(selectQuery);
-
-        if (status) {
-            query = query.eq('sku_inventories.status', status);
-        }
-
-        if (searchQuery) {
-            query = query.or(`name.ilike.%${searchQuery}%,id.ilike.%${searchQuery}%`);
-        }
-
-        const { data, error } = await query;
-
-        if (error) throw error;
-
-        res.json({
-            success: true,
-            data,
-        });
-    } catch (error) {
-        console.error('Select failed:', error);
-        res.status(500).json({
-            success: false,
-            message: '재고 목록 조회에 실패했습니다.',
-            error: error instanceof Error ? error.message : JSON.stringify(error),
-        });
-    }
-};
-
-// 2. 감사 로그 조회
-export const getInventoryLogs = async (req: Request, res: Response) => {
-    try {
-        const { data, error } = await supabase
-            .from('inventory_logs')
-            .select('*')
-            .order('created_at', { ascending: false });
-
-        if (error) throw error;
-
-        res.json({
-            success: true,
-            data,
-        });
-    } catch (error) {
-        console.error('Select logs failed:', error);
-        res.status(500).json({
-            success: false,
-            message: '감사 로그 조회에 실패했습니다.',
-            error: error instanceof Error ? error.message : JSON.stringify(error),
-        });
-    }
-};
-
-// 3. 신규 SKU 및 재고 그룹 등록 (유연한 네이밍 & 다중 SKU 배열 대응)
 interface CreateItemPayload {
     id?: string;
     inventoryItemId?: string;
     name?: string;
     inventoryItemName?: string;
     category?: string;
+    adminId?: string;
     skuId?: string;
     optionName?: string;
     initialStock?: number;
@@ -123,6 +42,118 @@ interface CreateItemPayload {
     }>;
 }
 
+const calculateStatus = (currentStock: number, safetyStock: number, isCurrentlyDisabled: boolean): StockStatus => {
+    if (isCurrentlyDisabled) return "DISABLED";
+    if (currentStock <= 0) return "SOLD_OUT";
+    if (currentStock <= safetyStock) return "LOW_STOCK";
+    return "IN_STOCK";
+};
+
+
+
+// ==========================================
+// Controllers
+// ==========================================
+interface InventoryQueryParams extends InventoryFilterParams {
+    page?: string;
+    limit?: string;
+}
+// 1. 재고 목록 조회 (하위 SKU 조인 및 검색/필터/페이징 지원)
+export const getInventoryItems = async (
+    req: Request<{}, {}, {}, InventoryQueryParams>,
+    res: Response
+) => {
+    try {
+        const { searchQuery, status } = req.query;
+        const page = Math.max(1, parseInt(req.query.page || '1', 10));
+        const limit = Math.max(1, parseInt(req.query.limit || '50', 10));
+
+        const from = (page - 1) * limit;
+        const to = from + limit - 1;
+
+        const selectQuery = status
+            ? '*, skus:sku_inventories!inner(*)'
+            : '*, skus:sku_inventories(*)';
+
+        let query = supabase
+            .from('inventory_items')
+            .select(selectQuery, { count: 'exact' });
+
+        if (status) {
+            query = query.eq('sku_inventories.status', status);
+        }
+
+        if (searchQuery) {
+            query = query.or(`name.ilike.%${searchQuery}%,id.ilike.%${searchQuery}%`);
+        }
+
+        const { data, error, count } = await query
+            .order('created_at', { ascending: false })
+            .range(from, to);
+
+        if (error) throw error;
+
+        res.json({
+            success: true,
+            data: toCamelCase(data),
+            pagination: {
+                page,
+                limit,
+                totalCount: count ?? 0,
+                totalPages: count ? Math.ceil(count / limit) : 0,
+            },
+        });
+    } catch (error) {
+        console.error('Select failed:', error);
+        res.status(500).json({
+            success: false,
+            message: '재고 목록 조회에 실패했습니다.',
+            error: error instanceof Error ? error.message : JSON.stringify(error),
+        });
+    }
+};
+
+// 2. 감사 로그 조회 (PRD 3.6 - 페이징 처리 반영)
+export const getInventoryLogs = async (
+    req: Request<{}, {}, {}, LogQueryParams>,
+    res: Response
+) => {
+    try {
+        const page = Math.max(1, parseInt(req.query.page || '1', 10));
+        const limit = Math.max(1, parseInt(req.query.limit || '50', 10));
+
+        const from = (page - 1) * limit;
+        const to = from + limit - 1;
+
+        const { data, error, count } = await supabase
+            .from('inventory_logs')
+            .select('*', { count: 'exact' })
+            .order('created_at', { ascending: false })
+            .range(from, to);
+
+        if (error) throw error;
+
+        res.json({
+            success: true,
+            data: toCamelCase(data),
+            pagination: {
+                page,
+                limit,
+                totalCount: count ?? 0,
+                totalPages: count ? Math.ceil(count / limit) : 0,
+            },
+        });
+    } catch (error) {
+        console.error('Select logs failed:', error);
+        res.status(500).json({
+            success: false,
+            message: '감사 로그 조회에 실패했습니다.',
+            error: error instanceof Error ? error.message : JSON.stringify(error),
+        });
+    }
+};
+
+// 3. 신규 SKU 및 재고 그룹 등록 (PRD 3.1 & 3.6 감사로그 반영)
 export const createInventoryItem = async (
     req: Request<{}, {}, CreateItemPayload>,
     res: Response
@@ -130,10 +161,10 @@ export const createInventoryItem = async (
     try {
         const body = req.body;
 
-        // 프론트엔드 모달 카멜케이스(id, name)와 기존 백엔드(inventoryItemId, inventoryItemName) 필드 유연 매핑
         const itemId = body.inventoryItemId || body.id;
         const itemName = body.inventoryItemName || body.name;
         const category = body.category || null;
+        const adminId = body.adminId || 'ADMIN-SYSTEM';
 
         if (!itemId || !itemName) {
             return res.status(400).json({
@@ -142,7 +173,6 @@ export const createInventoryItem = async (
             });
         }
 
-        // 다중 SKU 배열(`skus`)이 넘어오는 경우와 단일 SKU 필드로 전달되는 경우 모두 처리
         const skusToInsert = body.skus && body.skus.length > 0
             ? body.skus.map((s, idx) => {
                 const sStock = Number(s.currentStock ?? s.current_stock ?? body.initialStock ?? body.totalStock ?? 0);
@@ -192,12 +222,25 @@ export const createInventoryItem = async (
 
         if (skuError) throw skuError;
 
-        // 3) 상위 그룹 총 재고 수량 동기화
-        await syncTotalStock(itemId);
+        // 3) PRD 3.6: 신규 등록에 대한 초기 감사 로그 생성 (Append-Only Audit Log)
+        if (insertedSkus && insertedSkus.length > 0) {
+            const initialLogs = insertedSkus.map((sku) => ({
+                sku_id: sku.id,
+                option_name: sku.option_name,
+                before_qty: 0,
+                after_qty: sku.current_stock,
+                change_type: 'ADMIN_ADJUST',
+                reason_type: 'INCOMING',
+                reason_memo: '신규 SKU 등록 초기 재고 설정',
+                admin_id: adminId,
+            }));
+
+            await supabase.from('inventory_logs').insert(initialLogs);
+        }
 
         res.status(201).json({
             success: true,
-            data: insertedSkus,
+            data: toCamelCase(insertedSkus),
         });
     } catch (error) {
         console.error('Insert failed:', error);
@@ -209,20 +252,8 @@ export const createInventoryItem = async (
     }
 };
 
-// 4. 어드민 재고 수동 조정 (+ 감사 로그 생성 및 상위 총 재고 동기화)
-interface ExtendedAdjustPayload extends Partial<AdjustStockPayload> {
-    skuId?: string;
-    deltaQty?: number;
-    adjustmentQty?: number;
-    reasonType?: AdjustmentReason;
-    reasonMemo?: string;
-    adminId?: string;
-}
-
-export const adjustInventoryStock = async (
-    req: Request<{}, {}, ExtendedAdjustPayload>,
-    res: Response
-) => {
+// 4. 어드민 재고 수동 조정 (+ 감사 로그 생성) (PRD 3.3, 3.6 & 4.0 - RPC 트랜잭션/동시성 보장)
+export const adjustInventoryStock = async (req: Request, res: Response) => {
     try {
         const { skuId, deltaQty, adjustmentQty, reasonType, reasonMemo, adminId } = req.body;
         const changeQty = deltaQty ?? adjustmentQty ?? 0;
@@ -234,61 +265,20 @@ export const adjustInventoryStock = async (
             });
         }
 
-        // [STEP 1] 현재 SKU 재고 상태 조회
-        const { data: item, error: fetchError } = await supabase
-            .from('sku_inventories')
-            .select('*')
-            .eq('id', skuId)
-            .single();
+        // DB Stored Procedure(RPC) 호출로 트랜잭션 및 Lock 보장
+        const { data, error } = await supabase.rpc('adjust_sku_stock_transaction', {
+            p_sku_id: skuId,
+            p_change_qty: Number(changeQty),
+            p_reason_type: (reasonType as AdjustmentReason) || 'OTHER',
+            p_reason_memo: reasonMemo || '',
+            p_admin_id: adminId || 'SYSTEM_ADMIN',
+        });
 
-        if (fetchError || !item) {
-            return res.status(404).json({
-                success: false,
-                message: '존재하지 않는 SKU입니다.',
-            });
-        }
-
-        // [STEP 2] 조정 후 수량 및 상태 계산
-        const beforeQty = item.current_stock;
-        const afterQty = Math.max(0, beforeQty + Number(changeQty));
-        const newStatus: StockStatus = calculateStatus(afterQty, item.safety_stock, item.status === 'DISABLED');
-
-        // [STEP 3] SKU 재고 수량 및 상태 업데이트
-        const { data: updatedItem, error: updateError } = await supabase
-            .from('sku_inventories')
-            .update({
-                current_stock: afterQty,
-                status: newStatus,
-                updated_at: new Date().toISOString(),
-            })
-            .eq('id', skuId)
-            .select()
-            .single();
-
-        if (updateError) throw updateError;
-
-        // [STEP 4] 상위 inventory_items의 total_stock 수량 자동 갱신
-        await syncTotalStock(item.inventory_item_id);
-
-        // [STEP 5] 감사 로그(Audit Log) 생성
-        const { error: logError } = await supabase
-            .from('inventory_logs')
-            .insert({
-                sku_id: skuId,
-                option_name: item.option_name,
-                before_qty: beforeQty,
-                after_qty: afterQty,
-                change_type: 'ADMIN_ADJUST',
-                reason_type: reasonType as AdjustmentReason,
-                admin_id: adminId || 'SYSTEM_ADMIN',
-                reason_memo: reasonMemo ? `[${reasonType || 'ADJUST'}] ${reasonMemo}`.trim() : `[${reasonType || 'ADJUST'}]`,
-            });
-
-        if (logError) console.error('Audit Log 생성 실패:', logError);
+        if (error) throw error;
 
         res.json({
             success: true,
-            data: updatedItem,
+            data: toCamelCase(data),
         });
     } catch (error) {
         console.error('Adjustment failed:', error);
@@ -301,15 +291,8 @@ export const adjustInventoryStock = async (
 };
 
 // 5. 단순 SKU 정보 업데이트 (안전재고 및 옵션명 변경)
-interface UpdateSkuPayload {
-    optionName?: string;
-    option_name?: string;
-    safetyStock?: number;
-    safety_stock?: number;
-}
-
 export const updateInventoryItem = async (
-    req: Request<{ uuid: string }, {}, UpdateSkuPayload>,
+    req: Request<{ uuid: string }>,
     res: Response
 ) => {
     try {
@@ -357,7 +340,7 @@ export const updateInventoryItem = async (
 
         res.json({
             success: true,
-            data,
+            data: toCamelCase(data),
         });
     } catch (error) {
         console.error('Update failed:', error);
@@ -369,7 +352,7 @@ export const updateInventoryItem = async (
     }
 };
 
-// 6. SKU 비활성화 / 활성화 (논리적 삭제)
+// 6. SKU 비활성화 / 활성화 (논리적 삭제/복구)
 export const toggleInventoryStatus = async (
     req: Request<{ uuid: string }>,
     res: Response
@@ -391,7 +374,7 @@ export const toggleInventoryStatus = async (
             });
         }
 
-        // [STEP 2] DISABLED ↔ 기존 상태 토글
+        // [STEP 2] DISABLED ↔ 기존 상태 토글 (안전재고/현재재고 기준 계산)
         const isCurrentlyDisabled = item.status === 'DISABLED';
         const nextStatus: StockStatus = calculateStatus(
             item.current_stock,
@@ -413,7 +396,7 @@ export const toggleInventoryStatus = async (
 
         res.json({
             success: true,
-            data,
+            data: toCamelCase(data),
         });
     } catch (error) {
         console.error('Toggle status failed:', error);
