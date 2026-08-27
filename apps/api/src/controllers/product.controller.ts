@@ -1,119 +1,64 @@
-// controllers/product.controller.ts
-
 import type { Request, Response } from 'express';
 import { supabase } from '../config/supabase.js';
-import type {
-    AdminProductFilterParams,
-    ClientProductFilterParams,
-    CreateProductPayload,
-    UpdateProductPayload,
-    BatchUpdateStatusPayload,
-    BatchUpdateCategoryPayload,
-    ProductStatus
-} from '@mall/types';
+import { toCamelCase } from '../utils/caseConverter.js';
+import type { BatchUpdatePayload, CreateProductPayload, ProductAlertType, ProductFilterParams, ProductSortOption } from '@mall/types';
+import { calculateDiscountedPrice } from '../utils/calculateDiscountedPrice.js';
+
+// UUID 형식 검증 헬퍼
+const isUUID = (str: string) =>
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(str);
 
 // ==========================================
-// 1. 어드민: 상품 목록 조회 (검색/필터/페이징)
-// PRD 3.2: 카테고리, 판매 상태, 검색어 필터 지원
+// Controllers
 // ==========================================
-export const getAdminProducts = async (
-    req: Request<{}, {}, {}, AdminProductFilterParams>,
-    res: Response
-) => {
-    try {
-        const { searchQuery, status, categoryId, page = 1, limit = 20 } = req.query;
 
-        // 삭제되지 않은 상품 전체 조회 (또는 특정 status 필터)
-        let query = supabase.from('products').select(`
-            *,
-            options:product_options(*),
-            categories:product_categories(category_id)
-        `, { count: 'exact' });
-
-        // PRD 3.4: 'DELETED' 상태가 아닌 상품만 기본 조회 (status가 지정되지 않은 경우)
-        if (status) {
-            query = query.eq('status', status);
-        } else {
-            query = query.neq('status', 'DELETED');
-        }
-
-        // 상품명 또는 상품 ID 검색
-        if (searchQuery) {
-            query = query.or(`product_name.ilike.%${searchQuery}%,product_id.ilike.%${searchQuery}%`);
-        }
-
-        // 특정 카테고리 필터 (조인 테이블 조건)
-        if (categoryId) {
-            query = query.eq('product_categories.category_id', categoryId);
-        }
-
-        // 페이지네이션 적용
-        const from = (Number(page) - 1) * Number(limit);
-        const to = from + Number(limit) - 1;
-        query = query.range(from, to).order('created_at', { ascending: false });
-
-        const { data, error, count } = await query;
-
-        if (error) throw error;
-
-        res.json({
-            success: true,
-            data,
-            pagination: {
-                totalCount: count,
-                currentPage: Number(page),
-                totalPages: count ? Math.ceil(count / Number(limit)) : 0,
-            },
-        });
-    } catch (error) {
-        console.error('Admin products select failed:', error);
-        res.status(500).json({
-            success: false,
-            message: '어드민 상품 목록 조회에 실패했습니다.',
-            error: error instanceof Error ? error.message : JSON.stringify(error),
-        });
-    }
-};
-
-// ==========================================
-// 2. 클라이언트: 쇼핑몰 상품 목록 조회
-// PRD 3.2: '진열중(DISPLAY)'만 노출, 정렬 옵션 지원
-// ==========================================
+// 1. 클라이언트 쇼핑몰 상품 목록 조회 (PRD 3.2: Read-Only Exhibition)
 export const getClientProducts = async (
-    req: Request<{}, {}, {}, ClientProductFilterParams>,
+    req: Request<{}, {}, {}, ProductFilterParams>,
     res: Response
 ) => {
     try {
-        const { categoryId, sort = 'NEWEST', page = 1, limit = 20 } = req.query;
+        const { categoryId, searchQuery, sort = 'RECOMMENDED' } = req.query;
+        const page = Math.max(1, Number(req.query.page) || 1);
+        const limit = Math.max(1, Number(req.query.limit) || 20);
 
-        // 클라이언트는 무조건 'DISPLAY' 상태의 상품만 조회
-        let query = supabase.from('products').select(`
-            product_id,
-            product_name,
-            main_image_url,
-            base_price,
-            discounted_price,
-            discount_type,
-            discount_value,
-            status,
-            sort_order,
-            created_at,
-            categories:product_categories!inner(category_id)
-        `, { count: 'exact' }).eq('status', 'DISPLAY');
+        const from = (page - 1) * limit;
+        const to = from + limit - 1;
 
-        // 카테고리 필터
+        // 카테고리 필터링 여부에 따라 INNER JOIN(!inner) 매핑
+        const categorySelect = categoryId
+            ? 'categories:product_categories!inner(category_id)'
+            : 'categories:product_categories(category_id)';
+
+        let query = supabase
+            .from('products')
+            .select(
+                `
+        *,
+        options:product_options(*),
+        ${categorySelect}
+      `,
+                { count: 'exact' }
+            )
+            // PRD 3.2: 숨김(HIDDEN) 및 삭제됨(DELETED) 원천 제외
+            .in('status', ['DISPLAY', 'SOLD_OUT']);
+
+        // [수정] Alias인 'categories'를 통해 접근해야 PostgREST 파싱 에러가 발생하지 않음
         if (categoryId) {
-            query = query.eq('product_categories.category_id', categoryId);
+            query = query.eq('categories.category_id', categoryId);
         }
 
-        // 정렬 조건 처리 (PRD 3.2)
-        switch (sort) {
-            case 'RECOMMENDED':
-                query = query.order('sort_order', { ascending: true }); // 상단 고정/우선순위
+        if (searchQuery) {
+            query = query.ilike('product_name', `%${searchQuery}%`);
+        }
+
+        // PRD 3.2 정렬 조건 매핑
+        switch (sort as ProductSortOption) {
+            case 'NEWEST':
+                query = query.order('created_at', { ascending: false });
                 break;
             case 'POPULAR':
-                // 필요시 sales_count 또는 wishlist_count 기준 정렬
-                query = query.order('sort_order', { ascending: true });
+                query = query.order('sales_count', { ascending: false });
                 break;
             case 'PRICE_ASC':
                 query = query.order('discounted_price', { ascending: true });
@@ -121,32 +66,28 @@ export const getClientProducts = async (
             case 'PRICE_DESC':
                 query = query.order('discounted_price', { ascending: false });
                 break;
-            case 'NEWEST':
+            case 'RECOMMENDED':
             default:
-                query = query.order('created_at', { ascending: false });
+                query = query.order('sort_order', { ascending: true }).order('created_at', { ascending: false });
                 break;
         }
 
-        // 페이지네이션
-        const from = (Number(page) - 1) * Number(limit);
-        const to = from + Number(limit) - 1;
-        query = query.range(from, to);
-
-        const { data, error, count } = await query;
+        const { data, error, count } = await query.range(from, to);
 
         if (error) throw error;
 
         res.json({
             success: true,
-            data,
+            data: toCamelCase(data),
             pagination: {
-                totalCount: count,
-                currentPage: Number(page),
-                totalPages: count ? Math.ceil(count / Number(limit)) : 0,
+                page,
+                limit,
+                totalCount: count ?? 0,
+                totalPages: count ? Math.ceil(count / limit) : 0,
             },
         });
     } catch (error) {
-        console.error('Client products select failed:', error);
+        console.error('getClientProducts failed:', error);
         res.status(500).json({
             success: false,
             message: '상품 목록 조회에 실패했습니다.',
@@ -155,356 +96,633 @@ export const getClientProducts = async (
     }
 };
 
-// ==========================================
-// 3. 상품 상세 조회 (Direct URL 접근 제어)
-// PRD 3.4: 삭제/숨김 상품 직접 접근 시 예외 처리
-// ==========================================
+// 2-1. 어드민 상품 목록 조회 (PRD 3.2)
+export const getAdminProducts = async (
+    req: Request<{}, {}, {}, ProductFilterParams>,
+    res: Response
+) => {
+    try {
+        const { status, searchQuery, categoryId } = req.query;
+        const page = Math.max(1, Number(req.query.page) || 1);
+        const limit = Math.max(1, Number(req.query.limit) || 20);
+
+        const from = (page - 1) * limit;
+        const to = from + limit - 1;
+
+        const categorySelect = categoryId
+            ? 'categories:product_categories!inner(category_id)'
+            : 'categories:product_categories(category_id)';
+
+        let query = supabase
+            .from('products')
+            .select(
+                `
+        *,
+        options:product_options(*),
+        ${categorySelect}
+      `,
+                { count: 'exact' }
+            );
+
+        if (status) {
+            query = query.eq('status', status);
+        } else {
+            query = query.neq('status', 'DELETED');
+        }
+
+        // [수정] Alias인 'categories'를 통해 조건 지정
+        if (categoryId) {
+            query = query.eq('categories.category_id', categoryId);
+        }
+
+        // UUID 여부에 따라 파싱 에러 방지 처리
+        if (searchQuery) {
+            const cleanQuery = searchQuery.trim();
+            if (isUUID(cleanQuery)) {
+                query = query.or(`product_name.ilike.%${cleanQuery}%,product_id.eq.${cleanQuery}`);
+            } else {
+                query = query.ilike('product_name', `%${cleanQuery}%`);
+            }
+        }
+
+        const { data, error, count } = await query
+            .order('created_at', { ascending: false })
+            .range(from, to);
+
+        if (error) throw error;
+
+        res.json({
+            success: true,
+            data: toCamelCase(data),
+            pagination: {
+                page,
+                limit,
+                totalCount: count ?? 0,
+                totalPages: count ? Math.ceil(count / limit) : 0,
+            },
+        });
+    } catch (error) {
+        console.error('getAdminProducts failed:', error);
+        res.status(500).json({
+            success: false,
+            message: '어드민 상품 목록 조회에 실패했습니다.',
+            error: error instanceof Error ? error.message : JSON.stringify(error),
+        });
+    }
+};
+
+// 2-2. 어드민 상품 진열 상태 일괄 변경 (PRD 3.2: Batch Action)
+export const batchUpdateStatus = async (
+    req: Request<{}, {}, BatchUpdatePayload>,
+    res: Response
+) => {
+    try {
+        const { productIds, status } = req.body;
+
+        if (!productIds || !Array.isArray(productIds) || productIds.length === 0 || !status) {
+            return res.status(400).json({
+                success: false,
+                message: 'productIds 배열과 변경할 status 항목은 필수입니다.',
+            });
+        }
+
+        // [추가] UUID 형식 검증
+        if (!productIds.every(isUUID)) {
+            return res.status(400).json({
+                success: false,
+                message: '올바르지 않은 상품 ID가 포함되어 있습니다.',
+            });
+        }
+
+        const ALLOWED_STATUSES = ['DISPLAY', 'HIDDEN'];
+        if (!ALLOWED_STATUSES.includes(status)) {
+            return res.status(400).json({
+                success: false,
+                message: "일괄 변경 가능한 상태는 'DISPLAY' 또는 'HIDDEN'만 가능합니다.",
+            });
+        }
+
+        const { data, error } = await supabase
+            .from('products')
+            .update({ status })
+            .in('product_id', productIds)
+            .neq('status', 'DELETED')
+            .select();
+
+        if (error) throw error;
+
+        res.json({
+            success: true,
+            message: `${data.length}개 상품의 상태가 변경되었습니다.`,
+            data: toCamelCase(data),
+        });
+    } catch (error) {
+        console.error('batchUpdateStatus failed:', error);
+        res.status(500).json({
+            success: false,
+            message: '상품 상태 일괄 변경에 실패했습니다.',
+            error: error instanceof Error ? error.message : JSON.stringify(error),
+        });
+    }
+};
+
+// 2-3. 어드민 상품 카테고리 일괄 이동 (PRD 3.2: Batch Action)
+export const batchUpdateCategory = async (
+    req: Request<{}, {}, BatchUpdatePayload>,
+    res: Response
+) => {
+    try {
+        const { productIds, targetCategoryIds } = req.body;
+
+        if (!productIds || !Array.isArray(productIds) || productIds.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'productIds 배열은 필수이며 1개 이상이어야 합니다.',
+            });
+        }
+
+        if (!targetCategoryIds || !Array.isArray(targetCategoryIds) || targetCategoryIds.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: '이동할 targetCategoryIds 배열은 필수입니다.',
+            });
+        }
+
+        // [추가] UUID 형식 사전 검증
+        if (!productIds.every(isUUID) || !targetCategoryIds.every(isUUID)) {
+            return res.status(400).json({
+                success: false,
+                message: '올바르지 않은 ID 형식이 포함되어 있습니다.',
+            });
+        }
+
+        // 대상 카테고리 유효성 검증
+        const { data: existingCategories, error: categoryError } = await supabase
+            .from('categories')
+            .select('category_id')
+            .in('category_id', targetCategoryIds);
+
+        if (categoryError) throw categoryError;
+
+        if (!existingCategories || existingCategories.length !== targetCategoryIds.length) {
+            return res.status(404).json({
+                success: false,
+                message: '존재하지 않는 카테고리가 포함되어 있습니다.',
+            });
+        }
+
+        // [롤백 대비] 기존 카테고리 매핑 백업 백업
+        const { data: previousMappings, error: backupError } = await supabase
+            .from('product_categories')
+            .select('*')
+            .in('product_id', productIds);
+
+        if (backupError) throw backupError;
+
+        // 기존 매핑 삭제
+        const { error: deleteError } = await supabase
+            .from('product_categories')
+            .delete()
+            .in('product_id', productIds);
+
+        if (deleteError) throw deleteError;
+
+        // 신규 매핑 레코드 생성
+        const newMappings = productIds.flatMap((productId) =>
+            targetCategoryIds.map((categoryId) => ({
+                product_id: productId,
+                category_id: categoryId,
+            }))
+        );
+
+        const { data, error: insertError } = await supabase
+            .from('product_categories')
+            .insert(newMappings)
+            .select();
+
+        // 생성 실패 시 이전 카테고리 복구 (Rollback 시도)
+        if (insertError) {
+            if (previousMappings && previousMappings.length > 0) {
+                await supabase.from('product_categories').insert(previousMappings);
+            }
+            throw insertError;
+        }
+
+        res.json({
+            success: true,
+            message: `${productIds.length}개 상품의 카테고리가 일괄 이동되었습니다.`,
+            data: toCamelCase(data),
+        });
+    } catch (error) {
+        console.error('batchUpdateCategory failed:', error);
+        res.status(500).json({
+            success: false,
+            message: '상품 카테고리 일괄 이동에 실패했습니다.',
+            error: error instanceof Error ? error.message : JSON.stringify(error),
+        });
+    }
+};
+
+// 2-4. 어드민 상품 알림 목록 조회 (PRD 3.7: Admin Dashboard Widget & History)
+export const getAdminAlerts = async (
+    req: Request<{}, {}, {}, { isRead?: string; type?: ProductAlertType; limit?: string }>,
+    res: Response
+) => {
+    try {
+        const { isRead, type, limit } = req.query;
+
+        let query = supabase
+            .from('product_alerts')
+            .select(`
+        *,
+        product:products(product_name, main_image_url)
+      `)
+            .order('created_at', { ascending: false });
+
+        if (isRead !== undefined) {
+            query = query.eq('is_read', isRead === 'true');
+        }
+
+        if (type) {
+            query = query.eq('alert_type', type);
+        }
+
+        if (limit) {
+            query = query.limit(Math.max(1, parseInt(limit, 10)));
+        }
+
+        const { data, error } = await query;
+
+        if (error) throw error;
+
+        res.json({
+            success: true,
+            data: toCamelCase(data),
+        });
+    } catch (error) {
+        console.error('getAdminAlerts failed:', error);
+        res.status(500).json({
+            success: false,
+            message: '상품 알림 조회에 실패했습니다.',
+            error: error instanceof Error ? error.message : JSON.stringify(error),
+        });
+    }
+};
+
+// 3-1. 클라이언트 상품 상세 조회 (PRD 3.4: Direct URL 차단 대응)
 export const getProductById = async (req: Request<{ id: string }>, res: Response) => {
     try {
         const { id } = req.params;
 
-        const { data: product, error } = await supabase
-            .from('products')
-            .select(`
-                *,
-                options:product_options(*),
-                categories:product_categories(category_id)
-            `)
-            .eq('product_id', id)
-            .single();
-
-        if (error || !product) {
+        if (!isUUID(id)) {
             return res.status(404).json({
                 success: false,
                 message: '존재하지 않거나 삭제된 상품입니다.',
             });
         }
 
-        // PRD 3.4: Direct URL 접근 시 삭제/숨김 상태 체크
-        if (product.status === 'DELETED' || product.status === 'HIDDEN') {
+        const { data, error } = await supabase
+            .from('products')
+            .select(
+                `
+        *,
+        options:product_options(*),
+        categories:product_categories(category_id)
+      `
+            )
+            .eq('product_id', id)
+            .single();
+
+        if (error || !data || data.status === 'DELETED' || data.status === 'HIDDEN') {
             return res.status(404).json({
                 success: false,
-                message: '존재하지 않거나 판매가 중단된 상품입니다.',
+                message: '존재하지 않거나 삭제된 상품입니다.',
             });
         }
 
         res.json({
             success: true,
-            data: product,
+            data: toCamelCase(data),
         });
     } catch (error) {
-        console.error('Select product detail failed:', error);
+        console.error('getProductById failed:', error);
         res.status(500).json({
             success: false,
-            message: '상품 상세 정보 조회에 실패했습니다.',
+            message: '상품 상세 조회에 실패했습니다.',
             error: error instanceof Error ? error.message : JSON.stringify(error),
         });
     }
 };
 
-// ==========================================
-// 4. 어드민: 상품 신규 등록
-// PRD 3.1: 마스터 생성 + 옵션(SKU 매핑) + 카테고리 연동
-// ==========================================
+// 3-2. 어드민 상품 신규 등록 (PRD 3.1 & 3.6)
 export const createProduct = async (
     req: Request<{}, {}, CreateProductPayload>,
     res: Response
 ) => {
-    try {
-        const payload = req.body;
+    let createdProductId: string | null = null;
 
-        // 1) 할인가 계산 로직 (정율 / 정액 반영)
-        let discountedPrice = payload.basePrice;
-        if (payload.discountType === 'FIXED_AMOUNT' && payload.discountValue) {
-            discountedPrice = Math.max(0, payload.basePrice - payload.discountValue);
-        } else if (payload.discountType === 'PERCENTAGE' && payload.discountValue) {
-            discountedPrice = Math.max(0, payload.basePrice * (1 - payload.discountValue / 100));
+    try {
+        const {
+            productName,
+            mainImageUrl,
+            subImageUrls = [],
+            description,
+            status = 'DISPLAY',
+            sortOrder = 0,
+            basePrice,
+            discountType,
+            discountValue,
+            discountStartDate,
+            discountEndDate,
+            categoryIds = [],
+            options = [],
+        } = req.body;
+
+        if (!productName || !mainImageUrl || basePrice === undefined) {
+            return res.status(400).json({
+                success: false,
+                message: '상품명, 대표 이미지, 기본 가격은 필수 입력 항목입니다.',
+            });
         }
 
-        // 2) 상품 마스터 생성
-        const { data: product, error: productError } = await supabase
+        if (!['DISPLAY', 'HIDDEN'].includes(status)) {
+            return res.status(400).json({
+                success: false,
+                message: '초기 등록 시 상품 상태는 DISPLAY 또는 HIDDEN만 지정할 수 있습니다.',
+            });
+        }
+
+        const calculatedDiscountedPrice = calculateDiscountedPrice(
+            basePrice,
+            discountType,
+            discountValue,
+            discountStartDate,
+            discountEndDate
+        );
+
+        const { data: productData, error: productError } = await supabase
             .from('products')
             .insert({
-                product_name: payload.productName,
-                main_image_url: payload.mainImageUrl,
-                sub_image_urls: payload.subImageUrls || [],
-                description: payload.description,
-                status: payload.status,
-                sort_order: payload.sortOrder || 0,
-                base_price: payload.basePrice,
-                discounted_price: discountedPrice,
-                discount_type: payload.discountType,
-                discount_value: payload.discountValue,
-                discount_start_date: payload.discountStartDate,
-                discount_end_date: payload.discountEndDate,
+                product_name: productName,
+                main_image_url: mainImageUrl,
+                sub_image_urls: subImageUrls,
+                description,
+                status,
+                sort_order: sortOrder,
+                base_price: basePrice,
+                discounted_price: calculatedDiscountedPrice,
+                discount_type: discountType,
+                discount_value: discountValue,
+                discount_start_date: discountStartDate,
+                discount_end_date: discountEndDate,
             })
             .select()
             .single();
 
-        if (productError || !product) throw productError;
+        if (productError) throw productError;
+        createdProductId = productData.product_id;
 
-        const productId = product.product_id;
-
-        // 3) 옵션 및 SKU 매핑 저장 (PRD 2.1)
-        if (payload.options && payload.options.length > 0) {
-            const optionRows = payload.options.map((opt) => ({
-                product_id: productId,
-                option_name: opt.optionName,
-                option_value: opt.optionValue,
-                surcharge: opt.surcharge || 0,
-                sku_id: opt.skuId, // Inventory 모듈의 SKU ID 매핑
-            }));
-
-            const { error: optionError } = await supabase.from('product_options').insert(optionRows);
-            if (optionError) throw optionError;
-        }
-
-        // 4) 카테고리 다중 매핑 저장 (PRD 3.5)
-        if (payload.categoryIds && payload.categoryIds.length > 0) {
-            const categoryRows = payload.categoryIds.map((catId) => ({
-                product_id: productId,
+        if (categoryIds.length > 0) {
+            const categoryRows = categoryIds.map((catId) => ({
+                product_id: createdProductId,
                 category_id: catId,
             }));
-
-            const { error: categoryError } = await supabase.from('product_categories').insert(categoryRows);
-            if (categoryError) throw categoryError;
+            const { error: catError } = await supabase.from('product_categories').insert(categoryRows);
+            if (catError) throw catError;
         }
+
+        if (options.length > 0) {
+            const optionRows = options.map((opt) => ({
+                product_id: createdProductId,
+                option_name: opt.optionName,
+                option_value: opt.optionValue,
+                surcharge: opt.surcharge ?? 0,
+                sku_id: opt.skuId,
+            }));
+            const { error: optError } = await supabase.from('product_options').insert(optionRows);
+            if (optError) throw optError;
+        }
+
+        const { data: fullProduct, error: fetchError } = await supabase
+            .from('products')
+            .select(
+                `
+        *,
+        options:product_options(*),
+        categories:product_categories(category_id)
+      `
+            )
+            .eq('product_id', createdProductId)
+            .single();
+
+        if (fetchError) throw fetchError;
 
         res.status(201).json({
             success: true,
             message: '상품이 성공적으로 등록되었습니다.',
-            data: { productId },
+            data: toCamelCase(fullProduct),
         });
     } catch (error) {
-        console.error('Create product failed:', error);
+        console.error('createProduct failed:', error);
+
+        if (createdProductId) {
+            await supabase.from('products').delete().eq('product_id', createdProductId);
+        }
+
         res.status(500).json({
             success: false,
-            message: '상품 등록에 실패했습니다.',
+            message: '상품 신규 등록에 실패했습니다.',
             error: error instanceof Error ? error.message : JSON.stringify(error),
         });
     }
 };
 
-// ==========================================
-// 5. 어드민: 상품 정보 수정
-// PRD 3.3: 정보 수정 시 관련 테이블 업데이트
-// ==========================================
+// 3-3. 어드민 상품 정보 수정 (PRD 3.3 & 3.6)
 export const updateProduct = async (
-    req: Request<{ id: string }, {}, UpdateProductPayload>,
+    req: Request<{ id: string }, {}, Partial<CreateProductPayload>>,
     res: Response
 ) => {
     try {
         const { id } = req.params;
-        const payload = req.body;
 
-        // 1) 할인가 재계산
-        let discountedPrice: number | undefined;
-        if (payload.basePrice !== undefined) {
-            discountedPrice = payload.basePrice;
-            if (payload.discountType === 'FIXED_AMOUNT' && payload.discountValue) {
-                discountedPrice = Math.max(0, payload.basePrice - payload.discountValue);
-            } else if (payload.discountType === 'PERCENTAGE' && payload.discountValue) {
-                discountedPrice = Math.max(0, payload.basePrice * (1 - payload.discountValue / 100));
-            }
+        if (!isUUID(id)) {
+            return res.status(404).json({
+                success: false,
+                message: '존재하지 않는 상품입니다.',
+            });
         }
 
-        // 2) 상품 마스터 업데이트
+        const { data: currentProduct, error: fetchError } = await supabase
+            .from('products')
+            .select('*')
+            .eq('product_id', id)
+            .single();
+
+        if (fetchError || !currentProduct) {
+            return res.status(404).json({
+                success: false,
+                message: '존재하지 않는 상품입니다.',
+            });
+        }
+
+        const {
+            productName,
+            mainImageUrl,
+            subImageUrls,
+            description,
+            status,
+            sortOrder,
+            basePrice,
+            discountType,
+            discountValue,
+            discountStartDate,
+            discountEndDate,
+            categoryIds,
+            options,
+        } = req.body;
+
+        const updatePayload: Record<string, any> = {
+            updated_at: new Date().toISOString(),
+        };
+
+        if (productName !== undefined) updatePayload.product_name = productName;
+        if (mainImageUrl !== undefined) updatePayload.main_image_url = mainImageUrl;
+        if (subImageUrls !== undefined) updatePayload.sub_image_urls = subImageUrls;
+        if (description !== undefined) updatePayload.description = description;
+        if (status !== undefined) updatePayload.status = status;
+        if (sortOrder !== undefined) updatePayload.sort_order = sortOrder;
+        if (basePrice !== undefined) updatePayload.base_price = basePrice;
+        if (discountType !== undefined) updatePayload.discount_type = discountType;
+        if (discountValue !== undefined) updatePayload.discount_value = discountValue;
+        if (discountStartDate !== undefined) updatePayload.discount_start_date = discountStartDate;
+        if (discountEndDate !== undefined) updatePayload.discount_end_date = discountEndDate;
+
+        const isDiscountRelatedUpdate =
+            basePrice !== undefined ||
+            discountType !== undefined ||
+            discountValue !== undefined ||
+            discountStartDate !== undefined ||
+            discountEndDate !== undefined;
+
+        if (isDiscountRelatedUpdate) {
+            updatePayload.discounted_price = calculateDiscountedPrice(
+                basePrice ?? currentProduct.base_price,
+                discountType ?? currentProduct.discount_type,
+                discountValue ?? currentProduct.discount_value,
+                discountStartDate ?? currentProduct.discount_start_date,
+                discountEndDate ?? currentProduct.discount_end_date
+            );
+        }
+
         const { error: updateError } = await supabase
             .from('products')
-            .update({
-                ...(payload.productName && { product_name: payload.productName }),
-                ...(payload.mainImageUrl && { main_image_url: payload.mainImageUrl }),
-                ...(payload.subImageUrls && { sub_image_urls: payload.subImageUrls }),
-                ...(payload.description && { description: payload.description }),
-                ...(payload.status && { status: payload.status }),
-                ...(payload.sortOrder !== undefined && { sort_order: payload.sortOrder }),
-                ...(payload.basePrice !== undefined && { base_price: payload.basePrice }),
-                ...(discountedPrice !== undefined && { discounted_price: discountedPrice }),
-                ...(payload.discountType && { discount_type: payload.discountType }),
-                ...(payload.discountValue !== undefined && { discount_value: payload.discountValue }),
-                updated_at: new Date().toISOString(),
-            })
+            .update(updatePayload)
             .eq('product_id', id);
 
         if (updateError) throw updateError;
 
-        // 3) 카테고리 재매핑 (전체 삭제 후 재삽입)
-        if (payload.categoryIds) {
-            await supabase.from('product_categories').delete().eq('product_id', id);
+        if (categoryIds !== undefined) {
+            const { error: delCatErr } = await supabase.from('product_categories').delete().eq('product_id', id);
+            if (delCatErr) throw delCatErr;
 
-            if (payload.categoryIds.length > 0) {
-                const categoryRows = payload.categoryIds.map((catId) => ({
+            if (categoryIds.length > 0) {
+                const catRows = categoryIds.map((catId) => ({
                     product_id: id,
                     category_id: catId,
                 }));
-                await supabase.from('product_categories').insert(categoryRows);
+                const { error: insCatErr } = await supabase.from('product_categories').insert(catRows);
+                if (insCatErr) throw insCatErr;
             }
         }
+
+        if (options !== undefined) {
+            const { error: delOptErr } = await supabase.from('product_options').delete().eq('product_id', id);
+            if (delOptErr) throw delOptErr;
+
+            if (options.length > 0) {
+                const optRows = options.map((opt) => ({
+                    product_id: id,
+                    option_name: opt.optionName,
+                    option_value: opt.optionValue,
+                    surcharge: opt.surcharge ?? 0,
+                    sku_id: opt.skuId,
+                }));
+                const { error: insOptErr } = await supabase.from('product_options').insert(optRows);
+                if (insOptErr) throw insOptErr;
+            }
+        }
+
+        const { data: updatedProduct, error: refetchError } = await supabase
+            .from('products')
+            .select(
+                `
+        *,
+        options:product_options(*),
+        categories:product_categories(category_id)
+      `
+            )
+            .eq('product_id', id)
+            .single();
+
+        if (refetchError) throw refetchError;
 
         res.json({
             success: true,
             message: '상품 정보가 수정되었습니다.',
+            data: toCamelCase(updatedProduct),
         });
     } catch (error) {
-        console.error('Update product failed:', error);
+        console.error('updateProduct failed:', error);
         res.status(500).json({
             success: false,
-            message: '상품 수정에 실패했습니다.',
+            message: '상품 정보 수정에 실패했습니다.',
             error: error instanceof Error ? error.message : JSON.stringify(error),
         });
     }
 };
 
-// ==========================================
-// 6. 어드민: 상품 삭제 (Soft Delete)
-// PRD 3.4: 'DELETED' 상태로 변경하여 무결성 유지
-// ==========================================
+// 3-4. 어드민 상품 삭제 (PRD 3.4: Soft Delete)
 export const deleteProduct = async (req: Request<{ id: string }>, res: Response) => {
     try {
         const { id } = req.params;
 
-        const { error } = await supabase
+        if (!isUUID(id)) {
+            return res.status(404).json({
+                success: false,
+                message: '존재하지 않는 상품입니다.',
+            });
+        }
+
+        const { data, error } = await supabase
             .from('products')
             .update({
                 status: 'DELETED',
                 updated_at: new Date().toISOString(),
             })
-            .eq('product_id', id);
+            .eq('product_id', id)
+            .select()
+            .single();
 
-        if (error) throw error;
+        if (error) {
+            if (error.code === 'PGRST116') {
+                return res.status(404).json({
+                    success: false,
+                    message: '존재하지 않는 상품입니다.',
+                });
+            }
+            throw error;
+        }
 
         res.json({
             success: true,
-            message: '상품이 삭제 처리되었습니다.',
+            message: '상품이 삭제(Soft Delete) 처리되었습니다.',
+            data: toCamelCase(data),
         });
     } catch (error) {
-        console.error('Delete product failed:', error);
+        console.error('deleteProduct failed:', error);
         res.status(500).json({
             success: false,
             message: '상품 삭제 처리에 실패했습니다.',
-            error: error instanceof Error ? error.message : JSON.stringify(error),
-        });
-    }
-};
-
-// ==========================================
-// 7. 어드민: 상품 진열 상태 일괄 변경
-// PRD 3.2: Batch Action (진열중 ↔ 숨김)
-// ==========================================
-export const batchUpdateStatus = async (
-    req: Request<{}, {}, BatchUpdateStatusPayload>,
-    res: Response
-) => {
-    try {
-        const { productIds, status } = req.body;
-
-        const { error } = await supabase
-            .from('products')
-            .update({
-                status,
-                updated_at: new Date().toISOString(),
-            })
-            .in('product_id', productIds);
-
-        if (error) throw error;
-
-        res.json({
-            success: true,
-            message: `${productIds.length}개 상품의 진열 상태가 변경되었습니다.`,
-        });
-    } catch (error) {
-        console.error('Batch update status failed:', error);
-        res.status(500).json({
-            success: false,
-            message: '상태 일괄 변경에 실패했습니다.',
-            error: error instanceof Error ? error.message : JSON.stringify(error),
-        });
-    }
-};
-
-// ==========================================
-// 8. 어드민: 상품 카테고리 일괄 이동
-// PRD 3.2: Batch Action (다중 선택 상품 카테고리 이동)
-// ==========================================
-export const batchUpdateCategory = async (
-    req: Request<{}, {}, BatchUpdateCategoryPayload>,
-    res: Response
-) => {
-    try {
-        const { productIds, targetCategoryIds } = req.body;
-
-        // 1) 대상 상품들의 기존 카테고리 연동 삭제
-        await supabase
-            .from('product_categories')
-            .delete()
-            .in('product_id', productIds);
-
-        // 2) 신규 카테고리 매핑 데이터 일괄 생성
-        const newRows = productIds.flatMap((pId) =>
-            targetCategoryIds.map((cId) => ({
-                product_id: pId,
-                category_id: cId,
-            }))
-        );
-
-        const { error } = await supabase.from('product_categories').insert(newRows);
-        if (error) throw error;
-
-        res.json({
-            success: true,
-            message: `${productIds.length}개 상품의 카테고리가 일괄 변경되었습니다.`,
-        });
-    } catch (error) {
-        console.error('Batch update category failed:', error);
-        res.status(500).json({
-            success: false,
-            message: '카테고리 일괄 이동에 실패했습니다.',
-            error: error instanceof Error ? error.message : JSON.stringify(error),
-        });
-    }
-};
-
-// ==========================================
-// 9. 클라이언트: 관심상품(위시리스트) 등록/해제 Toggle
-// PRD 3.7: 하트 클릭 시 위시리스트 토글
-// ==========================================
-export const toggleWishlist = async (
-    req: Request<{}, {}, { userId: string; productId: string }>,
-    res: Response
-) => {
-    try {
-        const { userId, productId } = req.body;
-
-        // 기존 위시리스트 존재 여부 확인
-        const { data: existing } = await supabase
-            .from('wishlists')
-            .select('wishlist_id')
-            .eq('user_id', userId)
-            .eq('product_id', productId)
-            .single();
-
-        if (existing) {
-            // 존재하면 해제 (삭제)
-            await supabase.from('wishlists').delete().eq('wishlist_id', existing.wishlist_id);
-            return res.json({
-                success: true,
-                isWished: false,
-                message: '관심상품에서 제거되었습니다.',
-            });
-        } else {
-            // 없으면 등록 (생성)
-            await supabase.from('wishlists').insert({ user_id: userId, product_id: productId });
-            return res.json({
-                success: true,
-                isWished: true,
-                message: '관심상품에 등록되었습니다.',
-            });
-        }
-    } catch (error) {
-        console.error('Toggle wishlist failed:', error);
-        res.status(500).json({
-            success: false,
-            message: '관심상품 처리에 실패했습니다.',
             error: error instanceof Error ? error.message : JSON.stringify(error),
         });
     }
