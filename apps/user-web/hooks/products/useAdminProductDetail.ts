@@ -71,5 +71,22 @@ export function useAdminProductDetail() {
         }
     }, []);
 
-    return { product, loading, error, fetchProductById, createProduct, updateProduct };
+    const deleteProduct = useCallback(async (productId: string) => {
+        setLoading(true);
+        try {
+            const url = API_ENDPOINTS?.PRODUCTS?.BY_ID
+                ? API_ENDPOINTS.PRODUCTS.BY_ID(productId)
+                : `/api/products/${productId}`;
+            const res = await fetch(url, {
+                method: "DELETE",
+            });
+            if (!res.ok) throw new Error("상품 삭제에 실패했습니다.");
+        } catch (err) {
+            throw err;
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    return { product, loading, error, fetchProductById, createProduct, updateProduct, deleteProduct };
 }
