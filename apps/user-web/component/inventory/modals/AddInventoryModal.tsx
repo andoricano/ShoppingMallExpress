@@ -1,99 +1,110 @@
 "use client";
 
-import React, { useMemo } from "react";
-import { InventoryItem } from "@mall/types";
-import { useAddInventoryForm } from "./useAddInventoryForm";
+import React from "react";
+import type { SkuInventory } from "@mall/types";
 import { ModalLabelInput } from "@/component/modal/ModalLabelInput";
 import { ModalFrame } from "@/component/modal/ModalFrame";
-import { ModalSelectOrInput } from "./ModalSelectOrInput";
-import { SkuTableForm } from "./SkuTableForm";
 
 interface AddInventoryModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: InventoryItem) => Promise<void>;
-  categories?: string[];
+  onSubmit: (data: Omit<SkuInventory, "id">) => Promise<void>;
 }
-
-const DEFAULT_CATEGORIES = ["SHOES", "CLOTHES", "ACC", "EQUIPMENT", "ELECTRONICS"];
 
 export const AddInventoryModal: React.FC<AddInventoryModalProps> = ({
   isOpen,
   onClose,
   onSubmit,
-  categories = DEFAULT_CATEGORIES,
 }) => {
-  const memoizedCategories = useMemo(
-    () => (categories && categories.length > 0 ? categories : DEFAULT_CATEGORIES),
-    [categories]
-  );
+  const [skuCode, setSkuCode] = React.useState("");
+  const [currentStock, setCurrentStock] = React.useState("0");
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
 
-  const { state, actions } = useAddInventoryForm({
-    isOpen,
-    categories: memoizedCategories,
-    onSubmit,
-    onClose,
-  });
+  const handleSubmit = async () => {
+    setError(null);
+
+    const trimmedSkuCode = skuCode.trim();
+    const stock = Number(currentStock);
+
+    if (!trimmedSkuCode) {
+      setError("SKU 코드를 입력해주세요.");
+      return;
+    }
+
+    if (!Number.isInteger(stock) || stock < 0) {
+      setError("재고 수량은 0 이상의 정수여야 합니다.");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      await onSubmit({
+        skuCode: trimmedSkuCode,
+        currentStock: stock,
+        isActive: true,
+      });
+
+      setSkuCode("");
+      setCurrentStock("0");
+      onClose();
+    } catch (error) {
+      setError(
+        error instanceof Error
+          ? error.message
+          : "재고 등록에 실패했습니다."
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <ModalFrame
       isOpen={isOpen}
       onClose={onClose}
-      title="신규 재고 아이템 등록"
-      description="재고 그룹 및 세부 SKU 옵션을 등록합니다."
-      maxWidth="4xl"
-      onSubmit={actions.handleSubmit}
-      submitText="재고 등록 완료"
+      title="신규 SKU 재고 등록"
+      description="SKU의 기본 재고 정보를 등록합니다."
+      maxWidth="md"
+      onSubmit={handleSubmit}
+      submitText="재고 등록"
       cancelText="취소"
-      isSubmitting={state.isSubmitting}
+      isSubmitting={isSubmitting}
     >
-      {/* ModalFrame 버튼을 사용할 경우 form의 onSubmit 제거 */}
-      <form className="space-y-6">
-        {/* 그룹 기본 정보 */}
-        <div className="space-y-4">
-          <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">기본 정보</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <ModalLabelInput
-              label="재고 그룹 식별자 (ID)"
-              value={state.id}
-              onChange={actions.setId}
-              placeholder="예: INV-SHOE-01"
-              required
-              disabled={state.isSubmitting}
-            />
-
-            <ModalSelectOrInput
-              label="카테고리"
-              options={memoizedCategories}
-              value={state.category}
-              onChange={actions.setCategory}
-              placeholder="카테고리명 직접 입력"
-              disabled={state.isSubmitting}
-            />
-
-            <div className="md:col-span-2">
-              <ModalLabelInput
-                label="아이템명"
-                value={state.name}
-                onChange={actions.setName}
-                placeholder="예: 나이키 에어 포스 1"
-                required
-                disabled={state.isSubmitting}
-              />
-            </div>
+      <div className="space-y-5">
+        {error && (
+          <div className="p-3 text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-lg">
+            {error}
           </div>
-        </div>
+        )}
 
-        {/* SKU 옵션 정보 */}
-        <SkuTableForm
-          skus={state.skus}
-          baseGroupId={state.id}
-          disabled={state.isSubmitting}
-          onAddRow={actions.handleAddSkuRow}
-          onRemoveRow={actions.handleRemoveSkuRow}
-          onChangeRow={actions.handleSkuChange}
+        <ModalLabelInput
+          label="SKU 코드"
+          value={skuCode}
+          onChange={setSkuCode}
+          placeholder="예: NIKE-W-250-BLK"
+          required
+          disabled={isSubmitting}
+          multiline={false}
         />
-      </form>
+
+        <div className="space-y-1.5">
+          <label className="block text-xs font-semibold text-slate-600">
+            현재 재고 수량 <span className="text-rose-500">*</span>
+          </label>
+
+          <input
+            type="number"
+            min={0}
+            step={1}
+            value={currentStock}
+            onChange={(e) => setCurrentStock(e.target.value)}
+            disabled={isSubmitting}
+            className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:bg-slate-100 disabled:text-slate-400"
+          />
+        </div>
+      </div>
     </ModalFrame>
   );
 };

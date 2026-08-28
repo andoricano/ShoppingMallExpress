@@ -3,9 +3,9 @@
 export const API_ENDPOINTS = {
     INVENTORY: {
         BASE: '/api/inventory-items',
-        LOGS: '/api/inventory-items/logs',
-        ADJUST: '/api/inventory-items/adjust',
-        BY_UUID: (uuid: string) => `/api/inventory-items/${uuid}`,
+        BY_ID: (id: string) => `/api/inventory-items/${id}`,
+        STOCK: (id: string) => `/api/inventory-items/${id}/stock`,
+        STATUS: (id: string) => `/api/inventory-items/${id}/status`,
     },
 
     // ==========================================

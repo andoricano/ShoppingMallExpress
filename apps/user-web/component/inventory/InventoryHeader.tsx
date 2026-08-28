@@ -6,44 +6,25 @@ interface InventoryHeaderProps {
     onOpenAddModal: () => void;
 }
 
-export const InventoryHeader: React.FC<InventoryHeaderProps> = ({ onOpenAddModal }) => {
+export const InventoryHeader: React.FC<InventoryHeaderProps> = ({
+    onOpenAddModal,
+}) => {
     return (
-        <div
-            style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: "24px",
-            }}
-        >
+        <div className="flex items-center justify-between mb-6">
             <div>
-                <h1
-                    style={{
-                        fontSize: "24px",
-                        fontWeight: 700,
-                        margin: "0 0 8px 0",
-                        color: "#212529",
-                    }}
-                >
-                    재고 관리 (Admin)
+                <h1 className="text-2xl font-bold text-slate-800">
+                    재고 관리
                 </h1>
-                <p style={{ margin: 0, color: "#6c757d", fontSize: "14px" }}>
-                    상품별 사이즈/옵션(SKU) 재고를 조회하고 수동 조정 및 신규 등록을 수행합니다.
+
+                <p className="mt-2 text-sm text-slate-500">
+                    SKU별 재고 수량을 조회하고 수동 조정 및 재고 등록을 관리합니다.
                 </p>
             </div>
 
             <button
+                type="button"
                 onClick={onOpenAddModal}
-                style={{
-                    padding: "10px 18px",
-                    borderRadius: "6px",
-                    backgroundColor: "#1c7ed6",
-                    color: "#fff",
-                    border: "none",
-                    fontWeight: 600,
-                    fontSize: "14px",
-                    cursor: "pointer",
-                }}
+                className="px-4 py-2.5 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 active:bg-blue-800 transition-colors"
             >
                 + 신규 재고 등록
             </button>
