@@ -2,7 +2,7 @@
 
 export const API_ENDPOINTS = {
     INVENTORY: {
-        BASE: '/api/inventory-items',
+        BASE: "/api/inventory-items",
         BY_ID: (id: string) => `/api/inventory-items/${id}`,
         STOCK: (id: string) => `/api/inventory-items/${id}/stock`,
         STATUS: (id: string) => `/api/inventory-items/${id}/status`,

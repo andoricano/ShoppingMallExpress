@@ -6,6 +6,7 @@ import { InventoryHeader } from "@/component/inventory/InventoryHeader";
 import { InventorySearchToolbar } from "@/component/inventory/InventorySearchToolbar";
 import { InventoryTable } from "@/component/inventory/InventoryTable";
 import { AddInventoryModal } from "@/component/inventory/modals/AddInventoryModal";
+import { EditInventoryModal } from "@/component/inventory/modals/EditInventoryModal";
 import { AdjustStockModal } from "@/component/inventory/modals/AdjustStockModal";
 import type { SkuInventory } from "@mall/types";
 
@@ -21,11 +22,14 @@ export default function AdminInventoryPage() {
     error,
     fetchInventoryList,
     createInventoryItem,
+    updateInventoryItem,
     adjustStock,
     toggleInventoryStatus,
+    deleteInventoryItem,
   } = useAdminInventory();
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [editTarget, setEditTarget] = useState<SkuInventory | null>(null);
   const [adjustTargetSku, setAdjustTargetSku] =
     useState<AdjustTarget | null>(null);
 
@@ -42,13 +46,39 @@ export default function AdminInventoryPage() {
     setIsAddModalOpen(false);
   };
 
-  // 재고 수동 조정
+  // 재고 정보 수정
+  const handleUpdateInventory = async (
+    id: string,
+    payload: {
+      skuCode: string;
+      isActive: boolean;
+      meta?: Record<string, unknown>;
+    }
+  ) => {
+    await updateInventoryItem(id, payload);
+    setEditTarget(null);
+  };
+
+  // 재고 수량 조정
   const handleAdjustStock = async (
     skuId: string,
     adjustmentQty: number
   ) => {
     await adjustStock(skuId, adjustmentQty);
     setAdjustTargetSku(null);
+  };
+
+  // 재고 삭제
+  const handleDeleteInventory = async (id: string) => {
+    const confirmed = window.confirm(
+      "비활성화된 재고를 삭제하시겠습니까?"
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    await deleteInventoryItem(id);
   };
 
   return (
@@ -67,19 +97,22 @@ export default function AdminInventoryPage() {
 
         <div className="space-y-4">
           <InventorySearchToolbar
-            onRefresh={fetchInventoryList}
+            onSearch={fetchInventoryList}
+            onReset={fetchInventoryList}
           />
 
           <InventoryTable
             items={inventoryList}
             isLoading={loading}
-            onAdjustStock={(skuId, currentQty) =>
+            onEdit={setEditTarget}
+            onEditStock={(inventory) =>
               setAdjustTargetSku({
-                skuId,
-                currentQty,
+                skuId: inventory.id,
+                currentQty: inventory.currentStock,
               })
             }
             onToggleStatus={toggleInventoryStatus}
+            onDelete={handleDeleteInventory}
           />
         </div>
 
@@ -87,6 +120,13 @@ export default function AdminInventoryPage() {
           isOpen={isAddModalOpen}
           onClose={() => setIsAddModalOpen(false)}
           onSubmit={handleCreateInventory}
+        />
+
+        <EditInventoryModal
+          isOpen={!!editTarget}
+          inventory={editTarget}
+          onClose={() => setEditTarget(null)}
+          onSubmit={handleUpdateInventory}
         />
 
         <AdjustStockModal

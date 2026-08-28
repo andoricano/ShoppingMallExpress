@@ -1,30 +1,34 @@
 // routes/inventory.routes.ts
 
-import { Router } from 'express';
+import { Router } from "express";
 
 import {
+    getInventoryItems,
     createInventoryItem,
     adjustInventoryStock,
     toggleInventoryStatus,
     updateInventoryItem,
-    getInventoryItems,
-} from '../controllers/inventory.controller.js';
+    deleteInventoryItem,
+} from "../controllers/inventory.controller.js";
 
 const router: Router = Router();
 
-// 재고 목록 / 조회
-router.get('/', getInventoryItems);
+// 재고 목록 / 검색
+router.get("/", getInventoryItems);
 
-// 신규 SKU / 재고 등록
-router.post('/', createInventoryItem);
-
-// 재고 수동 조정
-router.patch('/:id/stock', adjustInventoryStock);
+// 신규 SKU 재고 등록
+router.post("/", createInventoryItem);
 
 // SKU 정보 수정
-router.patch('/:id', updateInventoryItem);
+router.patch("/:id", updateInventoryItem);
+
+// 재고 수동 조정
+router.patch("/:id/stock", adjustInventoryStock);
 
 // SKU 활성 / 비활성
-router.patch('/:id/status', toggleInventoryStatus);
+router.patch("/:id/status", toggleInventoryStatus);
+
+// 비활성 SKU 삭제
+router.delete("/:id", deleteInventoryItem);
 
 export default router;

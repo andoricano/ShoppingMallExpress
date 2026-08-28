@@ -6,6 +6,8 @@ import { toCamelCase } from '../utils/caseConverter.js';
 // Types
 // ==========================================
 
+
+
 /**
  * SKU 재고 등록 요청
  */
@@ -36,16 +38,36 @@ interface AdjustInventoryPayload {
 // ==========================================
 // 1. SKU 재고 조회
 // ==========================================
+interface InventoryQuery {
+    search?: string;
+    isActive?: string;
+}
 
 export const getInventoryItems = async (
-    req: Request,
+    req: Request<{}, {}, {}, InventoryQuery>,
     res: Response
 ) => {
     try {
-        const { data, error } = await supabase
+        const { search, isActive } = req.query;
+
+        let query = supabase
             .from('inventory_items')
             .select('*')
             .order('created_at', { ascending: false });
+
+        // SKU 코드 검색
+        if (search?.trim()) {
+            query = query.ilike('sku_code', `%${search.trim()}%`);
+        }
+
+        // 활성 / 비활성 필터
+        if (isActive === 'true') {
+            query = query.eq('is_active', true);
+        } else if (isActive === 'false') {
+            query = query.eq('is_active', false);
+        }
+
+        const { data, error } = await query;
 
         if (error) throw error;
 
@@ -290,6 +312,61 @@ export const toggleInventoryStatus = async (
         return res.status(500).json({
             success: false,
             message: '재고 활성 상태 변경에 실패했습니다.',
+            error: error instanceof Error ? error.message : JSON.stringify(error),
+        });
+    }
+};
+
+// ==========================================
+// 6. 비활성 SKU 삭제
+// ==========================================
+
+export const deleteInventoryItem = async (
+    req: Request<{ id: string }>,
+    res: Response
+) => {
+    try {
+        const { id } = req.params;
+
+        // 삭제 대상 조회
+        const { data: item, error: fetchError } = await supabase
+            .from('inventory_items')
+            .select('is_active')
+            .eq('id', id)
+            .single();
+
+        if (fetchError || !item) {
+            return res.status(404).json({
+                success: false,
+                message: '존재하지 않는 재고입니다.',
+            });
+        }
+
+        // 활성 상태에서는 삭제할 수 없음
+        if (item.is_active) {
+            return res.status(400).json({
+                success: false,
+                message: '활성 상태의 재고는 삭제할 수 없습니다. 먼저 비활성화해주세요.',
+            });
+        }
+
+        const { error } = await supabase
+            .from('inventory_items')
+            .delete()
+            .eq('id', id);
+
+        if (error) throw error;
+
+        return res.json({
+            success: true,
+            message: '재고가 삭제되었습니다.',
+        });
+    } catch (error) {
+        console.error('Delete inventory failed:', error);
+
+        return res.status(500).json({
+            success: false,
+            message: '재고 삭제에 실패했습니다.',
             error: error instanceof Error ? error.message : JSON.stringify(error),
         });
     }
