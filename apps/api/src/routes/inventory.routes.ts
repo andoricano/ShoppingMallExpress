@@ -1,33 +1,30 @@
-// routes/inventory.route.ts
+// routes/inventory.routes.ts
+
 import { Router } from 'express';
+
 import {
-    getInventoryItems,
     createInventoryItem,
+    adjustInventoryStock,
+    toggleInventoryStatus,
     updateInventoryItem,
-    adjustInventoryStock, 
-    toggleInventoryStatus, 
-    getInventoryLogs,    
+    getInventoryItems,
 } from '../controllers/inventory.controller.js';
 
 const router: Router = Router();
 
-// 1. 재고 목록 조회 (검색/필터)
+// 재고 목록 / 조회
 router.get('/', getInventoryItems);
 
-// 2. 감사 로그 전체/상세 조회 (PRD 3.6)
-router.get('/logs', getInventoryLogs);
-
-// 3. 신규 SKU 및 초기 재고 등록 (PRD 3.1)
+// 신규 SKU / 재고 등록
 router.post('/', createInventoryItem);
 
-// 4. 어드민 재고 수동 조정 (입출고, 사유메모, Admin ID 필수) (PRD 3.3)
-router.post('/adjust', adjustInventoryStock);
+// 재고 수동 조정
+router.patch('/:id/stock', adjustInventoryStock);
 
-// 5. 단순 SKU 설정 수정 (안전재고 수량 변경 등)
-router.patch('/:uuid', updateInventoryItem);
+// SKU 정보 수정
+router.patch('/:id', updateInventoryItem);
 
-// 6. SKU 비활성화 / 활성화 (논리적 삭제) (PRD 3.7)
-// DELETE /:uuid 요청 시 실제 삭제가 아닌 Disabled 상태 전환 처리
-router.delete('/:uuid', toggleInventoryStatus);
+// SKU 활성 / 비활성
+router.patch('/:id/status', toggleInventoryStatus);
 
 export default router;
