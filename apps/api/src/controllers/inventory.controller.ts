@@ -265,7 +265,6 @@ export const adjustInventoryStock = async (
     }
 };
 
-
 // ==========================================
 // 5. SKU 활성 / 비활성 상태 변경
 // ==========================================
@@ -277,45 +276,93 @@ export const toggleInventoryStatus = async (
     try {
         const { id } = req.params;
 
-        const { data: item, error: fetchError } = await supabase
-            .from('inventory_items')
-            .select('is_active')
-            .eq('id', id)
+        // 대상 Inventory 조회
+        const { data: inventory, error: inventoryError } = await supabase
+            .from("inventory_items")
+            .select("id, is_active")
+            .eq("id", id)
             .single();
 
-        if (fetchError || !item) {
+        if (inventoryError || !inventory) {
             return res.status(404).json({
                 success: false,
-                message: '존재하지 않는 SKU입니다.',
+                message: "존재하지 않는 재고입니다.",
             });
         }
 
+        const nextIsActive = !inventory.is_active;
+
+        // Inventory 활성화
+        if (nextIsActive) {
+            const { data, error } = await supabase
+                .from("inventory_items")
+                .update({
+                    is_active: true,
+                    updated_at: new Date().toISOString(),
+                })
+                .eq("id", id)
+                .select()
+                .single();
+
+            if (error) throw error;
+
+            return res.json({
+                success: true,
+                data: toCamelCase(data),
+            });
+        }
+
+        // Inventory 비활성화
+        // 연결된 Product도 함께 비활성화
+        const { data: product, error: productError } = await supabase
+            .from("products")
+            .select("id")
+            .eq("inventory_id", id)
+            .maybeSingle();
+
+        if (productError) throw productError;
+
         const { data, error } = await supabase
-            .from('inventory_items')
+            .from("inventory_items")
             .update({
-                is_active: !item.is_active,
+                is_active: false,
                 updated_at: new Date().toISOString(),
             })
-            .eq('id', id)
+            .eq("id", id)
             .select()
             .single();
 
         if (error) throw error;
+
+        if (product) {
+            const { error: updateProductError } = await supabase
+                .from("products")
+                .update({
+                    is_active: false,
+                    updated_at: new Date().toISOString(),
+                })
+                .eq("id", product.id);
+
+            if (updateProductError) throw updateProductError;
+        }
 
         return res.json({
             success: true,
             data: toCamelCase(data),
         });
     } catch (error) {
-        console.error('Toggle inventory status failed:', error);
+        console.error("Toggle inventory status failed:", error);
 
         return res.status(500).json({
             success: false,
-            message: '재고 활성 상태 변경에 실패했습니다.',
-            error: error instanceof Error ? error.message : JSON.stringify(error),
+            message: "재고 활성 상태 변경에 실패했습니다.",
+            error: error instanceof Error
+                ? error.message
+                : JSON.stringify(error),
         });
     }
 };
+
 
 // ==========================================
 // 6. 비활성 SKU 삭제
@@ -328,46 +375,63 @@ export const deleteInventoryItem = async (
     try {
         const { id } = req.params;
 
-        // 삭제 대상 조회
         const { data: item, error: fetchError } = await supabase
-            .from('inventory_items')
-            .select('is_active')
-            .eq('id', id)
+            .from("inventory_items")
+            .select("is_active")
+            .eq("id", id)
             .single();
 
         if (fetchError || !item) {
             return res.status(404).json({
                 success: false,
-                message: '존재하지 않는 재고입니다.',
+                message: "존재하지 않는 재고입니다.",
             });
         }
 
-        // 활성 상태에서는 삭제할 수 없음
+        // 활성 상태에서는 삭제 불가
         if (item.is_active) {
             return res.status(400).json({
                 success: false,
-                message: '활성 상태의 재고는 삭제할 수 없습니다. 먼저 비활성화해주세요.',
+                message: "활성 상태의 재고는 삭제할 수 없습니다. 먼저 비활성화해주세요.",
+            });
+        }
+
+        // 연결된 Product가 있는지 확인
+        const { data: product, error: productError } = await supabase
+            .from("products")
+            .select("id")
+            .eq("inventory_id", id)
+            .maybeSingle();
+
+        if (productError) throw productError;
+
+        if (product) {
+            return res.status(409).json({
+                success: false,
+                message: "상품에 연결된 재고는 삭제할 수 없습니다. 먼저 연결된 상품을 삭제해주세요.",
             });
         }
 
         const { error } = await supabase
-            .from('inventory_items')
+            .from("inventory_items")
             .delete()
-            .eq('id', id);
+            .eq("id", id);
 
         if (error) throw error;
 
         return res.json({
             success: true,
-            message: '재고가 삭제되었습니다.',
+            message: "재고가 삭제되었습니다.",
         });
     } catch (error) {
-        console.error('Delete inventory failed:', error);
+        console.error("Delete inventory failed:", error);
 
         return res.status(500).json({
             success: false,
-            message: '재고 삭제에 실패했습니다.',
-            error: error instanceof Error ? error.message : JSON.stringify(error),
+            message: "재고 삭제에 실패했습니다.",
+            error: error instanceof Error
+                ? error.message
+                : JSON.stringify(error),
         });
     }
 };

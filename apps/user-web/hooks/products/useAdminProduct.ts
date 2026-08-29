@@ -1,107 +1,351 @@
-import { useState, useCallback } from "react";
+import { useCallback, useState } from "react";
+import type { Product } from "@mall/types";
 import { API_ENDPOINTS } from "@mall/constants";
-import { toCamelCase } from "@/utils/camelCase";
-import { BatchUpdatePayload, Product, ProductFilterParams, ProductStatus } from "@mall/types";
 
+// ==========================================
+// Types
+// ==========================================
 
-export interface PaginationState {
-    page: number;
-    limit: number;
-    totalCount: number;
-    totalPages: number;
+interface ProductQuery {
+    search?: string;
+    isActive?: boolean;
 }
+
+interface CreateProductPayload {
+    name: string;
+    mainImageUrl: string;
+    imageUrls?: string[];
+    description: string;
+    price: number;
+    inventoryId: string;
+    isActive?: boolean;
+}
+
+interface UpdateProductPayload {
+    name?: string;
+    mainImageUrl?: string;
+    imageUrls?: string[];
+    description?: string;
+    price?: number;
+    inventoryId?: string;
+    isActive?: boolean;
+}
+
+// ==========================================
+// Hook
+// ==========================================
 
 export function useAdminProducts() {
     const [productList, setProductList] = useState<Product[]>([]);
-    const [pagination, setPagination] = useState<PaginationState>({
-        page: 1, limit: 20, totalCount: 0, totalPages: 0,
-    });
+    const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+
     const [loading, setLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
 
-    const fetchProductList = useCallback(async (params?: ProductFilterParams) => {
-        setLoading(true);
-        setError(null);
-        try {
-            const query = new URLSearchParams();
-            if (params?.searchQuery) query.append("searchQuery", params.searchQuery.trim());
-            if (params?.status) query.append("status", params.status);
-            if (params?.categoryId) query.append("categoryId", params.categoryId);
-            if (params?.sort) query.append("sort", params.sort);
-            if (params?.page) query.append("page", String(params.page));
-            if (params?.limit) query.append("limit", String(params.limit ?? 20));
+    // ==========================================
+    // 1. Admin 상품 목록 조회 / 검색
+    // ==========================================
 
-            const baseUrl = API_ENDPOINTS?.PRODUCTS?.ADMIN || "/api/products/admin";
-            const url = query.toString() ? `${baseUrl}?${query.toString()}` : baseUrl;
+    const fetchProducts = useCallback(
+        async (params?: ProductQuery) => {
+            setLoading(true);
+            setError(null);
 
-            const res = await fetch(url);
-            if (!res.ok) throw new Error("상품 목록을 불러오지 못했습니다.");
+            try {
+                const query = new URLSearchParams();
 
-            const resData = await res.json();
-            const camelData = toCamelCase<Product[]>(resData.data || []);
-            setProductList(Array.isArray(camelData) ? camelData : []);
-            if (resData.pagination) setPagination(resData.pagination);
-        } catch (err) {
-            setError(err instanceof Error ? err.message : "알 수 없는 에러가 발생했습니다.");
-            setProductList([]);
-        } finally {
-            setLoading(false);
-        }
-    }, []);
+                if (params?.search?.trim()) {
+                    query.set("search", params.search.trim());
+                }
 
-    const batchUpdateStatus = useCallback(async (productIds: string[], status: Extract<ProductStatus, "DISPLAY" | "HIDDEN">) => {
-        setLoading(true);
-        try {
-            const payload: BatchUpdatePayload = { productIds, status };
-            const baseUrl = API_ENDPOINTS?.PRODUCTS?.BATCH_STATUS || "/api/products/admin/batch-status";
-            const res = await fetch(baseUrl, {
-                method: "PATCH",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload),
-            });
-            if (!res.ok) throw new Error("상태 일괄 변경에 실패했습니다.");
-            return true;
-        } catch (err) {
-            throw err;
-        } finally {
-            setLoading(false);
-        }
-    }, []);
+                if (params?.isActive !== undefined) {
+                    query.set("isActive", String(params.isActive));
+                }
 
-    const batchUpdateCategory = useCallback(async (productIds: string[], targetCategoryIds: string[]) => {
-        setLoading(true);
-        try {
-            const payload: BatchUpdatePayload = { productIds, targetCategoryIds };
-            const baseUrl = API_ENDPOINTS?.PRODUCTS?.BATCH_CATEGORY || "/api/products/admin/batch-category";
-            const res = await fetch(baseUrl, {
-                method: "PATCH",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload),
-            });
-            if (!res.ok) throw new Error("카테고리 일괄 이동 중 오류가 발생했습니다.");
-            return true;
-        } catch (err) {
-            throw err;
-        } finally {
-            setLoading(false);
-        }
-    }, []);
+                const queryString = query.toString();
 
-    const deleteProduct = useCallback(async (productId: string) => {
-        setLoading(true);
-        try {
-            const baseUrl = API_ENDPOINTS?.PRODUCTS?.BY_ID
-                ? API_ENDPOINTS.PRODUCTS.BY_ID(productId)
-                : `/api/products/${productId}`;
-            const res = await fetch(baseUrl, { method: "DELETE" });
-            if (!res.ok) throw new Error("상품 삭제 처리에 실패했습니다.");
-            return true;
-        } catch (err) {
-            throw err;
-        } finally {
-            setLoading(false);
-        }
-    }, []);
+                const url = queryString
+                    ? `${API_ENDPOINTS.PRODUCTS.BASE}?${queryString}`
+                    : API_ENDPOINTS.PRODUCTS.BASE;
 
-    return { productList, pagination, loading, error, fetchProductList, batchUpdateStatus, batchUpdateCategory, deleteProduct };
+                const res = await fetch(url);
+
+                if (!res.ok) {
+                    throw new Error("상품 목록을 불러오지 못했습니다.");
+                }
+
+                const resData = await res.json();
+
+                setProductList(
+                    Array.isArray(resData.data)
+                        ? resData.data
+                        : []
+                );
+            } catch (err) {
+                setError(
+                    err instanceof Error
+                        ? err.message
+                        : "알 수 없는 에러"
+                );
+                setProductList([]);
+            } finally {
+                setLoading(false);
+            }
+        },
+        []
+    );
+
+    // ==========================================
+    // 2. 상품 상세 조회
+    // ==========================================
+
+    const fetchProduct = useCallback(
+        async (id: string) => {
+            setLoading(true);
+            setError(null);
+
+            try {
+                const res = await fetch(
+                    API_ENDPOINTS.PRODUCTS.BY_ID(id)
+                );
+
+                if (!res.ok) {
+                    throw new Error("상품 정보를 불러오지 못했습니다.");
+                }
+
+                const resData = await res.json();
+                const product = resData.data as Product;
+
+                setSelectedProduct(product);
+
+                return product;
+            } catch (err) {
+                setError(
+                    err instanceof Error
+                        ? err.message
+                        : "알 수 없는 에러"
+                );
+                setSelectedProduct(null);
+                throw err;
+            } finally {
+                setLoading(false);
+            }
+        },
+        []
+    );
+
+
+    // ==========================================
+    // 3. 상품 등록
+    // ==========================================
+
+    const createProduct = useCallback(
+        async (payload: CreateProductPayload) => {
+            setLoading(true);
+            setError(null);
+
+            try {
+                const res = await fetch(
+                    API_ENDPOINTS.PRODUCTS.BASE,
+                    {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify(payload),
+                    }
+                );
+
+                if (!res.ok) {
+                    const data = await res.json().catch(() => null);
+
+                    throw new Error(
+                        data?.message || "상품 등록에 실패했습니다."
+                    );
+                }
+
+                const resData = await res.json();
+
+                await fetchProducts();
+
+                return resData.data as Product;
+            } catch (err) {
+                setError(
+                    err instanceof Error
+                        ? err.message
+                        : "알 수 없는 에러"
+                );
+                throw err;
+            } finally {
+                setLoading(false);
+            }
+        },
+        [fetchProducts]
+    );
+
+
+
+    // ==========================================
+    // 4. 상품 정보 수정
+    // ==========================================
+
+    const updateProduct = useCallback(
+        async (
+            id: string,
+            payload: UpdateProductPayload
+        ) => {
+            setLoading(true);
+            setError(null);
+
+            try {
+                const res = await fetch(
+                    API_ENDPOINTS.PRODUCTS.BY_ID(id),
+                    {
+                        method: "PATCH",
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify(payload),
+                    }
+                );
+
+                if (!res.ok) {
+                    const data = await res.json().catch(() => null);
+
+                    throw new Error(
+                        data?.message || "상품 수정에 실패했습니다."
+                    );
+                }
+
+                const resData = await res.json();
+
+                await fetchProducts();
+
+                if (selectedProduct?.id === id) {
+                    setSelectedProduct(resData.data as Product);
+                }
+
+                return resData.data as Product;
+            } catch (err) {
+                setError(
+                    err instanceof Error
+                        ? err.message
+                        : "알 수 없는 에러"
+                );
+                throw err;
+            } finally {
+                setLoading(false);
+            }
+        },
+        [fetchProducts, selectedProduct]
+    );
+
+    // ==========================================
+    // 5. 상품 활성 / 비활성
+    // ==========================================
+
+    const toggleProductStatus = useCallback(
+        async (id: string) => {
+            setLoading(true);
+            setError(null);
+
+            try {
+                const res = await fetch(
+                    API_ENDPOINTS.PRODUCTS.STATUS(id),
+                    {
+                        method: "PATCH",
+                    }
+                );
+
+                if (!res.ok) {
+                    const data = await res.json().catch(() => null);
+
+                    throw new Error(
+                        data?.message ||
+                        "상품 활성 상태 변경에 실패했습니다."
+                    );
+                }
+
+                const resData = await res.json();
+
+                await fetchProducts();
+
+                if (selectedProduct?.id === id) {
+                    setSelectedProduct(resData.data as Product);
+                }
+
+                return resData.data as Product;
+            } catch (err) {
+                setError(
+                    err instanceof Error
+                        ? err.message
+                        : "알 수 없는 에러"
+                );
+                throw err;
+            } finally {
+                setLoading(false);
+            }
+        },
+        [fetchProducts, selectedProduct]
+    );
+
+    // ==========================================
+    // 6. 비활성 상품 삭제
+    // ==========================================
+
+    const deleteProduct = useCallback(
+        async (id: string) => {
+            setLoading(true);
+            setError(null);
+
+            try {
+                const res = await fetch(
+                    API_ENDPOINTS.PRODUCTS.BY_ID(id),
+                    {
+                        method: "DELETE",
+                    }
+                );
+
+                if (!res.ok) {
+                    const data = await res.json().catch(() => null);
+
+                    throw new Error(
+                        data?.message || "상품 삭제에 실패했습니다."
+                    );
+                }
+
+                await fetchProducts();
+
+                if (selectedProduct?.id === id) {
+                    setSelectedProduct(null);
+                }
+            } catch (err) {
+                setError(
+                    err instanceof Error
+                        ? err.message
+                        : "알 수 없는 에러"
+                );
+                throw err;
+            } finally {
+                setLoading(false);
+            }
+        },
+        [fetchProducts, selectedProduct]
+    );
+
+    return {
+        productList,
+        selectedProduct,
+        loading,
+        error,
+
+        fetchProducts,
+        fetchProduct,
+        createProduct,
+        updateProduct,
+        toggleProductStatus,
+        deleteProduct,
+
+        setSelectedProduct,
+    };
 }

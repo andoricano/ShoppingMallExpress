@@ -1,74 +1,51 @@
-import { Router } from 'express';
+import { Router } from "express";
 
 import {
-  batchDeleteProduct,
-  batchUpdateCategory,
-  batchUpdateStatus,
-  createProduct,
-  deleteProduct,
-  getAdminProducts,
   getClientProducts,
+  getAdminProducts,
   getProductById,
+  createProduct,
   updateProduct,
-} from '../controllers/product.controller.js';
+  toggleProductStatus,
+  deleteProduct,
+} from "../controllers/product.controller.js";
 
 const router: Router = Router();
 
 // ==========================================
-// 1. 클라이언트 상품 API
+// 1. Client 상품 API
 // ==========================================
 
 // GET /api/products
-// 클라이언트 상품 목록 조회
-router.get('/products', getClientProducts);
+// 활성 상품 목록 조회
+router.get("/products", getClientProducts);
 
 // ==========================================
-// 2. 어드민 상품 API
+// 2. Admin 상품 API
 // ==========================================
 
 // GET /api/admin/products
-// 어드민 상품 목록 조회
-router.get('/admin/products', getAdminProducts);
-
-// POST /api/admin/products
-// 상품 신규 등록
-router.post('/admin/products', createProduct);
+// 전체 상품 목록 조회
+router.get("/admin/products", getAdminProducts);
 
 // GET /api/admin/products/:id
 // 상품 상세 조회
-router.get('/admin/products/:id', getProductById);
+router.get("/admin/products/:id", getProductById);
 
-// PUT /api/admin/products/:id
+// POST /api/admin/products
+// 상품 신규 등록
+router.post("/admin/products", createProduct);
+
+// PATCH /api/admin/products/:id
 // 상품 정보 수정
-router.put('/admin/products/:id', updateProduct);
+router.patch("/admin/products/:id", updateProduct);
+
+// PATCH /api/admin/products/:id/status
+// 상품 활성 / 비활성
+router.patch("/admin/products/:id/status", toggleProductStatus);
 
 // DELETE /api/admin/products/:id
-// 상품 Soft Delete
-router.delete('/admin/products/:id', deleteProduct);
-
-// ==========================================
-// 3. 어드민 상품 일괄 관리
-// ==========================================
-
-// PATCH /api/admin/products/batch/status
-// 상품 상태 일괄 변경
-router.patch(
-  '/admin/products/batch/status',
-  batchUpdateStatus,
-);
-
-// PATCH /api/admin/products/batch/category
-// 상품 카테고리 일괄 변경
-router.patch(
-  '/admin/products/batch/category',
-  batchUpdateCategory,
-);
-
-// DELETE /api/admin/products/batch
-// 상품 일괄 Soft Delete
-router.delete(
-  '/admin/products/batch',
-  batchDeleteProduct,
-);
+// 비활성 상품 삭제
+router.delete("/admin/products/:id", deleteProduct);
 
 export default router;
