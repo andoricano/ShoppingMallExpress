@@ -1,16 +1,22 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
+import { useRouter } from "next/navigation";
+
+import { ProductAdminHeader } from "@/component/products/ProductAdminHeader";
+import { AdminMenuItem } from "@/component/common/AdminMenu";
 
 import { InventoryList } from "@/component/products/add/InventoryList";
 import { InventoryInspector } from "@/component/products/add/InventoryInspector";
 import { ProductsTable } from "@/component/products/add/ProductsTable";
+import { InventorySearchBar } from "@/component/products/add/InventorSearchBar";
 
 import type { SkuInventory } from "@mall/types";
 import { useProductAdd } from "@/hooks/products/useProductAdd";
-import { InventorySearchBar } from "../../../component/products/add/InventorSearchBar";
 
 export default function ProductAddPage() {
+    const router = useRouter();
+
     const {
         inventoryList,
         selectedInventory,
@@ -25,50 +31,45 @@ export default function ProductAddPage() {
         fetchProducts,
     } = useProductAdd();
 
-    const [search, setSearch] = useState("");
-
-    // 초기 데이터 조회
     useEffect(() => {
         fetchInventories();
         fetchProducts();
     }, [fetchInventories, fetchProducts]);
 
-    // Inventory 검색
+    const menu: AdminMenuItem[] = [
+        {
+            menuTitle: "상품 목록",
+            onClick: () => router.push("/products"),
+        },
+        {
+            menuTitle: "상품 등록",
+            onClick: () => router.push("/products/add"),
+        },
+        {
+            menuTitle: "비활성화 목록",
+            onClick: () => router.push("/products/inactive"),
+        },
+    ];
+
     const handleInventorySearch = (value: string) => {
-        setSearch(value);
         fetchInventories({
             search: value,
         });
     };
 
-    // Inventory 검색 초기화
     const handleInventoryReset = () => {
-        setSearch("");
         fetchInventories();
     };
 
-    // 상품 등록 페이지 이동
     const handleRegisterProduct = (inventory: SkuInventory) => {
-        // TODO:
-        // 선택한 inventory.id를 이용해 상품 등록 Form 페이지로 이동
-        console.log("Register product:", inventory);
+        router.push(`/products/add/${inventory.id}`);
     };
 
     return (
         <div className="min-h-screen bg-slate-50/50 p-6 md:p-8">
             <div className="max-w-[1800px] mx-auto space-y-6">
-                {/* Page Header */}
-                <div>
-                    <h1 className="text-2xl font-bold text-slate-800">
-                        상품 등록
-                    </h1>
+                <ProductAdminHeader menu={menu} />
 
-                    <p className="mt-2 text-sm text-slate-500">
-                        판매할 Inventory를 선택하고 상품 등록을 진행합니다.
-                    </p>
-                </div>
-
-                {/* Error */}
                 {error && (
                     <div className="flex items-center gap-2 p-4 text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-xl">
                         <span className="font-semibold">
@@ -78,11 +79,8 @@ export default function ProductAddPage() {
                     </div>
                 )}
 
-                {/* Main */}
                 <div className="grid grid-cols-1 lg:grid-cols-[300px_minmax(400px,1fr)_minmax(500px,1.5fr)] gap-5 items-start">
-                    {/* ==========================================
-                        Left: Inventory
-                    ========================================== */}
+                    {/* Left: Inventory */}
                     <section className="space-y-3">
                         <InventorySearchBar
                             onSearch={handleInventorySearch}
@@ -97,9 +95,7 @@ export default function ProductAddPage() {
                         />
                     </section>
 
-                    {/* ==========================================
-                        Center: Inventory Inspector
-                    ========================================== */}
+                    {/* Center: Inventory Inspector */}
                     <section>
                         <InventoryInspector
                             inventory={selectedInventory}
@@ -107,9 +103,7 @@ export default function ProductAddPage() {
                         />
                     </section>
 
-                    {/* ==========================================
-                        Right: Products
-                    ========================================== */}
+                    {/* Right: Products */}
                     <section>
                         <ProductsTable
                             products={productList}

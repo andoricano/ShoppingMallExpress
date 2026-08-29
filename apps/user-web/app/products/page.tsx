@@ -7,7 +7,7 @@ import { useAdminProducts } from "@/hooks/products/useAdminProduct";
 import { ProductAdminHeader } from "@/component/products/ProductAdminHeader";
 import { AdminMenuItem } from "@/component/common/AdminMenu";
 import { ProductSearchToolbar } from "@/component/products/ProductSearchToolbar";
-import { AdminProductThumbnailBox } from "@/component/products/AdminProductThumbnailBox";
+import { AdminProductThumbnailBox } from "@/component/products/list/AdminProductThumbnailBox";
 
 export default function AdminProductPage() {
   const router = useRouter();
