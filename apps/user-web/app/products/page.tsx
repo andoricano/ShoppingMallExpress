@@ -1,124 +1,113 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react";
+import React from "react";
 import { useRouter } from "next/navigation";
+
 import { useAdminProducts } from "@/hooks/products/useAdminProduct";
-import { ProductCategory, ProductFilterParams } from "@mall/types";
-import { ProductsHeader } from "@/component/products/ProductsHeader";
-import { ProductsFilterBar } from "@/component/products/ProductsFilterBar";
-import { BatchActionToolbar } from "@/component/products/BatchActionToolbar";
-import { ProductTable } from "@/component/products/ProductTable";
+import { ProductAdminHeader } from "@/component/products/ProductAdminHeader";
+import { AdminMenuItem } from "@/component/common/AdminMenu";
+import { ProductSearchToolbar } from "@/component/products/ProductSearchToolbar";
+import { AdminProductThumbnailBox } from "@/component/products/AdminProductThumbnailBox";
 
 export default function AdminProductPage() {
   const router = useRouter();
 
   const {
     productList,
-    pagination,
     loading,
     error,
-    fetchProductList,
+    fetchProducts,
+    toggleProductStatus,
     deleteProduct,
   } = useAdminProducts();
 
-  const [filters, setFilters] = useState<ProductFilterParams>({
-    searchQuery: "",
-    status: undefined,
-    categoryId: "",
-    page: 1,
-    limit: 20,
-  });
+  React.useEffect(() => {
+    fetchProducts();
+  }, [fetchProducts]);
 
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [categories] = useState<ProductCategory[]>([]);
+  const menu: AdminMenuItem[] = [
+    {
+      menuTitle: "상품 목록",
+      onClick: () => router.push("/products"),
+    },
+    {
+      menuTitle: "상품 등록",
+      onClick: () => router.push("/products/add"),
+    },
+    {
+      menuTitle: "비활성화 목록",
+      onClick: () => router.push("/products/inactive"),
+    },
+  ];
 
-  const loadProducts = useCallback(() => {
-    fetchProductList(filters);
-  }, [fetchProductList, filters]);
-
-  useEffect(() => {
-    loadProducts();
-  }, [loadProducts]);
-
-  const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.checked) {
-      setSelectedIds(productList.map((p) => p.productId));
-    } else {
-      setSelectedIds([]);
-    }
+  const handleSearch = (params: {
+    search?: string;
+    isActive?: boolean;
+  }) => {
+    fetchProducts(params);
   };
 
-  const handleSelectOne = (productId: string) => {
-    setSelectedIds((prev) =>
-      prev.includes(productId)
-        ? prev.filter((id) => id !== productId)
-        : [...prev, productId]
+  const handleReset = () => {
+    fetchProducts();
+  };
+
+  const handleEdit = (productId: string) => {
+    router.push(`/admin/products/${productId}`);
+  };
+
+  const handleDelete = async (productId: string) => {
+    const confirmed = window.confirm(
+      "비활성화된 상품을 삭제하시겠습니까?"
     );
-  };
 
-  const handleDeleteSingle = async (productId: string, productName: string) => {
-    if (!window.confirm(`'${productName}' 상품을 삭제하시겠습니까?`)) return;
-    try {
-      await deleteProduct(productId);
-      alert("상품이 삭제되었습니다.");
-      setSelectedIds((prev) => prev.filter((id) => id !== productId));
-      loadProducts();
-    } catch (err) {
-      alert(err instanceof Error ? err.message : "삭제 중 오류가 발생했습니다.");
+    if (!confirmed) {
+      return;
     }
-  };
 
-  const handleBatchDelete = async () => {
-    if (selectedIds.length === 0) return;
-    if (!window.confirm(`선택한 ${selectedIds.length}개 상품을 삭제하시겠습니까?`)) return;
-    try {
-      await Promise.all(selectedIds.map((id) => deleteProduct(id)));
-      alert("선택한 상품이 삭제되었습니다.");
-      setSelectedIds([]);
-      loadProducts();
-    } catch (err) {
-      alert("일괄 삭제 처리 중 일부 오류가 발생했습니다.");
-    }
+    await deleteProduct(productId);
   };
 
   return (
-    <div className="min-h-screen bg-slate-50/50 p-6 md:p-8 space-y-6">
-      <ProductsHeader
-        totalCount={pagination.totalCount}
-        onRegisterClick={() => router.push("/admin/products/new")}
-      />
+    <div className="min-h-screen bg-slate-50/50 p-6 md:p-8">
+      <div className="max-w-7xl mx-auto space-y-6">
+        <ProductAdminHeader menu={menu} />
 
-      <ProductsFilterBar
-        searchQuery={filters.searchQuery || ""}
-        status={filters.status || ""}
-        categoryId={filters.categoryId || ""}
-        categories={categories}
-        onSearchQueryChange={(searchQuery) => setFilters((prev) => ({ ...prev, searchQuery, page: 1 }))}
-        onStatusChange={(status) => setFilters((prev) => ({ ...prev, status: status === "" ? undefined : status, page: 1 }))}
-        onCategoryChange={(categoryId) => setFilters((prev) => ({ ...prev, categoryId, page: 1 }))}
-        onReset={() => setFilters({ searchQuery: "", status: undefined, categoryId: "", page: 1, limit: 20 })}
-      />
+        {error && (
+          <div className="flex items-center gap-2 p-4 text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-xl">
+            <span className="font-semibold">
+              ⚠️ 오류 발생:
+            </span>
+            <span>{error}</span>
+          </div>
+        )}
 
-      <BatchActionToolbar
-        selectedCount={selectedIds.length}
-        onOpenStatusModal={() => console.log("Open Status Modal", selectedIds)}
-        onOpenCategoryModal={() => console.log("Open Category Modal", selectedIds)}
-        onBatchDelete={handleBatchDelete}
-      />
+        <ProductSearchToolbar
+          onSearch={handleSearch}
+          onReset={handleReset}
+        />
 
-      {/* 4. 분리된 Data Table */}
-      <ProductTable
-        productList={productList}
-        selectedIds={selectedIds}
-        loading={loading}
-        error={error}
-        pagination={pagination}
-        onSelectAll={handleSelectAll}
-        onSelectOne={handleSelectOne}
-        onEdit={(id) => router.push(`/admin/products/${id}/edit`)}
-        onDelete={handleDeleteSingle}
-        onPageChange={(page) => setFilters((prev) => ({ ...prev, page }))}
-      />
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {loading ? (
+            <div className="col-span-full py-16 text-center text-sm text-slate-400">
+              상품 목록을 불러오는 중입니다...
+            </div>
+          ) : productList.length === 0 ? (
+            <div className="col-span-full py-16 text-center text-sm text-slate-400">
+              등록된 상품이 없습니다.
+            </div>
+          ) : (
+            productList.map((product) => (
+              <AdminProductThumbnailBox
+                key={product.id}
+                product={product}
+                onEdit={() => handleEdit(product.id)}
+                onToggleStatus={toggleProductStatus}
+                onDelete={handleDelete}
+              />
+            ))
+          )}
+        </div>
+      </div>
     </div>
   );
 }
