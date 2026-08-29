@@ -106,6 +106,7 @@ export default function ProductAddPage() {
                     {/* Right: Products */}
                     <section>
                         <ProductsTable
+                            items={inventoryList}
                             products={productList}
                             isLoading={loadingProducts}
                         />
