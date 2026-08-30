@@ -1,51 +1,42 @@
 "use client";
 
 import Link from "next/link";
-import { useProduct } from "@/hooks/useProduct";
+import type { Product, ProductSection } from "@mall/types";
 
-export default function FeaturedSection() {
-  const { productList, loading, error } = useProduct();
+interface FeaturedSectionProps {
+  section: ProductSection;
+  products: Product[];
+}
 
-  // 진열(DISPLAY) 상태인 상품 중 메인 화면에 상위 4개만 표시
-  const featuredProducts = productList
-    ?.filter((product) => product.status === "DISPLAY")
-    .slice(0, 4);
+export default function FeaturedSection({
+  section,
+  products,
+}: FeaturedSectionProps) {
+  const sectionProducts = section.productIds
+    .map((productId) =>
+      products.find((product) => product.id === productId)
+    )
+    .filter((product): product is Product => Boolean(product))
+    .filter((product) => product.isActive);
 
-  if (loading) {
+  if (sectionProducts.length === 0) {
     return (
       <section className="py-20 max-w-7xl mx-auto px-4 text-center text-neutral-500">
-        상품을 불러오는 중입니다...
-      </section>
-    );
-  }
-
-  if (error) {
-    return (
-      <section className="py-20 max-w-7xl mx-auto px-4 text-center text-neutral-400">
-        {error}
-      </section>
-    );
-  }
-
-  if (!featuredProducts || featuredProducts.length === 0) {
-    return (
-      <section className="py-20 max-w-7xl mx-auto px-4 text-center text-neutral-500">
-        등록된 추천 상품이 없습니다.
+        등록된 상품이 없습니다.
       </section>
     );
   }
 
   return (
     <section className="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      {/* Section Header */}
       <div className="flex justify-between items-end mb-10">
         <div>
           <h2 className="text-2xl font-bold tracking-tight text-neutral-900">
-            Featured Products
+            {section.title}
           </h2>
-          <p className="text-sm text-neutral-500 mt-1">
-            지금 가장 사랑받는 컬렉션을 만나보세요.
-          </p>
         </div>
+
         <Link
           href="/products"
           className="text-sm font-medium text-neutral-900 hover:underline"
@@ -54,51 +45,100 @@ export default function FeaturedSection() {
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {featuredProducts.map((product) => {
-          // 💡 객체 구조(product.price)와 평탄화 구조(product.discountedPrice) 모두 안전하게 대응
-          const discountedPrice =
-            product.price?.discountedPrice ?? (product as any).discountedPrice ?? 0;
-          const basePrice =
-            product.price?.basePrice ?? (product as any).basePrice ?? 0;
-
-          const hasDiscount = discountedPrice < basePrice;
-
-          return (
+      {/* Product Layout */}
+      {section.layout === "GRID" && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {sectionProducts.map((product) => (
             <Link
-              key={product.productId}
-              href={`/products/${product.productId}`}
+              key={product.id}
+              href={`/products/${product.id}`}
               className="group"
             >
               <div className="aspect-square bg-neutral-100 overflow-hidden rounded mb-3">
                 <img
-                  src={product.mainImageUrl || "/placeholder.png"}
-                  alt={product.productName}
+                  src={product.mainImageUrl}
+                  alt={product.name}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                 />
               </div>
+
               <h3 className="text-sm font-medium text-neutral-900 truncate">
-                {product.productName}
+                {product.name}
               </h3>
+
               <p className="text-xs text-neutral-500 line-clamp-1 mt-0.5">
                 {product.description}
               </p>
 
-              {/* 가격 표시 */}
-              <div className="mt-2 flex items-center gap-2">
-                <span className="text-sm font-bold text-neutral-900">
-                  {discountedPrice.toLocaleString()}원
-                </span>
-                {hasDiscount && (
-                  <span className="text-xs text-neutral-400 line-through">
-                    {basePrice.toLocaleString()}원
-                  </span>
-                )}
+              <p className="mt-2 text-sm font-bold text-neutral-900">
+                {product.price.toLocaleString()}원
+              </p>
+            </Link>
+          ))}
+        </div>
+      )}
+
+      {/* Horizontal Scroll */}
+      {section.layout === "HORIZONTAL_SCROLL" && (
+        <div className="flex gap-6 overflow-x-auto pb-2">
+          {sectionProducts.map((product) => (
+            <Link
+              key={product.id}
+              href={`/products/${product.id}`}
+              className="group w-[220px] shrink-0"
+            >
+              <div className="aspect-square bg-neutral-100 overflow-hidden rounded mb-3">
+                <img
+                  src={product.mainImageUrl}
+                  alt={product.name}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                />
+              </div>
+
+              <h3 className="text-sm font-medium text-neutral-900 truncate">
+                {product.name}
+              </h3>
+
+              <p className="mt-2 text-sm font-bold text-neutral-900">
+                {product.price.toLocaleString()}원
+              </p>
+            </Link>
+          ))}
+        </div>
+      )}
+
+      {/* Large */}
+      {section.layout === "LARGE" && (
+        <div className="grid grid-cols-1 gap-6">
+          {sectionProducts.map((product) => (
+            <Link
+              key={product.id}
+              href={`/products/${product.id}`}
+              className="group"
+            >
+              <div className="relative aspect-[16/7] overflow-hidden rounded bg-neutral-100">
+                <img
+                  src={product.mainImageUrl}
+                  alt={product.name}
+                  className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
+                />
+
+                <div className="absolute inset-0 flex items-end bg-black/20 p-8">
+                  <div className="text-white">
+                    <h3 className="text-2xl font-bold">
+                      {product.name}
+                    </h3>
+
+                    <p className="mt-2 text-sm">
+                      {product.price.toLocaleString()}원
+                    </p>
+                  </div>
+                </div>
               </div>
             </Link>
-          );
-        })}
-      </div>
+          ))}
+        </div>
+      )}
     </section>
   );
 }

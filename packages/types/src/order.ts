@@ -9,12 +9,14 @@ export type OrderStatus =
     | "COMPLETED" // 배송 완료
     | "CANCELLED"; // 취소
 
+
 /**
  * 주문
  */
 export interface Order {
     id: string;
     clientId: string;
+    paymentId: string;
 
     status: OrderStatus;
     totalPrice: number;
@@ -26,23 +28,27 @@ export interface Order {
     completedAt?: string;
 }
 
+
 /**
  * 주문 상품
+ *
+ * 주문 당시 Product / Inventory 정보를 Snapshot으로 보존합니다.
  */
 export interface OrderItem {
     id: string;
     orderId: string;
 
     productId: string;
-    itemId: string;
-    skuId: string;
+    inventoryId: string;
 
     productName: string;
+    skuCode: string;
     price: number;
     quantity: number;
 
     meta?: Record<string, unknown>;
 }
+
 
 /**
  * 주문 배송지

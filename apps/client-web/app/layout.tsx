@@ -1,8 +1,5 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import Header from "@/components/common/Header";
-import Footer from "@/components/common/Footer";
-import { SITE_CONFIG } from "@/config/site";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -16,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: SITE_CONFIG.name,
-  description: SITE_CONFIG.description,
+  title: "MALL",
+  description: "Shopping Mall",
 };
 
 export default function RootLayout({
@@ -30,10 +27,8 @@ export default function RootLayout({
       lang="ko"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
-        <Header />
-        <div className="flex-1">{children}</div>
-        <Footer />
+      <body className="min-h-full">
+        {children}
       </body>
     </html>
   );
