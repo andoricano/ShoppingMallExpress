@@ -11,21 +11,25 @@ export type OrderStatus =
 
 
 /**
- * 주문
+ * 주문 배송지
  */
-export interface Order {
-    id: string;
-    clientId: string;
-    paymentId: string;
+export interface OrderShippingAddress {
+    recipient: string;
+    phone: string;
 
-    status: OrderStatus;
-    totalPrice: number;
+    postalCode: string;
+    address: string;
+    detailAddress?: string;
+}
 
-    shippingAddress: OrderShippingAddress;
 
-    createdAt: string;
-    shippedAt?: string;
-    completedAt?: string;
+/**
+ * 주문 배송 정보
+ */
+export interface OrderDelivery {
+    carrier: string;
+    trackingNumber: string;
+    shippedAt: string;
 }
 
 
@@ -46,17 +50,28 @@ export interface OrderItem {
     price: number;
     quantity: number;
 
-    meta?: Record<string, unknown>;
+    inventoryMeta?: Record<string, unknown>;
 }
 
 
 /**
- * 주문 배송지
+ * 주문
  */
-export interface OrderShippingAddress {
-    recipient: string;
-    phone: string;
-    postalCode: string;
-    address: string;
-    detailAddress?: string;
+export interface Order {
+    id: string;
+
+    clientId: string;
+    paymentId: string;
+
+    status: OrderStatus;
+    totalPrice: number;
+
+    shippingAddress: OrderShippingAddress;
+    delivery?: OrderDelivery;
+
+    items: OrderItem[];
+
+    createdAt: string;
+    shippedAt?: string;
+    completedAt?: string;
 }
