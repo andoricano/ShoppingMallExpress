@@ -8,6 +8,7 @@ import inventoryRoutes from './routes/inventory.routes.js';
 import productRoutes from './routes/product.routes.js';
 import categoryRoutes from './routes/category.routes.js';
 import orderRoutes from './routes/order.routes.js';
+import displayRoutes from './routes/client/display.routes.js';
 
 const app = express();
 const PORT: number = Number(process.env['PORT']) || 8080;
@@ -29,6 +30,9 @@ app.use('/api/inventory-items', inventoryRoutes);
 app.use('/api', productRoutes);
 app.use('/api', categoryRoutes);
 app.use('/api/orders', orderRoutes);
+
+// Client Routes
+app.use('/api/products', displayRoutes);
 
 // Server
 app.listen(PORT, () => {
