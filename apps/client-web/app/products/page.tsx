@@ -1,4 +1,4 @@
-import ProductCard from "@/components/home/ProductCard";
+import ProductCard from "@/components/home/ProductThumbnailBox";
 import ProductFilter from "@/components/products/ProductFilter";
 import { FEATURED_PRODUCTS } from "@/mockData";
 import { ProductCategory } from "@mall/types";
