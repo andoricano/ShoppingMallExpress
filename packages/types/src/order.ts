@@ -9,40 +9,6 @@ export type OrderStatus =
     | "COMPLETED" // 배송 완료
     | "CANCELLED"; // 취소
 
-/**
- * 주문
- */
-export interface Order {
-    id: string;
-    clientId: string;
-
-    status: OrderStatus;
-    totalPrice: number;
-
-    shippingAddress: OrderShippingAddress;
-
-    createdAt: string;
-    shippedAt?: string;
-    completedAt?: string;
-}
-
-/**
- * 주문 상품
- */
-export interface OrderItem {
-    id: string;
-    orderId: string;
-
-    productId: string;
-    itemId: string;
-    skuId: string;
-
-    productName: string;
-    price: number;
-    quantity: number;
-
-    meta?: Record<string, unknown>;
-}
 
 /**
  * 주문 배송지
@@ -50,7 +16,62 @@ export interface OrderItem {
 export interface OrderShippingAddress {
     recipient: string;
     phone: string;
+
     postalCode: string;
     address: string;
     detailAddress?: string;
+}
+
+
+/**
+ * 주문 배송 정보
+ */
+export interface OrderDelivery {
+    carrier: string;
+    trackingNumber: string;
+    shippedAt: string;
+}
+
+
+/**
+ * 주문 상품
+ *
+ * 주문 당시 Product / Inventory 정보를 Snapshot으로 보존합니다.
+ */
+export interface OrderItem {
+    id: string;
+    orderId: string;
+
+    productId: string;
+    inventoryId: string;
+
+    productName: string;
+    skuCode: string;
+    price: number;
+    quantity: number;
+
+    inventoryMeta?: Record<string, unknown>;
+}
+
+
+/**
+ * 주문
+ */
+export interface Order {
+    id: string;
+
+    clientId: string;
+    paymentId: string;
+
+    status: OrderStatus;
+    totalPrice: number;
+
+    shippingAddress: OrderShippingAddress;
+    delivery?: OrderDelivery;
+
+    items: OrderItem[];
+
+    createdAt: string;
+    shippedAt?: string;
+    completedAt?: string;
 }

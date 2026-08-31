@@ -1,26 +1,13 @@
-"use client";
-
-import { useEffect } from "react";
-
+import type { MainSection } from "@mall/types";
 import HeroBanner from "@/components/home/HomeBanner";
-import ProductSection from "@/components/home/FeaturedSection";
-import BrandStory from "@/components/home/BrandStory";
-
-import { useProduct } from "@/hooks/useProduct";
+import FeaturedSection from "@/components/home/FeaturedSection";
 import { configData } from "@/config/site";
+import Header from "@/components/common/Header";
+import Footer from "@/components/common/Footer";
+import { products } from "@/config/products";
+
 
 export default function HomePage() {
-  const {
-    productList,
-    loading,
-    error,
-    fetchProducts,
-  } = useProduct();
-
-  useEffect(() => {
-    fetchProducts();
-  }, [fetchProducts]);
-
   const activeHero = configData.hero
     .filter((hero) => hero.isActive)
     .sort((a, b) => a.order - b.order)[0];
@@ -31,24 +18,21 @@ export default function HomePage() {
 
   return (
     <main className="min-h-screen">
+      <Header config={configData.header} />
+
       {/* Hero */}
-      {activeHero && (
-        <HeroBanner section={activeHero} />
-      )}
+      {activeHero && <HeroBanner section={activeHero} />}
 
       {/* Sections */}
-      {activeSections.map((section) => {
+      {activeSections.map((section: MainSection) => {
         switch (section.type) {
           case "PRODUCT":
             return (
-              <ProductSection
+
+              <FeaturedSection
                 key={section.id}
-                title={section.title}
-                productIds={section.productIds}
-                layout={section.layout}
-                products={productList}
-                loading={loading}
-                error={error}
+                section={section}
+                products={products}
               />
             );
 
@@ -63,7 +47,7 @@ export default function HomePage() {
         }
       })}
 
-      <BrandStory />
+      <Footer config={configData.footer} />
     </main>
   );
 }

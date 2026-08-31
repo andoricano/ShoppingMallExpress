@@ -4,28 +4,32 @@ import type { Request, Response } from "express";
 import { supabase } from "../config/supabase.js";
 import { toCamelCase } from "../utils/caseConverter.js";
 
-
 // ==========================================
 // Types
 // ==========================================
 
-interface CreateOrderItemPayload {
-    productId: string;
-    quantity: number;
-}
-
 interface CreateOrderPayload {
     clientId: string;
     paymentId: string;
-    items: CreateOrderItemPayload[];
+    totalPrice: number;
     shippingAddress: Record<string, unknown>;
+    items: CreateOrderItemPayload[];
+}
+
+interface CreateOrderItemPayload {
+    productId: string;
+    inventoryId: string;
+    productName: string;
+    skuCode: string;
+    price: number;
+    quantity: number;
+    inventoryMeta?: Record<string, unknown>;
 }
 
 interface ShippingPayload {
     carrier: string;
     trackingNumber: string;
 }
-
 
 // ==========================================
 // 1. 주문 생성
@@ -39,80 +43,17 @@ export const createOrder = async (
         const {
             clientId,
             paymentId,
-            items,
+            totalPrice,
             shippingAddress,
+            items,
         } = req.body;
 
-        if (
-            !clientId ||
-            !paymentId ||
-            !shippingAddress ||
-            !items?.length
-        ) {
+        if (!clientId || !paymentId || !shippingAddress || !items?.length) {
             return res.status(400).json({
                 success: false,
                 message: "주문 정보가 부족합니다.",
             });
         }
-
-        let totalPrice = 0;
-
-        const orderItems = [];
-
-        // Product / Inventory 확인 및 Snapshot 생성
-        for (const item of items) {
-            if (!item.productId || !item.quantity || item.quantity <= 0) {
-                return res.status(400).json({
-                    success: false,
-                    message: "주문 상품 정보가 올바르지 않습니다.",
-                });
-            }
-
-            const { data: product, error: productError } = await supabase
-                .from("products")
-                .select("*")
-                .eq("id", item.productId)
-                .eq("is_active", true)
-                .single();
-
-            if (productError || !product) {
-                return res.status(404).json({
-                    success: false,
-                    message: "주문할 상품을 찾을 수 없습니다.",
-                });
-            }
-
-            const { data: inventory, error: inventoryError } =
-                await supabase
-                    .from("inventory_items")
-                    .select("*")
-                    .eq("id", product.inventory_id)
-                    .eq("is_active", true)
-                    .single();
-
-            if (inventoryError || !inventory) {
-                return res.status(400).json({
-                    success: false,
-                    message: "상품에 연결된 재고를 찾을 수 없습니다.",
-                });
-            }
-
-            totalPrice += product.price * item.quantity;
-
-            orderItems.push({
-                product_id: product.id,
-                inventory_id: inventory.id,
-                product_name: product.name,
-                sku_code: inventory.sku_code,
-                price: product.price,
-                quantity: item.quantity,
-                inventory_meta: inventory.meta ?? null,
-            });
-        }
-
-        // ==========================================
-        // Order 생성
-        // ==========================================
 
         const { data: order, error: orderError } = await supabase
             .from("orders")
@@ -128,55 +69,26 @@ export const createOrder = async (
 
         if (orderError) throw orderError;
 
-        // ==========================================
-        // 재고 차감 + Order Item 생성
-        // ==========================================
+        const orderItems = items.map((item) => ({
+            order_id: order.id,
+            product_id: item.productId,
+            inventory_id: item.inventoryId,
+            product_name: item.productName,
+            sku_code: item.skuCode,
+            price: item.price,
+            quantity: item.quantity,
+            inventory_meta: item.inventoryMeta ?? null,
+        }));
 
-        const createdItems = [];
+        const { error: itemError } = await supabase
+            .from("order_items")
+            .insert(orderItems);
 
-        for (const item of orderItems) {
-            const { data: inventory, error: inventoryError } =
-                await supabase.rpc("adjust_inventory_stock", {
-                    p_sku_id: item.inventory_id,
-                    p_adjustment_qty: -item.quantity,
-                });
-
-            if (inventoryError) {
-                throw inventoryError;
-            }
-
-            if (!inventory) {
-                throw new Error("재고 차감에 실패했습니다.");
-            }
-
-            const { data: orderItem, error: itemError } = await supabase
-                .from("order_items")
-                .insert({
-                    order_id: order.id,
-                    product_id: item.product_id,
-                    inventory_id: item.inventory_id,
-                    product_name: item.product_name,
-                    sku_code: item.sku_code,
-                    price: item.price,
-                    quantity: item.quantity,
-                    inventory_meta: item.inventory_meta,
-                })
-                .select()
-                .single();
-
-            if (itemError) {
-                throw itemError;
-            }
-
-            createdItems.push(orderItem);
-        }
+        if (itemError) throw itemError;
 
         return res.status(201).json({
             success: true,
-            data: toCamelCase({
-                ...order,
-                order_items: createdItems,
-            }),
+            data: toCamelCase(order),
         });
     } catch (error) {
         console.error("Create order failed:", error);
@@ -184,14 +96,12 @@ export const createOrder = async (
         return res.status(500).json({
             success: false,
             message: "주문 생성에 실패했습니다.",
-            error:
-                error instanceof Error
-                    ? error.message
-                    : JSON.stringify(error),
+            error: error instanceof Error
+                ? error.message
+                : JSON.stringify(error),
         });
     }
 };
-
 
 // ==========================================
 // 2. 주문 목록 조회
@@ -222,14 +132,12 @@ export const getOrders = async (
         return res.status(500).json({
             success: false,
             message: "주문 목록 조회에 실패했습니다.",
-            error:
-                error instanceof Error
-                    ? error.message
-                    : JSON.stringify(error),
+            error: error instanceof Error
+                ? error.message
+                : JSON.stringify(error),
         });
     }
 };
-
 
 // ==========================================
 // 3. 주문 상세 조회
@@ -268,14 +176,12 @@ export const getOrderById = async (
         return res.status(500).json({
             success: false,
             message: "주문 조회에 실패했습니다.",
-            error:
-                error instanceof Error
-                    ? error.message
-                    : JSON.stringify(error),
+            error: error instanceof Error
+                ? error.message
+                : JSON.stringify(error),
         });
     }
 };
-
 
 // ==========================================
 // 4. 출고 처리
@@ -292,7 +198,7 @@ export const processShipment = async (
         if (!carrier || !trackingNumber) {
             return res.status(400).json({
                 success: false,
-                message: "배송사와 송장번호를 입력해주세요.",
+                message: "배송사와 송장번호가 필요합니다.",
             });
         }
 
@@ -345,14 +251,12 @@ export const processShipment = async (
         return res.status(500).json({
             success: false,
             message: "출고 처리에 실패했습니다.",
-            error:
-                error instanceof Error
-                    ? error.message
-                    : JSON.stringify(error),
+            error: error instanceof Error
+                ? error.message
+                : JSON.stringify(error),
         });
     }
 };
-
 
 // ==========================================
 // 5. 주문 취소
@@ -367,11 +271,7 @@ export const cancelOrder = async (
 
         const { data: order, error: fetchError } = await supabase
             .from("orders")
-            .select(`
-                id,
-                status,
-                order_items (*)
-            `)
+            .select("id, status")
             .eq("id", id)
             .single();
 
@@ -387,21 +287,6 @@ export const cancelOrder = async (
                 success: false,
                 message: "출고 대기 상태의 주문만 취소할 수 있습니다.",
             });
-        }
-
-        // 주문 취소에 따른 재고 복구
-        for (const item of order.order_items) {
-            const { error: inventoryError } = await supabase.rpc(
-                "adjust_inventory_stock",
-                {
-                    p_sku_id: item.inventory_id,
-                    p_adjustment_qty: item.quantity,
-                }
-            );
-
-            if (inventoryError) {
-                throw inventoryError;
-            }
         }
 
         const { data, error } = await supabase
@@ -425,14 +310,12 @@ export const cancelOrder = async (
         return res.status(500).json({
             success: false,
             message: "주문 취소에 실패했습니다.",
-            error:
-                error instanceof Error
-                    ? error.message
-                    : JSON.stringify(error),
+            error: error instanceof Error
+                ? error.message
+                : JSON.stringify(error),
         });
     }
 };
-
 
 // ==========================================
 // 6. 배송 완료
@@ -489,10 +372,9 @@ export const completeOrder = async (
         return res.status(500).json({
             success: false,
             message: "배송 완료 처리에 실패했습니다.",
-            error:
-                error instanceof Error
-                    ? error.message
-                    : JSON.stringify(error),
+            error: error instanceof Error
+                ? error.message
+                : JSON.stringify(error),
         });
     }
 };
