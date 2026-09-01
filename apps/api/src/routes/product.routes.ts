@@ -16,10 +16,6 @@ const router: Router = Router();
 // 1. Client 상품 API
 // ==========================================
 
-// GET /api/products
-// 활성 상품 목록 조회
-router.get("/products", getClientProducts);
-
 // ==========================================
 // 2. Admin 상품 API
 // ==========================================

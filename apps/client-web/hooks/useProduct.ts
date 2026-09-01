@@ -1,91 +1,124 @@
-// apps/user-web/hooks/products/useProducts.ts
+// hooks/useProduct.ts
 
 "use client";
 
-import { useCallback, useState } from "react";
 import type { Product } from "@mall/types";
-import { API_ENDPOINTS } from "@mall/constants";
+import { useCallback, useState } from "react";
 
-export function useProducts() {
-    const [productList, setProductList] = useState<Product[]>([]);
-    const [product, setProduct] = useState<Product | null>(null);
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+export function useProduct() {
+  const [productList, setProductList] = useState<Product[]>([]);
+  const [product, setProduct] = useState<Product | null>(null);
 
-    // 활성 상품 목록
-    const fetchProducts = useCallback(async () => {
-        setLoading(true);
-        setError(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-        try {
-            const res = await fetch(API_ENDPOINTS.CLIENT_PRODUCTS.BASE);
+  const fetchProducts = useCallback(async () => {
+    setLoading(true);
+    setError(null);
 
-            if (!res.ok) {
-                throw new Error("상품 목록을 불러오지 못했습니다.");
-            }
+    try {
+      const url = `${API_BASE_URL}/api/products`;
 
-            const result = await res.json();
+      console.log("[useProduct] 상품 목록 요청:", url);
 
-            setProductList(
-                Array.isArray(result.data)
-                    ? result.data
-                    : []
-            );
-        } catch (err) {
-            setError(
-                err instanceof Error
-                    ? err.message
-                    : "상품 목록 조회에 실패했습니다."
-            );
+      const response = await fetch(url);
 
-            setProductList([]);
-        } finally {
-            setLoading(false);
-        }
-    }, []);
+      console.log("[useProduct] response:", response.status, response.statusText);
 
-    // 상품 상세
-    const fetchProduct = useCallback(async (id: string) => {
-        setLoading(true);
-        setError(null);
+      if (!response.ok) {
+        throw new Error("상품 목록을 불러오지 못했습니다.");
+      }
 
-        try {
-            const res = await fetch(
-                `/api/admin/products/${id}`
-            );
+      const result = await response.json();
 
-            if (!res.ok) {
-                throw new Error("상품 정보를 불러오지 못했습니다.");
-            }
+      console.log("[useProduct] API result:", result);
+      console.log("[useProduct] API data:", result?.data);
+      console.log(
+        "[useProduct] data isArray:",
+        Array.isArray(result?.data)
+      );
 
-            const result = await res.json();
+      const products = Array.isArray(result?.data)
+        ? result.data
+        : [];
 
-            setProduct(result.data ?? null);
+      console.log("[useProduct] 최종 productList:", products);
 
-            return result.data as Product;
-        } catch (err) {
-            setError(
-                err instanceof Error
-                    ? err.message
-                    : "상품 조회에 실패했습니다."
-            );
+      setProductList(products);
+    } catch (error) {
+      console.error("[useProduct] Fetch display products failed:", error);
 
-            setProduct(null);
-            throw err;
-        } finally {
-            setLoading(false);
-        }
-    }, []);
+      setError(
+        error instanceof Error
+          ? error.message
+          : "상품 목록 조회에 실패했습니다."
+      );
 
-    return {
-        productList,
-        product,
+      setProductList([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-        loading,
-        error,
+  const fetchProduct = useCallback(async (id: string) => {
+    setLoading(true);
+    setError(null);
 
-        fetchProducts,
-        fetchProduct,
-    };
+    try {
+      const url = `${API_BASE_URL}/api/products/${id}`;
+
+      console.log("[useProduct] 상품 상세 요청:", url);
+
+      const response = await fetch(url);
+
+      console.log(
+        "[useProduct] detail response:",
+        response.status,
+        response.statusText
+      );
+
+      if (!response.ok) {
+        throw new Error("상품 정보를 불러오지 못했습니다.");
+      }
+
+      const result = await response.json();
+
+      console.log("[useProduct] detail result:", result);
+      console.log("[useProduct] detail data:", result?.data);
+
+      const productData = result?.data ?? null;
+
+      setProduct(productData);
+
+      return productData as Product | null;
+    } catch (error) {
+      console.error("[useProduct] Fetch display product failed:", error);
+
+      setError(
+        error instanceof Error
+          ? error.message
+          : "상품 조회에 실패했습니다."
+      );
+
+      setProduct(null);
+
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  return {
+    productList,
+    product,
+
+    loading,
+    error,
+
+    fetchProducts,
+    fetchProduct,
+  };
 }

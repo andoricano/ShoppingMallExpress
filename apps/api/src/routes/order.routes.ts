@@ -14,7 +14,7 @@ import {
 const router: Router = Router();
 
 // ==========================================
-// 1. Client 주문
+// Client 주문
 // ==========================================
 
 // POST /api/orders
@@ -31,7 +31,7 @@ router.patch("/:id/complete", completeOrder);
 
 
 // ==========================================
-// 2. Admin 주문
+// Admin 주문
 // ==========================================
 
 // GET /api/orders
