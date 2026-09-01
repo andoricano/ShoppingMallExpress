@@ -3,10 +3,12 @@
 'use client';
 
 import type { JSONContent } from '@tiptap/core';
+import { useEditor } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+import Image from '@tiptap/extension-image';
 
-import { PostToolbar } from './PostToolbar';
 import { EditSection } from './EditSection';
-import { usePostEditor } from './usePostEditor';
+import { PostToolbar } from './PostToolbar';
 
 export type PostEditorProps = {
   initialContent?: JSONContent;
@@ -22,7 +24,14 @@ export function PostEditor({
   onPreview,
   onPublish,
 }: PostEditorProps) {
-  const editor = usePostEditor(initialContent);
+  const editor = useEditor({
+    extensions: [
+      StarterKit,
+      Image,
+    ],
+    content: initialContent,
+    immediatelyRender: false,
+  });
 
   const handleSave = () => {
     if (!editor) return;
@@ -60,7 +69,6 @@ export function PostEditor({
   return (
     <div>
       <PostToolbar items={postToolbarItems} />
-
       <EditSection editor={editor} />
     </div>
   );

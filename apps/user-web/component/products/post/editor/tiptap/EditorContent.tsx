@@ -19,8 +19,17 @@ export function EditorContent({
     }
 
     return (
-        <TiptapEditorContent
-            editor={editor}
-        />
+        <div
+            style={{
+                minHeight: '500px',
+                padding: '16px',
+                border: '1px solid #e5e5e5',
+                borderRadius: '4px',
+            }}
+        >
+            <TiptapEditorContent
+                editor={editor}
+            />
+        </div>
     );
 }
