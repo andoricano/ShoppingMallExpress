@@ -17,12 +17,14 @@
     "start": "node dist/index.js"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.49.1",
     "@mall/constants": "workspace:*",
     "@mall/types": "workspace:*",
+    "@supabase/supabase-js": "^2.49.1",
+    "cloudinary": "^2.11.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^5.0.1",
+    "multer": "^2.3.0",
     "pg": "^8.13.3"
   },
   "devDependencies": {

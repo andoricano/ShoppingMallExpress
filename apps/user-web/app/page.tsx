@@ -3,6 +3,7 @@
 import React from 'react';
 import { DashboardCard } from '@/component/main/DashboardCard';
 import { AdminOverviewData } from '@/types/admin';
+import { useRouter } from 'next/navigation';
 
 // 테스트용 임시 데이터
 const MOCK_OVERVIEW_DATA: AdminOverviewData = {
@@ -42,12 +43,26 @@ const MOCK_OVERVIEW_DATA: AdminOverviewData = {
 export default function MainPage() {
   const data = MOCK_OVERVIEW_DATA;
 
+  const router = useRouter();
+
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto">
       {/* 타이틀 */}
-      <h1 className="text-xl sm:text-2xl font-bold text-slate-800 mb-6">
-        관리자 메인 대시보드
-      </h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">
+          관리자 메인 대시보드
+        </h1>
+
+        <button
+          type="button"
+          className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50"
+          onClick={() => {
+            router.push('/master');
+          }}
+        >
+          세팅
+        </button>
+      </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
         <DashboardCard
