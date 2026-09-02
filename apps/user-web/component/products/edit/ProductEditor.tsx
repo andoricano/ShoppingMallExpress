@@ -9,8 +9,8 @@ import { ProductEditHeader } from "./ProductEditHeader";
 import { ProductEditForm } from "./ProductEditForm";
 import { ProductPreview } from "./ProductPreview";
 
-import { PostEditor } from "../post/editor/PostEditor";
 import { useProductEditor } from "./useProductEditor";
+import { ProductDescriptionEditor } from "../post/editor/PostEditor";
 
 export type ProductEditorMode = "create" | "edit";
 
@@ -138,9 +138,9 @@ export function ProductEditor({
                                 상품 상세 설명
                             </h2>
 
-                            <PostEditor
+                            <ProductDescriptionEditor
                                 initialContent={descriptionContent}
-                                onSave={handleDescriptionChange}
+                                onChange={handleDescriptionChange}
                             />
                         </section>
                     </div>

@@ -1,40 +1,136 @@
 // post/editor/EditorToolbar.tsx
 
-import type { ReactNode } from 'react';
+"use client";
 
-export type EditorToolbarItem = {
-  text: string;
-  icon?: ReactNode;
-  onClick: () => void;
-};
+import TextAlign from "@tiptap/extension-text-align";
+import type { Editor } from "@tiptap/react";
+import { EditorToolButton } from "./EditorToolButton";
+import {
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  List,
+  ListOrdered,
+  Image,
+  Video,
+  Link,
+  Minus,
+} from "lucide-react";
 
 export type EditorToolbarProps = {
-  items: EditorToolbarItem[];
+  editor: Editor | null;
+
+  onImage?: () => void;
+  onVideo?: () => void;
+  onLink?: () => void;
+  onHorizontalRule?: () => void;
 };
 
 export function EditorToolbar({
-  items,
+  editor,
+  onImage,
+  onVideo,
+  onLink,
+  onHorizontalRule,
 }: EditorToolbarProps) {
+  if (!editor) {
+    return null;
+  }
+
   return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '8px',
-        padding: '8px 12px',
-        borderBottom: '1px solid #ddd',
-      }}
-    >
-      {items.map((item, index) => (
-        <button
-          key={`${item.text}-${index}`}
-          type="button"
-          onClick={item.onClick}
-        >
-          {item.icon}
-          {item.text}
-        </button>
-      ))}
+    <div className="flex items-center gap-1 border-b border-slate-200 bg-white p-2">
+      {/* 텍스트 서식 */}
+      <EditorToolButton
+        text="B"
+        active={editor.isActive("bold")}
+        onClick={() =>
+          editor.chain().focus().toggleBold().run()
+        }
+      />
+
+      <EditorToolButton
+        text="I"
+        active={editor.isActive("italic")}
+        onClick={() =>
+          editor.chain().focus().toggleItalic().run()
+        }
+      />
+
+      <EditorToolButton
+        icon={
+          <span className="line-through">
+            S
+          </span>
+        }
+        active={editor.isActive("strike")}
+        onClick={() =>
+          editor.chain().focus().toggleStrike().run()
+        }
+      />
+
+      <div className="mx-1 h-5 w-px bg-slate-200" />
+
+
+      <EditorToolButton
+        icon={<AlignLeft size={16} />}
+        active={editor.isActive({
+          textAlign: "left",
+        })}
+        onClick={() =>
+          editor.chain().focus().setTextAlign("left").run()
+        }
+      />
+
+      <EditorToolButton
+        icon={<AlignCenter size={16} />}
+        active={editor.isActive({
+          textAlign: "center",
+        })}
+        onClick={() =>
+          editor.chain().focus().setTextAlign("center").run()
+        }
+      />
+
+      <EditorToolButton
+        icon={<AlignRight size={16} />}
+        active={editor.isActive({
+          textAlign: "right",
+        })}
+        onClick={() =>
+          editor.chain().focus().setTextAlign("right").run()
+        }
+      />
+
+      <div className="mx-1 h-5 w-px bg-slate-200" />
+
+      {/* 삽입 */}
+      {onImage && (
+        <EditorToolButton
+          icon={<Image size={16} />}
+          onClick={onImage}
+        />
+      )}
+
+      {onVideo && (
+        <EditorToolButton
+          icon={<Video size={16} />}
+          onClick={onVideo}
+        />
+      )}
+
+      {onLink && (
+        <EditorToolButton
+          icon={<Link size={16} />}
+          onClick={onLink}
+        />
+      )}
+
+      {onHorizontalRule && (
+        <EditorToolButton
+          icon={<Minus size={16} />}
+          onClick={onHorizontalRule}
+        />
+      )}
     </div>
   );
 }

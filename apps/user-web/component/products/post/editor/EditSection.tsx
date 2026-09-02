@@ -1,11 +1,11 @@
 // post/editor/EditSection.tsx
 
-import type { Editor } from '@tiptap/react';
+import type { Editor } from "@tiptap/react";
 
-import { EditorToolbar } from './EditorToolbar';
-import { EditorContent } from './tiptap/EditorContent';
-import { ImageUploaderModal } from './modal/ImageUploaderModal';
-import { useEditSection } from './useEditSection';
+import { EditorToolbar } from "./EditorToolbar";
+import { EditorContent } from "./tiptap/EditorContent";
+import { ImageUploaderModal } from "./modal/ImageUploaderModal";
+import { useEditSection } from "./useEditSection";
 
 export type EditSectionProps = {
   editor: Editor | null;
@@ -19,34 +19,20 @@ export function EditSection({
     openImageModal,
     closeImageModal,
     insertImage,
-
     openVideoModal,
     openLinkModal,
     insertHorizontalRule,
   } = useEditSection(editor);
 
-  const toolbarItems = [
-    {
-      text: '이미지',
-      onClick: openImageModal,
-    },
-    {
-      text: '영상',
-      onClick: openVideoModal,
-    },
-    {
-      text: '링크',
-      onClick: openLinkModal,
-    },
-    {
-      text: '구분선',
-      onClick: insertHorizontalRule,
-    },
-  ];
-
   return (
     <div>
-      <EditorToolbar items={toolbarItems} />
+      <EditorToolbar
+        editor={editor}
+        onImage={openImageModal}
+        onVideo={openVideoModal}
+        onLink={openLinkModal}
+        onHorizontalRule={insertHorizontalRule}
+      />
 
       <EditorContent editor={editor} />
 

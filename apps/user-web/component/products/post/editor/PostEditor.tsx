@@ -1,75 +1,51 @@
-// post/editor/PostEditor.tsx
+"use client";
 
-'use client';
+import { useEffect, useState } from "react";
+import type { JSONContent } from "@tiptap/core";
+import { useEditor } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import Image from "@tiptap/extension-image";
+import TextAlign from "@tiptap/extension-text-align";
 
-import type { JSONContent } from '@tiptap/core';
-import { useEditor } from '@tiptap/react';
-import StarterKit from '@tiptap/starter-kit';
-import Image from '@tiptap/extension-image';
+import { EditSection } from "./EditSection";
 
-import { EditSection } from './EditSection';
-import { PostToolbar } from './PostToolbar';
-
-export type PostEditorProps = {
+interface ProductDescriptionEditorProps {
   initialContent?: JSONContent;
+  onChange?: (content: JSONContent) => void;
+}
 
-  onSave?: (content: JSONContent) => void;
-  onPreview?: (content: JSONContent) => void;
-  onPublish?: (content: JSONContent) => void;
-};
-
-export function PostEditor({
+export function ProductDescriptionEditor({
   initialContent,
-  onSave,
-  onPreview,
-  onPublish,
-}: PostEditorProps) {
+  onChange,
+}: ProductDescriptionEditorProps) {
+  const [content, setContent] = useState<JSONContent | undefined>(
+    initialContent,
+  );
+
   const editor = useEditor({
     extensions: [
       StarterKit,
       Image,
+      TextAlign.configure({
+        types: ["heading", "paragraph"],
+      }),
     ],
     content: initialContent,
     immediatelyRender: false,
+    onUpdate: ({ editor }) => {
+      setContent(editor.getJSON());
+    },
   });
 
-  const handleSave = () => {
-    if (!editor) return;
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (content) {
+        onChange?.(content);
+      }
+    }, 500);
 
-    onSave?.(editor.getJSON());
-  };
+    return () => clearTimeout(timer);
+  }, [content, onChange]);
 
-  const handlePreview = () => {
-    if (!editor) return;
-
-    onPreview?.(editor.getJSON());
-  };
-
-  const handlePublish = () => {
-    if (!editor) return;
-
-    onPublish?.(editor.getJSON());
-  };
-
-  const postToolbarItems = [
-    {
-      text: '저장',
-      onClick: handleSave,
-    },
-    {
-      text: '미리보기',
-      onClick: handlePreview,
-    },
-    {
-      text: '게시',
-      onClick: handlePublish,
-    },
-  ];
-
-  return (
-    <div>
-      <PostToolbar items={postToolbarItems} />
-      <EditSection editor={editor} />
-    </div>
-  );
+  return <EditSection editor={editor} />;
 }
