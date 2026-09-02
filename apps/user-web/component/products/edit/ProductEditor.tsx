@@ -1,28 +1,39 @@
 // component/products/edit/ProductEditor.tsx
 
-'use client';
+"use client";
 
-import type { JSONContent } from '@tiptap/core';
-import type { Product } from '@mall/types';
+import type { JSONContent } from "@tiptap/core";
+import type { Product } from "@mall/types";
 
-import { ProductEditHeader } from './ProductEditHeader';
-import { ProductEditForm } from './ProductEditForm';
-import { ProductPreview } from './ProductPreview';
+import { ProductEditHeader } from "./ProductEditHeader";
+import { ProductEditForm } from "./ProductEditForm";
+import { ProductPreview } from "./ProductPreview";
 
-import { PostEditor } from '../post/editor/PostEditor';
-import { useProductEditor } from './useProductEditor';
+import { PostEditor } from "../post/editor/PostEditor";
+import { useProductEditor } from "./useProductEditor";
+
+export type ProductEditorMode = "create" | "edit";
 
 export type ProductEditorProps = {
-    product: Product;
+    mode: ProductEditorMode;
+    product?: Product | null;
+
     saving?: boolean;
+
+    onCreate?: (
+        data: Partial<Product>,
+    ) => Promise<Product | undefined>;
+
     onUpdate?: (
         data: Partial<Product>,
     ) => Promise<Product | undefined>;
 };
 
 export function ProductEditor({
-    product,
+    mode,
+    product = null,
     saving = false,
+    onCreate,
     onUpdate,
 }: ProductEditorProps) {
     const {
@@ -30,13 +41,27 @@ export function ProductEditor({
         descriptionContent,
         updateProduct,
         updateDescription,
-    } = useProductEditor(product);
-
-    if (!form) {
-        return null;
-    }
+    } = useProductEditor({
+        mode,
+        product,
+    });
 
     const handleSave = async () => {
+        if (mode === "create") {
+            if (!onCreate) {
+                return;
+            }
+
+            await onCreate({
+                ...form,
+                id: undefined,
+                createdAt: undefined,
+                updatedAt: undefined,
+            });
+
+            return;
+        }
+
         if (!onUpdate) {
             return;
         }
@@ -60,58 +85,62 @@ export function ProductEditor({
     };
 
     const handleDelete = () => {
+        if (mode !== "edit") {
+            return;
+        }
+
         console.log(
-            '[ProductEditor] 삭제',
+            "[ProductEditor] 삭제",
             form.id,
         );
     };
 
-    const handleToggleActive = async () => {
-        const nextIsActive = !form.isActive;
+    const handleToggleActive = () => {
+        if (mode !== "edit") {
+            return;
+        }
 
         updateProduct({
             ...form,
-            isActive: nextIsActive,
+            isActive: !form.isActive,
         });
     };
 
     return (
         <div className="min-h-screen bg-slate-50">
             <div className="mx-auto max-w-[1400px] space-y-6 p-6 md:p-8">
-                {/* Header */}
                 <ProductEditHeader
                     productName={form.name}
+                    mode={mode}
                     onSave={handleSave}
-                    onDelete={handleDelete}
+                    onDelete={
+                        mode === "edit"
+                            ? handleDelete
+                            : undefined
+                    }
                     onToggleActive={
-                        handleToggleActive
+                        mode === "edit"
+                            ? handleToggleActive
+                            : undefined
                     }
                 />
 
                 <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                     {/* Editor */}
                     <div className="space-y-6">
-                        {/* 기본 상품 정보 */}
                         <ProductEditForm
                             product={form}
-                            onSubmit={
-                                handleProductChange
-                            }
+                            onSubmit={handleProductChange}
                         />
 
-                        {/* 상품 상세 설명 */}
                         <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
                             <h2 className="mb-4 text-lg font-semibold text-slate-900">
                                 상품 상세 설명
                             </h2>
 
                             <PostEditor
-                                initialContent={
-                                    descriptionContent
-                                }
-                                onSave={
-                                    handleDescriptionChange
-                                }
+                                initialContent={descriptionContent}
+                                onSave={handleDescriptionChange}
                             />
                         </section>
                     </div>
@@ -119,9 +148,7 @@ export function ProductEditor({
                     {/* Preview */}
                     <div>
                         <div className="sticky top-6">
-                            <ProductPreview
-                                product={form}
-                            />
+                            <ProductPreview product={form} />
                         </div>
                     </div>
                 </div>

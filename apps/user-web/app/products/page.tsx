@@ -27,10 +27,6 @@ export default function AdminProductPage() {
 
   const menu: AdminMenuItem[] = [
     {
-      menuTitle: "상품 목록",
-      onClick: () => router.push("/products"),
-    },
-    {
       menuTitle: "상품 등록",
       onClick: () => router.push("/products/add"),
     },
@@ -52,7 +48,7 @@ export default function AdminProductPage() {
   };
 
   const handleEdit = (productId: string) => {
-    router.push(`/admin/products/${productId}`);
+    router.push(`/products/edit/${productId}`);
   };
 
   const handleDelete = async (productId: string) => {

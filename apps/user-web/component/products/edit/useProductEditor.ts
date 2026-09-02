@@ -1,46 +1,66 @@
 // hooks/products/useProductEditor.ts
 
-import { useEffect, useMemo, useState } from 'react';
-import type { Product } from '@mall/types';
-import type { JSONContent } from '@tiptap/core';
+import { useEffect, useMemo, useState } from "react";
+import type { Product } from "@mall/types";
+import type { JSONContent } from "@tiptap/core";
 
-export function useProductEditor(
-    product: Product | null,
-) {
-    const [form, setForm] = useState<Product | null>(
-        product,
+type ProductEditorMode = "create" | "edit";
+
+interface UseProductEditorParams {
+    mode: ProductEditorMode;
+    product?: Product | null;
+}
+
+const DEFAULT_PRODUCT: Product = {
+    id: "",
+    name: "",
+    mainImageUrl: "",
+    imageUrls: [],
+    description: "",
+    price: 0,
+    inventoryId: "",
+    isActive: true,
+    createdAt: "",
+    updatedAt: "",
+};
+
+export function useProductEditor({
+    mode,
+    product,
+}: UseProductEditorParams) {
+    const [form, setForm] = useState<Product>(
+        mode === "edit" && product
+            ? product
+            : DEFAULT_PRODUCT,
     );
 
     useEffect(() => {
-        setForm(product);
-    }, [product]);
+        if (mode === "edit" && product) {
+            setForm(product);
+            return;
+        }
+
+        setForm(DEFAULT_PRODUCT);
+    }, [mode, product]);
 
     const updateField = <K extends keyof Product>(
         key: K,
         value: Product[K],
     ) => {
-        setForm((prev) => {
-            if (!prev) {
-                return prev;
-            }
-
-            return {
-                ...prev,
-                [key]: value,
-            };
-        });
+        setForm((prev) => ({
+            ...prev,
+            [key]: value,
+        }));
     };
 
-    const updateProduct = (
-        product: Product,
-    ) => {
+    const updateProduct = (product: Product) => {
         setForm(product);
     };
 
     const descriptionContent = useMemo<
         JSONContent | undefined
     >(() => {
-        if (!form?.description) {
+        if (!form.description) {
             return undefined;
         }
 
@@ -51,13 +71,13 @@ export function useProductEditor(
         } catch {
             return undefined;
         }
-    }, [form?.description]);
+    }, [form.description]);
 
     const updateDescription = (
         content: JSONContent,
     ) => {
         updateField(
-            'description',
+            "description",
             JSON.stringify(content),
         );
     };
