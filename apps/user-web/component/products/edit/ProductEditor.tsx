@@ -41,12 +41,24 @@ export function ProductEditor({
         descriptionContent,
         updateProduct,
         updateDescription,
+        validate
     } = useProductEditor({
         mode,
         product,
     });
 
+
     const handleSave = async () => {
+        const validationError = validate();
+
+        if (validationError) {
+            console.log(
+                "[ProductEditor] validation failed:",
+                validationError,
+            );
+            return;
+        }
+
         if (mode === "create") {
             if (!onCreate) {
                 return;
@@ -68,7 +80,6 @@ export function ProductEditor({
 
         await onUpdate({
             ...form,
-            description: form.description,
         });
     };
 

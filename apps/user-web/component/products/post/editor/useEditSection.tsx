@@ -10,7 +10,6 @@ export function useEditSection(editor: Editor | null) {
     const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
     const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
 
-    // 에디터에 삽입했지만 아직 Cloudinary에 업로드하지 않은 이미지
     const [imageFiles, setImageFiles] = useState<File[]>([]);
 
     const openImageModal = () => {

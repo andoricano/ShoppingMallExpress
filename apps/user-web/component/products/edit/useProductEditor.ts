@@ -14,7 +14,7 @@ interface UseProductEditorParams {
 const DEFAULT_PRODUCT: Product = {
     id: "",
     name: "",
-    mainImageUrl: "",
+    mainImageUrl: "1111111111",
     imageUrls: [],
     description: "",
     price: 0,
@@ -82,6 +82,18 @@ export function useProductEditor({
         );
     };
 
+    const validate = (): string | null => {
+        if (!form.name.trim()) {
+            return "상품명을 입력해주세요.";
+        }
+
+        if (form.price < 0) {
+            return "가격은 0 이상이어야 합니다.";
+        }
+
+        return null;
+    };
+
     return {
         form,
         descriptionContent,
@@ -90,5 +102,6 @@ export function useProductEditor({
         updateField,
         updateProduct,
         updateDescription,
+        validate
     };
 }
