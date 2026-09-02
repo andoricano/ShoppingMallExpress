@@ -1,9 +1,11 @@
-// component/products/ProductEditForm.tsx
+"use client";
 
-'use client';
+import { useState } from "react";
+import type { Product } from "@mall/types";
 
-import { useState } from 'react';
-import type { Product } from '@mall/types';
+import FormField from "@/component/common/field/FormField";
+import CheckboxField from "@/component/common/field/CheckboxField";
+import ImageUploadField from "@/component/common/field/ImageUploadField";
 
 export type ProductEditFormProps = {
     product: Product;
@@ -15,19 +17,26 @@ export function ProductEditForm({
     onSubmit,
 }: ProductEditFormProps) {
     const [name, setName] = useState(product.name);
+
     const [mainImageUrl, setMainImageUrl] = useState(
         product.mainImageUrl,
     );
-    const [imageUrls, setImageUrls] = useState(
-        product.imageUrls.join('\n'),
+
+    const [imageUrls, setImageUrls] = useState<string[]>(
+        product.imageUrls,
     );
+
     const [price, setPrice] = useState(
         String(product.price),
     );
+
     const [isActive, setIsActive] = useState(
         product.isActive,
     );
-    const [error, setError] = useState<string | null>(null);
+
+    const [error, setError] = useState<string | null>(
+        null,
+    );
 
     const handleSubmit = (
         event: React.FormEvent<HTMLFormElement>,
@@ -39,21 +48,18 @@ export function ProductEditForm({
             ...product,
             name: name.trim(),
             mainImageUrl: mainImageUrl.trim(),
-            imageUrls: imageUrls
-                .split('\n')
-                .map((url) => url.trim())
-                .filter(Boolean),
+            imageUrls,
             price: Number(price),
             isActive,
         };
 
         if (!nextProduct.name) {
-            setError('상품명을 입력해주세요.');
+            setError("상품명을 입력해주세요.");
             return;
         }
 
         if (nextProduct.price < 0) {
-            setError('가격은 0 이상이어야 합니다.');
+            setError("가격은 0 이상이어야 합니다.");
             return;
         }
 
@@ -65,92 +71,51 @@ export function ProductEditForm({
             onSubmit={handleSubmit}
             className="space-y-5 rounded-xl border border-slate-200 bg-white p-6 shadow-sm"
         >
-            <div>
-                <label className="mb-1.5 block text-xs font-semibold text-slate-600">
-                    Inventory ID
-                </label>
+            <FormField
+                label="Inventory ID"
+                value={product.inventoryId}
+                disabled
+            />
 
-                <input
-                    type="text"
-                    value={product.inventoryId}
-                    disabled
-                    className="w-full rounded-lg border border-slate-200 bg-slate-100 px-3 py-2 text-sm text-slate-400"
-                />
-            </div>
+            <FormField
+                label="상품명"
+                value={name}
+                onChange={setName}
+                placeholder="상품명을 입력하세요."
+            />
 
-            <div>
-                <label className="mb-1.5 block text-xs font-semibold text-slate-600">
-                    상품명
-                </label>
+            <ImageUploadField
+                label="대표 이미지"
+                imageUrl={mainImageUrl}
+                onUpload={(files) => {
+                    console.log("대표 이미지:", files);
+                }}
+            />
 
-                <input
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="상품명을 입력하세요."
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                />
-            </div>
+            <ImageUploadField
+                label="추가 이미지"
+                imageUrls={imageUrls}
+                multiple
+                onUpload={(files) => {
+                    console.log("추가 이미지:", files);
+                }}
+            />
 
-            <div>
-                <label className="mb-1.5 block text-xs font-semibold text-slate-600">
-                    대표 이미지 URL
-                </label>
+            <FormField
+                label="가격"
+                value={price}
+                onChange={setPrice}
+                placeholder="0"
+                type="number"
+                min={0}
+                step={1}
+            />
 
-                <input
-                    type="text"
-                    value={mainImageUrl}
-                    onChange={(e) =>
-                        setMainImageUrl(e.target.value)
-                    }
-                    placeholder="https://..."
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                />
-            </div>
-
-            <div>
-                <label className="mb-1.5 block text-xs font-semibold text-slate-600">
-                    추가 이미지 URL
-                </label>
-
-                <textarea
-                    value={imageUrls}
-                    onChange={(e) =>
-                        setImageUrls(e.target.value)
-                    }
-                    placeholder="이미지 URL을 한 줄에 하나씩 입력하세요."
-                    rows={4}
-                    className="w-full resize-none rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                />
-            </div>
-
-            <div>
-                <label className="mb-1.5 block text-xs font-semibold text-slate-600">
-                    가격
-                </label>
-
-                <input
-                    type="number"
-                    min={0}
-                    step={1}
-                    value={price}
-                    onChange={(e) => setPrice(e.target.value)}
-                    placeholder="0"
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                />
-            </div>
-
-            <label className="flex items-center gap-2 text-sm text-slate-700">
-                <input
-                    type="checkbox"
-                    checked={isActive}
-                    onChange={(e) =>
-                        setIsActive(e.target.checked)
-                    }
-                />
-
-                상품 활성화
-            </label>
+            <CheckboxField
+                label="상품 활성화"
+                checked={isActive}
+                onChange={setIsActive}
+            />
 
             {error && (
                 <div className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">
