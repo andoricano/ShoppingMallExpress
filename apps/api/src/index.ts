@@ -6,6 +6,7 @@ import cors from 'cors';
 
 import inventoryRoutes from './routes/inventory.routes.js';
 import productRoutes from './routes/product.routes.js';
+import productPostRoutes from "./routes/productPost.routes.js";
 import categoryRoutes from './routes/category.routes.js';
 import orderRoutes from './routes/order.routes.js';
 import displayRoutes from './routes/client/display.routes.js';
@@ -30,6 +31,7 @@ app.use('/api/inventory-items', inventoryRoutes);
 app.use('/api', productRoutes);
 app.use('/api', categoryRoutes);
 app.use('/api/orders', orderRoutes);
+app.use('/api/product-posts', productPostRoutes);
 
 // Client Routes
 app.use('/api/products', displayRoutes);
