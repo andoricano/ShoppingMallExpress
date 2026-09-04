@@ -3,21 +3,28 @@
 "use client";
 
 import { useState } from "react";
-import { TiptapViewer, ProductThumbnailCard } from "@mall/tiptap";
+import { TiptapViewer, ProductPostCard } from "@mall/tiptap";
 import { ProductGallery } from "./ProductGallery";
 
 export interface ProductPreviewProps {
     name: string;
+    summary?: string;
+    discount: number;
+    price: number;
+
     mainImageUrl: string;
     imageUrls: string[];
+    tags: string[];
     description: string;
-    price: number;
 }
 
 export function ProductPreview({
     name,
+    summary,
+    discount,
     mainImageUrl,
     imageUrls,
+    tags,
     description,
     price,
 }: ProductPreviewProps) {
@@ -32,10 +39,13 @@ export function ProductPreview({
         <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
             {/* 상품 정보 */}
             <div className="p-4">
-                <ProductThumbnailCard
+                <ProductPostCard
                     imageUrl={images[selectedIndex]}
-                    name={name}
+                    title={name}
+                    summary={summary}
+                    discount={discount}
                     price={price}
+                    tags={tags}
                 />
             </div>
 

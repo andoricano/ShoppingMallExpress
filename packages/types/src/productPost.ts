@@ -25,8 +25,6 @@ export interface ProductPost {
 
     productIds: string[];
 
-    tags: string[];
-
     isPublished: boolean;
 
     viewCount: number;

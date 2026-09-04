@@ -5,9 +5,9 @@ import { useEffect } from "react";
 import { AdminMenuItem } from "@/component/common/AdminMenu";
 import { ProductAdminHeader } from "@/component/products/ProductAdminHeader";
 import { ProductInventorySection } from "@/component/products/add/ProductInventorySection";
+import { ProductPostEditor } from "@/component/products/edit/ProductEditor";
 
 import { useProductPostEditor } from "@/hooks/products/useProductPostEditor";
-import { ProductPostEditor } from "@/component/products/edit/ProductEditor";
 
 interface ProductAddPageProps {
     mode: "create" | "edit";
@@ -17,17 +17,37 @@ export default function ProductAddPage({
     mode,
 }: ProductAddPageProps) {
     const {
+        productPost,
         products,
-        loading: loadingProducts,
+        selectedProducts,
+
+        loading,
         saving,
         error,
 
         fetchProducts,
+        fetchProductPost,
+
+        addProduct,
+        removeProduct,
+        moveProduct,
+
+        createProductPost,
+        updateProductPost,
+        deleteProductPost,
     } = useProductPostEditor();
 
     useEffect(() => {
         fetchProducts();
-    }, [fetchProducts]);
+
+        if (mode === "edit") {
+            fetchProductPost();
+        }
+    }, [
+        mode,
+        fetchProducts,
+        fetchProductPost,
+    ]);
 
     const handleRegisterProduct = () => {
         // Inventory 선택 후 Product 등록 로직 연결 예정
@@ -42,12 +62,19 @@ export default function ProductAddPage({
     };
 
     const handleDelete = async () => {
-        // ProductPost 삭제 로직 연결 예정
+        if (mode !== "edit") {
+            return;
+        }
+
+        await deleteProductPost();
     };
 
     const menu: AdminMenuItem[] = [
         {
-            menuTitle: mode === "create" ? "게시하기" : "수정하기",
+            menuTitle:
+                mode === "create"
+                    ? "게시하기"
+                    : "수정하기",
             onClick: handleSave,
         },
         {
@@ -81,21 +108,19 @@ export default function ProductAddPage({
                 <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[1fr_3fr]">
                     <ProductInventorySection
                         products={products}
-                        isLoadingProducts={loadingProducts}
+                        isLoadingProducts={loading}
                         onRegister={handleRegisterProduct}
                     />
 
-                    {/* 중앙 + 우측 */}
                     <ProductPostEditor
                         mode={mode}
+                        productPost={productPost}
+                        selectedProducts={selectedProducts}
+                        saving={saving}
+                        onCreate={createProductPost}
+                        onUpdate={updateProductPost}
                     />
                 </div>
-
-                {saving && (
-                    <div className="text-sm text-slate-500">
-                        저장 중입니다...
-                    </div>
-                )}
             </div>
         </div>
     );

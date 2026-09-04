@@ -74,15 +74,13 @@ SKU 메타 정보는 상품 종류에 따라 자유롭게 구성할 수 있으�
 ### 3.5 재고 비활성화
 
 * 더 이상 판매하지 않는 SKU는 `isActive = false`로 비활성화
-* 비활성 Inventory는 신규 주문 및 재고 변동 대상에서 제외
-* 비활성 Inventory의 현재 재고 및 기존 데이터 유지
+* 비활성 Inventory는 신규 주문 대상에서 제외
+* 비활성 Inventory는 Inventory API로만 직접 수정 가능
 * 활성 Inventory에 대한 비활성화시 Product를 아예 보이지도 않게 함
 
 ### 3.6 재고 활성화
 
-* 비활성 Inventory 재활성화 가능
 * 재활성화된 Inventory는 다시 재고 변동 및 주문 대상이 될 수 있음
-* 활성 Inventory에 대한 비활성화시 Product 활성화
 
 ### 3.7 재고 삭제
 

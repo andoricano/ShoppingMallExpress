@@ -2,12 +2,11 @@ import { useCallback, useState } from "react";
 import type { Product, ProductPost } from "@mall/types";
 import { API_ENDPOINTS } from "@mall/constants";
 
-interface ProductPostForm {
+export interface ProductPostForm {
     title: string;
     thumbnail: ProductPost["thumbnail"];
     imageUrls: string[];
     content: string;
-    tags: string[];
     isPublished: boolean;
     metadata?: Record<string, unknown>;
 }

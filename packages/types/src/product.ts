@@ -15,8 +15,6 @@ export interface Product {
 
     inventoryId: string;
 
-    isActive: boolean;
-
     createdAt: string;
     updatedAt: string;
 }

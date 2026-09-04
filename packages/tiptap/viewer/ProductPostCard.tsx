@@ -1,26 +1,28 @@
-// packages/tiptap/.../ProductThumbnailCard.tsx
-
-interface ProductThumbnailCardProps {
+interface ProductPostCardProps {
     imageUrl?: string;
-    name: string;
+    title: string;
     summary?: string;
+    discount: number;
     price: number;
+    tags: string[];
 }
 
-export function ProductThumbnailCard({
+export function ProductPostCard({
     imageUrl,
-    name,
+    title,
     summary,
+    discount,
     price,
-}: ProductThumbnailCardProps) {
+    tags,
+}: ProductPostCardProps) {
     return (
         <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-            {/* 상품 이미지 */}
+            {/* 게시물 이미지 */}
             <div className="aspect-square overflow-hidden bg-neutral-100">
                 {imageUrl ? (
                     <img
                         src={imageUrl}
-                        alt={name}
+                        alt={title}
                         className="h-full w-full object-cover"
                     />
                 ) : (
@@ -30,10 +32,10 @@ export function ProductThumbnailCard({
                 )}
             </div>
 
-            {/* 상품 정보 */}
+            {/* 게시물 정보 */}
             <div className="p-4">
                 <h3 className="truncate text-sm font-semibold text-neutral-900">
-                    {name}
+                    {title}
                 </h3>
 
                 {summary && (
@@ -42,9 +44,28 @@ export function ProductThumbnailCard({
                     </p>
                 )}
 
-                <p className="mt-2 text-sm font-bold text-neutral-900">
+                {discount > 0 && (
+                    <p className="mt-2 text-sm font-semibold text-rose-600">
+                        {discount}% 할인
+                    </p>
+                )}
+
+                <p className="mt-1 text-sm font-bold text-neutral-900">
                     {price.toLocaleString()}원
                 </p>
+
+                {tags.length > 0 && (
+                    <div className="mt-3 flex flex-wrap gap-1.5">
+                        {tags.map((tag) => (
+                            <span
+                                key={tag}
+                                className="rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-600"
+                            >
+                                #{tag}
+                            </span>
+                        ))}
+                    </div>
+                )}
             </div>
         </div>
     );
