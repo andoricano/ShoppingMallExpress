@@ -1,8 +1,12 @@
 // component/products/ProductPreview.tsx
 
-'use client';
+"use client";
 
-import type { Product } from '@mall/types';
+import { useState } from "react";
+import type { Product } from "@mall/types";
+import { TiptapViewer, ProductThumbnailCard } from "@mall/tiptap";
+import { ProductGallery } from "./ProductGallery";
+
 
 export type ProductPreviewProps = {
     product: Product;
@@ -11,72 +15,36 @@ export type ProductPreviewProps = {
 export function ProductPreview({
     product,
 }: ProductPreviewProps) {
+    const [selectedIndex, setSelectedIndex] = useState(0);
+
+    const images = [
+        product.mainImageUrl,
+        ...product.imageUrls,
+    ].filter(Boolean);
+
     return (
         <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-            {/* 대표 이미지 */}
-            <div className="aspect-square overflow-hidden bg-slate-100">
-                {product.mainImageUrl ? (
-                    <img
-                        src={product.mainImageUrl}
-                        alt={product.name}
-                        className="h-full w-full object-contain"
-                    />
-                ) : (
-                    <div className="flex h-full items-center justify-center text-sm text-slate-400">
-                        대표 이미지 없음
-                    </div>
-                )}
+            {/* 상품 정보 */}
+            <div className="p-4">
+                <ProductThumbnailCard
+                    imageUrl={images[selectedIndex]}
+                    name={product.name}
+                    price={product.price}
+                />
             </div>
 
             <div className="space-y-5 p-6">
-                {/* 상품 정보 */}
-                <div>
-                    <div className="mb-2 flex items-center justify-between gap-3">
-                        <h2 className="text-xl font-bold text-slate-900">
-                            {product.name}
-                        </h2>
-
-                        <span
-                            className={
-                                product.isActive
-                                    ? 'rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-600'
-                                    : 'rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-500'
-                            }
-                        >
-                            {product.isActive
-                                ? '판매 중'
-                                : '비활성'}
-                        </span>
-                    </div>
-
-                    <p className="text-2xl font-bold text-slate-900">
-                        {product.price.toLocaleString()}원
-                    </p>
-                </div>
-
-                {/* 추가 이미지 */}
-                {product.imageUrls.length > 0 && (
+                {/* 상품 이미지 */}
+                {images.length > 0 && (
                     <div>
                         <h3 className="mb-2 text-sm font-semibold text-slate-700">
                             상품 이미지
                         </h3>
 
-                        <div className="grid grid-cols-4 gap-2">
-                            {product.imageUrls.map(
-                                (url, index) => (
-                                    <div
-                                        key={`${url}-${index}`}
-                                        className="aspect-square overflow-hidden rounded-lg border border-slate-200 bg-slate-50"
-                                    >
-                                        <img
-                                            src={url}
-                                            alt={`${product.name} 이미지 ${index + 1}`}
-                                            className="h-full w-full object-cover"
-                                        />
-                                    </div>
-                                ),
-                            )}
-                        </div>
+                        <ProductGallery
+                            images={images}
+                            onSelect={setSelectedIndex}
+                        />
                     </div>
                 )}
 
@@ -88,9 +56,9 @@ export function ProductPreview({
 
                     <div className="min-h-[300px] rounded-lg border border-slate-200 bg-white p-4">
                         {product.description ? (
-                            <pre className="whitespace-pre-wrap break-words text-sm leading-6 text-slate-700">
-                                {product.description}
-                            </pre>
+                            <TiptapViewer
+                                content={product.description}
+                            />
                         ) : (
                             <p className="text-sm text-slate-400">
                                 상품 상세 설명이 없습니다.

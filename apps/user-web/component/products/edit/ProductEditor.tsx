@@ -146,7 +146,7 @@ export function ProductEditor({
 
                         <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
                             <h2 className="mb-4 text-lg font-semibold text-slate-900">
-                                상품 상세 설명
+                                상품 설명글 쓰기
                             </h2>
 
                             <ProductDescriptionEditor
@@ -159,6 +159,9 @@ export function ProductEditor({
                     {/* Preview */}
                     <div>
                         <div className="sticky top-6">
+                            <h2 className="mb-4 text-lg font-semibold text-slate-900">
+                                게시글 미리보기
+                            </h2>
                             <ProductPreview product={form} />
                         </div>
                     </div>

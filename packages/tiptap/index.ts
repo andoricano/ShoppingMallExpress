@@ -11,3 +11,4 @@ export const tiptapExtensions = [
 ];
 
 export { TiptapViewer } from "./viewer/TiptapViewer";
+export { ProductThumbnailCard } from "./viewer/ProductThumbnailCard";

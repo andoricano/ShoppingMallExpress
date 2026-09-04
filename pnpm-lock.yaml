@@ -238,6 +238,9 @@ importers:
       '@mall/constants':
         specifier: workspace:*
         version: link:../../packages/constants
+      '@mall/tiptap':
+        specifier: workspace:*
+        version: link:../../packages/tiptap
       '@mall/types':
         specifier: workspace:*
         version: link:../../packages/types
@@ -253,6 +256,9 @@ importers:
       '@tiptap/extension-image':
         specifier: ^3.31.0
         version: 3.31.0(@tiptap/core@3.31.0(@tiptap/pm@3.31.0))
+      '@tiptap/extension-text-align':
+        specifier: ^3.31.0
+        version: 3.31.0(@tiptap/core@3.31.0(@tiptap/pm@3.31.0))
       '@tiptap/pm':
         specifier: ^3.31.0
         version: 3.31.0
@@ -262,6 +268,9 @@ importers:
       '@tiptap/starter-kit':
         specifier: ^3.31.0
         version: 3.31.0
+      lucide-react:
+        specifier: ^1.39.0
+        version: 1.40.0(react@19.2.8)
       next:
         specifier: 16.3.0
         version: 16.3.0(@babel/core@7.29.7)(@types/node@20.19.43)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
