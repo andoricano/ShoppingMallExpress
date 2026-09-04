@@ -1,75 +1,73 @@
+// apps/user-web/app/products/page.tsx
+
 "use client";
 
 import React from "react";
 import { useRouter } from "next/navigation";
 
-import { useAdminProducts } from "@/hooks/products/useAdminProduct";
 import { ProductAdminHeader } from "@/component/products/ProductAdminHeader";
 import { AdminMenuItem } from "@/component/common/AdminMenu";
-import { ProductSearchToolbar } from "@/component/products/ProductSearchToolbar";
-import { AdminProductThumbnailBox } from "@/component/products/list/AdminProductThumbnailBox";
+import { useAdminPostProducts } from "@/hooks/products/useAdminPostProducts";
+import { ProductPostSearchToolbar } from "@/component/products/ProductSearchToolbar";
+import { AdminProductPostCard } from "@/component/products/list/AdminProductThumbnailBox";
 
 export default function AdminProductPage() {
   const router = useRouter();
 
   const {
-    productList,
+    postList,
     loading,
     error,
-    fetchProducts,
-    toggleProductStatus,
-    deleteProduct,
-  } = useAdminProducts();
+    fetchPosts,
+    deletePost,
+  } = useAdminPostProducts();
 
   React.useEffect(() => {
-    fetchProducts();
-  }, [fetchProducts]);
+    fetchPosts();
+  }, [fetchPosts]);
 
   const menu: AdminMenuItem[] = [
     {
-      menuTitle: "상품 등록",
+      menuTitle: "상품 게시물 등록",
       onClick: () => router.push("/products/add"),
-    },
-    {
-      menuTitle: "비활성화 목록",
-      onClick: () => router.push("/products/inactive"),
     },
   ];
 
   const handleSearch = (params: {
     search?: string;
-    isActive?: boolean;
+    isPublished?: boolean;
   }) => {
-    fetchProducts(params);
+    fetchPosts(params);
   };
 
   const handleReset = () => {
-    fetchProducts();
+    fetchPosts();
   };
 
-  const handleEdit = (productId: string) => {
-    router.push(`/products/edit/${productId}`);
+  const handleEdit = (postId: string) => {
+    router.push(`/products/edit/${postId}`);
   };
 
-  const handleDelete = async (productId: string) => {
+  const handleDelete = async (postId: string) => {
     const confirmed = window.confirm(
-      "비활성화된 상품을 삭제하시겠습니까?"
+      "상품 게시물을 삭제하시겠습니까?",
     );
 
     if (!confirmed) {
       return;
     }
 
-    await deleteProduct(productId);
+    await deletePost(postId);
+    await fetchPosts();
   };
 
   return (
     <div className="min-h-screen bg-slate-50/50 p-6 md:p-8">
-      <div className="max-w-7xl mx-auto space-y-6">
+      <div className="mx-auto max-w-7xl space-y-6">
         <ProductAdminHeader menu={menu} />
 
         {error && (
-          <div className="flex items-center gap-2 p-4 text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-xl">
+          <div className="flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
             <span className="font-semibold">
               ⚠️ 오류 발생:
             </span>
@@ -77,7 +75,7 @@ export default function AdminProductPage() {
           </div>
         )}
 
-        <ProductSearchToolbar
+        <ProductPostSearchToolbar
           onSearch={handleSearch}
           onReset={handleReset}
         />
@@ -85,19 +83,20 @@ export default function AdminProductPage() {
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {loading ? (
             <div className="col-span-full py-16 text-center text-sm text-slate-400">
-              상품 목록을 불러오는 중입니다...
+              상품 게시물 목록을 불러오는 중입니다...
             </div>
-          ) : productList.length === 0 ? (
+          ) : postList.length === 0 ? (
             <div className="col-span-full py-16 text-center text-sm text-slate-400">
-              등록된 상품이 없습니다.
+              등록된 상품 게시물이 없습니다.
             </div>
           ) : (
-            productList.map((product) => (
-              <AdminProductThumbnailBox
-                key={product.id}
-                product={product}
-                onEdit={() => handleEdit(product.id)}
-                onToggleStatus={toggleProductStatus}
+            postList.map((post) => (
+              <AdminProductPostCard
+                key={post.id}
+                post={post}
+                onEdit={() =>
+                  handleEdit(post.id)
+                }
                 onDelete={handleDelete}
               />
             ))

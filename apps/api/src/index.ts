@@ -29,12 +29,16 @@ app.get('/', (req: Request, res: Response) => {
 app.use('/api/inventory-items', inventoryRoutes);
 app.use('/api', categoryRoutes);
 app.use('/api/orders', orderRoutes);
-app.use('/api/product-posts', productPostRoutes);
 
-// Client Routes
-app.use('/api/products', displayRoutes);
+// Admin ProductPost
+app.use('/api', productPostRoutes);
+
+// Client ProductPost
+app.use('/api/product-posts', displayRoutes);
 
 // Server
 app.listen(PORT, () => {
-  console.log(`TypeScript Server running on port ${PORT}`);
+  console.log(
+    `TypeScript Server running on port ${PORT}`,
+  );
 });
