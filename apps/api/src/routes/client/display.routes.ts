@@ -1,14 +1,12 @@
 import { Router } from "express";
-import { getDisplayProductById, getDisplayProducts } from "../../controllers/client/display.controller.js";
-
-
+import { getDisplayProductPostById, getDisplayProductPosts } from "../../controllers/client/display.controller.js";
 
 const router: Router = Router();
 
-// GET /api/products
-router.get("/", getDisplayProducts);
+// GET /api/product-posts
+router.get("/", getDisplayProductPosts);
 
-// GET /api/products/:id
-router.get("/:id", getDisplayProductById);
+// GET /api/product-posts/:id
+router.get("/:id", getDisplayProductPostById);
 
 export default router;

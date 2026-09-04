@@ -91,12 +91,6 @@ export const getAdminProducts = async (
             );
         }
 
-        // 활성 / 비활성 필터
-        if (isActive === "true") {
-            query = query.eq("is_active", true);
-        } else if (isActive === "false") {
-            query = query.eq("is_active", false);
-        }
 
         const { data, error } = await query;
 

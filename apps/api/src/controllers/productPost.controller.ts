@@ -3,6 +3,7 @@
 import type { Request, Response } from "express";
 import { supabase } from "../config/supabase.js";
 import { toCamelCase } from "../utils/caseConverter.js";
+import type { ProductPost } from "@mall/types";
 
 // ==========================================
 // Types
@@ -14,32 +15,60 @@ interface ProductPostQuery {
 }
 
 interface ProductPostProductPayload {
-    productId: string;
+    id?: string;
+
+    name: string;
+    mainImageUrl: string;
+    imageUrls?: string[];
+    description?: string;
+    price: number;
+    inventoryId: string;
     displayOrder?: number;
 }
 
-interface CreateProductPostPayload {
+interface UpdateProductPostPayload {
     title: string;
-    thumbnail: Record<string, unknown>;
+    thumbnail: ProductPost["thumbnail"];
     imageUrls?: string[];
-    content: string;
-    tags?: string[];
-    productIds?: ProductPostProductPayload[];
+    content?: string;
     isPublished?: boolean;
     metadata?: Record<string, unknown>;
+    products?: ProductPostProductPayload[];
+}
+
+
+interface CreateProductPostPayload {
+    title: string;
+
+    thumbnail: ProductPost["thumbnail"];
+
+    imageUrls?: string[];
+    content?: string;
+
+    isPublished?: boolean;
+
+    metadata?: Record<string, unknown>;
+
+    products: Array<{
+        name: string;
+        mainImageUrl: string;
+        imageUrls?: string[];
+        description?: string;
+        price: number;
+        inventoryId: string;
+        displayOrder?: number;
+    }>;
 }
 
 interface UpdateProductPostPayload {
-    title?: string;
-    thumbnail?: Record<string, unknown>;
+    title: string;
+    thumbnail: ProductPost["thumbnail"];
     imageUrls?: string[];
     content?: string;
-    tags?: string[];
-    productIds?: ProductPostProductPayload[];
     isPublished?: boolean;
     metadata?: Record<string, unknown>;
+    products?: ProductPostProductPayload[];
 }
-
 
 // ==========================================
 // 1. Admin 상품 게시물 목록 조회
@@ -120,13 +149,31 @@ export const getProductPostById = async (
         const { data, error } = await supabase
             .from("product_posts")
             .select(`
-                *,
-                product_post_products (
+        *,
+        product_post_products (
+            id,
+            product_id,
+            display_order,
+            products (
+                id,
+                name,
+                main_image_url,
+                image_urls,
+                description,
+                price,
+                inventory_id,
+                inventory_items (
                     id,
-                    product_id,
-                    display_order
+                    sku_code,
+                    current_stock,
+                    is_active,
+                    meta,
+                    created_at,
+                    updated_at
                 )
-            `)
+            )
+        )
+    `)
             .eq("id", id)
             .maybeSingle();
 
@@ -158,8 +205,6 @@ export const getProductPostById = async (
         });
     }
 };
-
-
 // ==========================================
 // 3. Admin 상품 게시물 등록
 // ==========================================
@@ -173,11 +218,10 @@ export const createProductPost = async (
             title,
             thumbnail,
             imageUrls = [],
-            content,
-            tags = [],
-            productIds = [],
+            content = "",
             isPublished = false,
             metadata = {},
+            products = [],
         } = req.body;
 
         if (!title?.trim()) {
@@ -187,54 +231,24 @@ export const createProductPost = async (
             });
         }
 
-        const { data: post, error: postError } = await supabase
-            .from("product_posts")
-            .insert({
-                title: title.trim(),
-                thumbnail,
-                image_urls: imageUrls,
-                content,
-                tags,
-                is_published: isPublished,
-                metadata,
-                published_at: isPublished
-                    ? new Date().toISOString()
-                    : null,
-            })
-            .select("*")
-            .single();
+        const { data, error } = await supabase.rpc(
+            "create_product_post",
+            {
+                p_title: title.trim(),
+                p_thumbnail: thumbnail,
+                p_image_urls: imageUrls,
+                p_content: content,
+                p_is_published: isPublished,
+                p_metadata: metadata,
+                p_products: products,
+            }
+        );
 
-        if (postError) throw postError;
-
-        // Product 연결
-        if (productIds.length > 0) {
-            const relations = productIds.map((item, index) => ({
-                product_post_id: post.id,
-                product_id: item.productId,
-                display_order:
-                    item.displayOrder ?? index,
-            }));
-
-            const { error: relationError } = await supabase
-                .from("product_post_products")
-                .insert(relations);
-
-            if (relationError) throw relationError;
-        }
+        if (error) throw error;
 
         return res.status(201).json({
             success: true,
-            data: toCamelCase({
-                ...post,
-                product_post_products: productIds.map(
-                    (item, index) => ({
-                        product_post_id: post.id,
-                        product_id: item.productId,
-                        display_order:
-                            item.displayOrder ?? index,
-                    })
-                ),
-            }),
+            data: toCamelCase(data),
         });
     } catch (error) {
         console.error(
@@ -245,9 +259,10 @@ export const createProductPost = async (
         return res.status(500).json({
             success: false,
             message: "상품 게시물 등록에 실패했습니다.",
-            error: error instanceof Error
-                ? error.message
-                : JSON.stringify(error),
+            error:
+                error instanceof Error
+                    ? error.message
+                    : JSON.stringify(error),
         });
     }
 };
@@ -271,99 +286,39 @@ export const updateProductPost = async (
         const {
             title,
             thumbnail,
-            imageUrls,
-            content,
-            tags,
-            productIds,
-            isPublished,
-            metadata,
+            imageUrls = [],
+            content = "",
+            isPublished = false,
+            metadata = {},
+            products = [],
         } = req.body;
 
-        const updateData: Record<string, unknown> = {};
-
-        if (title !== undefined) {
-            updateData.title = title.trim();
-        }
-
-        if (thumbnail !== undefined) {
-            updateData.thumbnail = thumbnail;
-        }
-
-        if (imageUrls !== undefined) {
-            updateData.image_urls = imageUrls;
-        }
-
-        if (content !== undefined) {
-            updateData.content = content;
-        }
-
-        if (tags !== undefined) {
-            updateData.tags = tags;
-        }
-
-        if (metadata !== undefined) {
-            updateData.metadata = metadata;
-        }
-
-        if (isPublished !== undefined) {
-            updateData.is_published = isPublished;
-
-            if (isPublished) {
-                updateData.published_at =
-                    new Date().toISOString();
-            } else {
-                updateData.published_at = null;
-            }
-        }
-
-        updateData.updated_at = new Date().toISOString();
-
-        const { data: post, error: postError } = await supabase
-            .from("product_posts")
-            .update(updateData)
-            .eq("id", id)
-            .select("*")
-            .maybeSingle();
-
-        if (postError) throw postError;
-
-        if (!post) {
-            return res.status(404).json({
+        if (!title?.trim()) {
+            return res.status(400).json({
                 success: false,
-                message: "상품 게시물을 찾을 수 없습니다.",
+                message: "게시물 제목은 필수입니다.",
             });
         }
 
-        // Product 연결 정보가 전달된 경우 전체 재구성
-        if (productIds !== undefined) {
-            const { error: deleteError } = await supabase
-                .from("product_post_products")
-                .delete()
-                .eq("product_post_id", id);
-
-            if (deleteError) throw deleteError;
-
-            if (productIds.length > 0) {
-                const relations = productIds.map(
-                    (item, index) => ({
-                        product_post_id: id,
-                        product_id: item.productId,
-                        display_order:
-                            item.displayOrder ?? index,
-                    })
-                );
-
-                const { error: insertError } = await supabase
-                    .from("product_post_products")
-                    .insert(relations);
-
-                if (insertError) throw insertError;
+        const { data, error } = await supabase.rpc(
+            "update_product_post",
+            {
+                p_post_id: id,
+                p_title: title.trim(),
+                p_thumbnail: thumbnail,
+                p_image_urls: imageUrls,
+                p_content: content,
+                p_is_published: isPublished,
+                p_metadata: metadata,
+                p_products: products,
             }
-        }
+        );
+
+        if (error) throw error;
 
         return res.json({
             success: true,
-            data: toCamelCase(post),
+            data: toCamelCase(data),
         });
     } catch (error) {
         console.error(
@@ -374,9 +329,10 @@ export const updateProductPost = async (
         return res.status(500).json({
             success: false,
             message: "상품 게시물 수정에 실패했습니다.",
-            error: error instanceof Error
-                ? error.message
-                : JSON.stringify(error),
+            error:
+                error instanceof Error
+                    ? error.message
+                    : JSON.stringify(error),
         });
     }
 };
@@ -472,101 +428,6 @@ export const deleteProductPost = async (
         return res.status(500).json({
             success: false,
             message: "상품 게시물 삭제에 실패했습니다.",
-            error: error instanceof Error
-                ? error.message
-                : JSON.stringify(error),
-        });
-    }
-};
-
-
-// ==========================================
-// 7. Product 추가
-// ==========================================
-
-export const addProductToPost = async (
-    req: Request<
-        { id: string },
-        {},
-        ProductPostProductPayload
-    >,
-    res: Response
-) => {
-    try {
-        const { id } = req.params;
-        const {
-            productId,
-            displayOrder = 0,
-        } = req.body;
-
-        const { data, error } = await supabase
-            .from("product_post_products")
-            .insert({
-                product_post_id: id,
-                product_id: productId,
-                display_order: displayOrder,
-            })
-            .select("*")
-            .single();
-
-        if (error) throw error;
-
-        return res.status(201).json({
-            success: true,
-            data: toCamelCase(data),
-        });
-    } catch (error) {
-        console.error(
-            "Add product to post failed:",
-            error
-        );
-
-        return res.status(500).json({
-            success: false,
-            message: "상품 게시물에 상품을 추가하지 못했습니다.",
-            error: error instanceof Error
-                ? error.message
-                : JSON.stringify(error),
-        });
-    }
-};
-
-
-// ==========================================
-// 8. Product 제거
-// ==========================================
-
-export const removeProductFromPost = async (
-    req: Request<{
-        id: string;
-        productId: string;
-    }>,
-    res: Response
-) => {
-    try {
-        const { id, productId } = req.params;
-
-        const { error } = await supabase
-            .from("product_post_products")
-            .delete()
-            .eq("product_post_id", id)
-            .eq("product_id", productId);
-
-        if (error) throw error;
-
-        return res.json({
-            success: true,
-            message: "상품이 게시물에서 제거되었습니다.",
-        });
-    } catch (error) {
-        console.error(
-            "Remove product from post failed:",
-            error
-        );
-
-        return res.status(500).json({
-            success: false,
-            message: "상품 게시물에서 상품을 제거하지 못했습니다.",
             error: error instanceof Error
                 ? error.message
                 : JSON.stringify(error),
