@@ -1,23 +1,19 @@
 "use client";
 
-import { useEffect } from "react";
 import { useParams } from "next/navigation";
 
-import { useProduct } from "@/hooks/useProduct";
+import { useProductDetail } from "@/hooks/useProductDetail";
 import { ProductPost } from "@/components/product/post/ProductPost";
 
 export default function ProductDetailPage() {
     const params = useParams<{ id: string }>();
-    const { product, loading, error, fetchProduct } =
-        useProduct();
 
-    useEffect(() => {
-        if (!params.id) {
-            return;
-        }
-
-        fetchProduct(params.id);
-    }, [params.id, fetchProduct]);
+    const {
+        product,
+        reviews,
+        loading,
+        error,
+    } = useProductDetail(params.id);
 
     if (loading) {
         return (
@@ -43,5 +39,10 @@ export default function ProductDetailPage() {
         );
     }
 
-    return <ProductPost product={product} />;
+    return (
+        <ProductPost
+            product={product}
+            reviews={reviews}
+        />
+    );
 }
