@@ -6,3 +6,4 @@ export * from './product.js';
 export * from './order.js';
 export * from './config.js';
 export * from './masterConfig.js';
+export * from './productPost.js';
