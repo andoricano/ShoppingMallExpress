@@ -15,11 +15,11 @@ export const ProductAdminHeader: React.FC<ProductAdminHeaderProps> = ({
             <div className="flex items-start justify-between gap-6">
                 <div>
                     <h1 className="text-2xl font-bold text-slate-800">
-                        상품 관리
+                        상품 판매글 추가
                     </h1>
 
                     <p className="mt-2 text-sm text-slate-500">
-                        상품 정보를 관리하고 판매 상태를 설정합니다.
+                        상품 판매글을 추가하세요!
                     </p>
                 </div>
 

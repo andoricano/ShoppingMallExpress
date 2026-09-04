@@ -29,6 +29,25 @@ export const API_ENDPOINTS = {
     },
 
     // ==========================================
+    // 상품 게시물 관리 - Admin
+    // ==========================================
+    PRODUCT_POSTS: {
+        BASE: "/api/admin/product-posts",
+        BY_ID: (id: string) =>
+            `/api/admin/product-posts/${id}`,
+        STATUS: (id: string) =>
+            `/api/admin/product-posts/${id}/status`,
+        PRODUCTS: (id: string) =>
+            `/api/admin/product-posts/${id}/products`,
+        PRODUCT: (
+            id: string,
+            productId: string,
+        ) =>
+            `/api/admin/product-posts/${id}/products/${productId}`,
+    },
+
+
+    // ==========================================
     // 상품 조회 - Client
     // ==========================================
     CLIENT_PRODUCTS: {

@@ -3,23 +3,29 @@
 "use client";
 
 import { useState } from "react";
-import type { Product } from "@mall/types";
 import { TiptapViewer, ProductThumbnailCard } from "@mall/tiptap";
 import { ProductGallery } from "./ProductGallery";
 
-
-export type ProductPreviewProps = {
-    product: Product;
-};
+export interface ProductPreviewProps {
+    name: string;
+    mainImageUrl: string;
+    imageUrls: string[];
+    description: string;
+    price: number;
+}
 
 export function ProductPreview({
-    product,
+    name,
+    mainImageUrl,
+    imageUrls,
+    description,
+    price,
 }: ProductPreviewProps) {
     const [selectedIndex, setSelectedIndex] = useState(0);
 
     const images = [
-        product.mainImageUrl,
-        ...product.imageUrls,
+        mainImageUrl,
+        ...imageUrls,
     ].filter(Boolean);
 
     return (
@@ -28,8 +34,8 @@ export function ProductPreview({
             <div className="p-4">
                 <ProductThumbnailCard
                     imageUrl={images[selectedIndex]}
-                    name={product.name}
-                    price={product.price}
+                    name={name}
+                    price={price}
                 />
             </div>
 
@@ -55,27 +61,14 @@ export function ProductPreview({
                     </h3>
 
                     <div className="min-h-[300px] rounded-lg border border-slate-200 bg-white p-4">
-                        {product.description ? (
-                            <TiptapViewer
-                                content={product.description}
-                            />
+                        {description ? (
+                            <TiptapViewer content={description} />
                         ) : (
                             <p className="text-sm text-slate-400">
                                 상품 상세 설명이 없습니다.
                             </p>
                         )}
                     </div>
-                </div>
-
-                {/* 기본 정보 */}
-                <div className="border-t border-slate-100 pt-4 text-xs text-slate-400">
-                    <p>
-                        Inventory ID: {product.inventoryId}
-                    </p>
-
-                    <p className="mt-1">
-                        상품 ID: {product.id}
-                    </p>
                 </div>
             </div>
         </div>

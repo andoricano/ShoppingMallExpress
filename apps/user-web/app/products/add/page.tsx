@@ -1,77 +1,76 @@
 "use client";
 
-import React, { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
-import { ProductAdminHeader } from "@/component/products/ProductAdminHeader";
 import { AdminMenuItem } from "@/component/common/AdminMenu";
+import { ProductAdminHeader } from "@/component/products/ProductAdminHeader";
+import { ProductInventorySection } from "@/component/products/add/ProductInventorySection";
 
-import { InventoryList } from "@/component/products/add/InventoryList";
-import { InventoryInspector } from "@/component/products/add/InventoryInspector";
-import { ProductsTable } from "@/component/products/add/ProductsTable";
-import { InventorySearchBar } from "@/component/products/add/InventorSearchBar";
+import { useProductPostEditor } from "@/hooks/products/useProductPostEditor";
+import { ProductPostEditor } from "@/component/products/edit/ProductEditor";
 
-import type { SkuInventory } from "@mall/types";
-import { useProductAdd } from "@/hooks/products/useProductAdd";
+interface ProductAddPageProps {
+    mode: "create" | "edit";
+}
 
-export default function ProductAddPage() {
-    const router = useRouter();
-
+export default function ProductAddPage({
+    mode,
+}: ProductAddPageProps) {
     const {
-        inventoryList,
-        selectedInventory,
-        productList,
-
-        loadingInventory,
-        loadingProducts,
+        products,
+        loading: loadingProducts,
+        saving,
         error,
 
-        fetchInventories,
-        selectInventory,
         fetchProducts,
-    } = useProductAdd();
+    } = useProductPostEditor();
 
     useEffect(() => {
-        fetchInventories();
         fetchProducts();
-    }, [fetchInventories, fetchProducts]);
+    }, [fetchProducts]);
+
+    const handleRegisterProduct = () => {
+        // Inventory 선택 후 Product 등록 로직 연결 예정
+    };
+
+    const handleSave = async () => {
+        // ProductPost 저장 로직 연결 예정
+    };
+
+    const handleTemporarySave = async () => {
+        // ProductPost 임시저장 로직 연결 예정
+    };
+
+    const handleDelete = async () => {
+        // ProductPost 삭제 로직 연결 예정
+    };
 
     const menu: AdminMenuItem[] = [
         {
-            menuTitle: "상품 목록",
-            onClick: () => router.push("/products"),
+            menuTitle: mode === "create" ? "게시하기" : "수정하기",
+            onClick: handleSave,
         },
         {
-            menuTitle: "상품 등록",
-            onClick: () => router.push("/products/add"),
+            menuTitle: "임시저장",
+            onClick: handleTemporarySave,
         },
-        {
-            menuTitle: "비활성화 목록",
-            onClick: () => router.push("/products/inactive"),
-        },
+        ...(mode === "edit"
+            ? [
+                {
+                    menuTitle: "삭제하기",
+                    onClick: handleDelete,
+                },
+            ]
+            : []),
     ];
-
-    const handleInventorySearch = (value: string) => {
-        fetchInventories({
-            search: value,
-        });
-    };
-
-    const handleInventoryReset = () => {
-        fetchInventories();
-    };
-
-    const handleRegisterProduct = (inventory: SkuInventory) => {
-        router.push(`/products/add/${inventory.id}`);
-    };
 
     return (
         <div className="min-h-screen bg-slate-50/50 p-6 md:p-8">
-            <div className="max-w-[1800px] mx-auto space-y-6">
+            <div className="mx-auto max-w-[1800px] space-y-6">
                 <ProductAdminHeader menu={menu} />
 
                 {error && (
-                    <div className="flex items-center gap-2 p-4 text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-xl">
+                    <div className="flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
                         <span className="font-semibold">
                             ⚠️ 오류 발생:
                         </span>
@@ -79,39 +78,24 @@ export default function ProductAddPage() {
                     </div>
                 )}
 
-                <div className="grid grid-cols-1 lg:grid-cols-[300px_minmax(400px,1fr)_minmax(500px,1.5fr)] gap-5 items-start">
-                    {/* Left: Inventory */}
-                    <section className="space-y-3">
-                        <InventorySearchBar
-                            onSearch={handleInventorySearch}
-                            onReset={handleInventoryReset}
-                        />
+                <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[1fr_3fr]">
+                    <ProductInventorySection
+                        products={products}
+                        isLoadingProducts={loadingProducts}
+                        onRegister={handleRegisterProduct}
+                    />
 
-                        <InventoryList
-                            items={inventoryList}
-                            selectedId={selectedInventory?.id}
-                            isLoading={loadingInventory}
-                            onSelect={selectInventory}
-                        />
-                    </section>
-
-                    {/* Center: Inventory Inspector */}
-                    <section>
-                        <InventoryInspector
-                            inventory={selectedInventory}
-                            onRegister={handleRegisterProduct}
-                        />
-                    </section>
-
-                    {/* Right: Products */}
-                    <section>
-                        <ProductsTable
-                            items={inventoryList}
-                            products={productList}
-                            isLoading={loadingProducts}
-                        />
-                    </section>
+                    {/* 중앙 + 우측 */}
+                    <ProductPostEditor
+                        mode={mode}
+                    />
                 </div>
+
+                {saving && (
+                    <div className="text-sm text-slate-500">
+                        저장 중입니다...
+                    </div>
+                )}
             </div>
         </div>
     );

@@ -22,7 +22,7 @@ export const InventoryInspector: React.FC<InventoryInspectorProps> = ({
                         Inventory를 선택해주세요.
                     </p>
                     <p className="mt-1 text-xs text-slate-400">
-                        좌측 목록에서 상품으로 등록할 Inventory를 선택할 수 있습니다.
+                        위 목록에서 상품으로 등록할 Inventory를 선택할 수 있습니다.
                     </p>
                 </div>
             </div>

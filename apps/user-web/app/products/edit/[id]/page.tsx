@@ -6,7 +6,7 @@ import { useEffect } from "react";
 import { useParams } from "next/navigation";
 
 import { useProductEdit } from "@/hooks/products/useProductEdit";
-import { ProductEditor } from "@/component/products/edit/ProductEditor";
+import { ProductPostEditor } from "@/component/products/edit/ProductEditor";
 
 export default function ProductEditPage() {
     const params = useParams<{ id: string }>();
@@ -50,11 +50,8 @@ export default function ProductEditPage() {
     }
 
     return (
-        <ProductEditor
+        <ProductPostEditor
             mode="edit"
-            product={product}
-            saving={saving}
-            onUpdate={updateProduct}
         />
     );
 }
