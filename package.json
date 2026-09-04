@@ -1,6 +1,7 @@
 {
   "name": "mall",
   "private": true,
+
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",
@@ -13,16 +14,28 @@
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "check-types": "turbo run check-types"
   },
+
   "devDependencies": {
     "prettier": "^3.7.4",
     "turbo": "^2.10.9",
     "typescript": "5.9.2"
   },
+
   "packageManager": "pnpm@9.0.0",
+
   "engines": {
     "node": ">=18"
   },
+
   "dependencies": {
-    "zustand": "^5.0.15"
+    "zustand": "^5.0.15",
+
+    "@tiptap/core": "3.31.0",
+    "@tiptap/extension-image": "3.31.0",
+    "@tiptap/extension-text-align": "3.31.0",
+    "@tiptap/pm": "3.31.0",
+    "@tiptap/react": "3.31.0",
+    "@tiptap/starter-kit": "3.31.0",
+    "@tiptap/static-renderer": "3.31.0"
   }
 }
