@@ -52,7 +52,7 @@ const createEmptyProductPost = (): ProductPost => ({
     imageUrls: [],
     content: "",
     productIds: [],
-    isPublished: false,
+    isPublished: true,
     viewCount: 0,
     publishedAt: undefined,
     metadata: {},

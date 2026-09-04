@@ -7,21 +7,22 @@ import HeroBanner from "@/components/home/HomeBanner";
 import ProductSection from "@/components/home/ProductSection";
 import Header from "@/components/common/Header";
 import Footer from "@/components/common/Footer";
-import { useProduct } from "@/hooks/useProduct";
+import { useProductPost } from "@/hooks/useProductPost";
 
 export default function HomePage() {
   const {
-    productList,
+    postList,
     loading,
     error,
-    fetchProducts,
-  } = useProduct();
+    fetchPosts,
+  } = useProductPost();
 
   useEffect(() => {
-    fetchProducts();
-  }, [fetchProducts]);
+    fetchPosts();
+  }, [fetchPosts]);
 
-  // 사이트 설정이 없을 때 사용하는 기본 설정
+
+
   const configData = useMemo<ClientPageConfig>(
     () => ({
       id: "default",
@@ -40,7 +41,9 @@ export default function HomePage() {
           order: 1,
           isActive: true,
           title: "상품",
-          productIds: productList.map((product) => product.id),
+          postIds: postList.map(
+            (post) => post.id,
+          ),
           layout: "GRID",
         },
       ],
@@ -55,46 +58,52 @@ export default function HomePage() {
         additionalInfo: "",
       },
     }),
-    [productList]
+    [postList],
   );
 
   const activeHero = configData.hero
     .filter((hero) => hero.isActive)
-    .sort((a, b) => a.order - b.order)[0];
+    .sort(
+      (a, b) => a.order - b.order,
+    )[0];
 
   const activeSections = configData.sections
     .filter((section) => section.isActive)
-    .sort((a, b) => a.order - b.order);
+    .sort(
+      (a, b) => a.order - b.order,
+    );
 
   return (
     <main className="min-h-screen">
       <Header config={configData.header} />
 
-      {/* Hero */}
-      {activeHero && <HeroBanner section={activeHero} />}
+      {activeHero && (
+        <HeroBanner section={activeHero} />
+      )}
 
-      {/* Sections */}
-      {activeSections.map((section: MainSection) => {
-        switch (section.type) {
-          case "PRODUCT":
-            return (
-              <ProductSection
-                key={section.id}
-                section={section}
-                products={productList}
-              />
-            );
+      {activeSections.map(
+        (section: MainSection) => {
+          switch (section.type) {
+            case "PRODUCT":
+              return (
+                <ProductSection
+                  key={section.id}
+                  section={section}
+                  posts={postList}
+                />
+              );
 
-          case "CATEGORY":
-            return null;
+            case "CATEGORY":
+              return null;
 
-          case "BANNER":
-            return null;
+            case "BANNER":
+              return null;
 
-          default:
-            return null;
-        }
-      })}
+            default:
+              return null;
+          }
+        },
+      )}
 
       <Footer config={configData.footer} />
 

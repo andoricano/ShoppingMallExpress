@@ -49,7 +49,7 @@ export interface ProductSection extends MainSectionBase {
 
     title: string;
 
-    productIds: string[];
+    postIds: string[];
 
     layout: ProductSectionLayout;
 }

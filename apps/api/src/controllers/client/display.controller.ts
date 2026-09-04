@@ -1,4 +1,4 @@
-// controllers/client/productPost.controller.ts
+// controllers/client/display.controller.ts
 
 import type { Request, Response } from "express";
 import { supabase } from "../../config/supabase.js";
@@ -10,7 +10,7 @@ import { toCamelCase } from "../../utils/caseConverter.js";
 
 export const getDisplayProductPosts = async (
     _req: Request,
-    res: Response
+    res: Response,
 ) => {
     try {
         const { data, error } = await supabase
@@ -34,7 +34,9 @@ export const getDisplayProductPosts = async (
                             sku_code,
                             current_stock,
                             is_active,
-                            meta
+                            meta,
+                            created_at,
+                            updated_at
                         )
                     )
                 )
@@ -53,12 +55,13 @@ export const getDisplayProductPosts = async (
     } catch (error) {
         console.error(
             "Get client product posts failed:",
-            error
+            error,
         );
 
         return res.status(500).json({
             success: false,
-            message: "상품 게시물 목록 조회에 실패했습니다.",
+            message:
+                "상품 게시물 목록 조회에 실패했습니다.",
             error:
                 error instanceof Error
                     ? error.message
@@ -74,7 +77,7 @@ export const getDisplayProductPosts = async (
 
 export const getDisplayProductPostById = async (
     req: Request<{ id: string }>,
-    res: Response
+    res: Response,
 ) => {
     try {
         const { id } = req.params;
@@ -100,7 +103,9 @@ export const getDisplayProductPostById = async (
                             sku_code,
                             current_stock,
                             is_active,
-                            meta
+                            meta,
+                            created_at,
+                            updated_at
                         )
                     )
                 )
@@ -114,7 +119,8 @@ export const getDisplayProductPostById = async (
         if (!data) {
             return res.status(404).json({
                 success: false,
-                message: "상품 게시물을 찾을 수 없습니다.",
+                message:
+                    "상품 게시물을 찾을 수 없습니다.",
             });
         }
 
@@ -125,12 +131,13 @@ export const getDisplayProductPostById = async (
     } catch (error) {
         console.error(
             "Get client product post failed:",
-            error
+            error,
         );
 
         return res.status(500).json({
             success: false,
-            message: "상품 게시물 조회에 실패했습니다.",
+            message:
+                "상품 게시물 조회에 실패했습니다.",
             error:
                 error instanceof Error
                     ? error.message

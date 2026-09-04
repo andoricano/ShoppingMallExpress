@@ -1,6 +1,8 @@
-# [PRD] 상품 관리 모듈 (Product Management) - Admin Focused
+# [PRD] 상품 관리 모듈 (Product Management)
 
-> 본 모듈은 **상품 정보를 관리하고 구매자에게 판매 상품 정보를 제공하는 모듈**입니다.
+> 본 모듈은 **상품 게시물에서 사용하는 Product 데이터의 구조와 관리 범위**를 정의합니다.
+>
+> Product는 독립적인 CRUD 대상이 아니며, **ProductPost를 통해 생성·수정·제거됩니다.**
 >
 > 상품별 SKU 및 재고 수량은 **Inventory 모듈**에서 관리하며, 본 모듈에서는 재고 수량을 직접 관리하지 않습니다.
 
@@ -8,11 +10,13 @@
 
 ## 1. 개요 (Overview)
 
-어드민에서 판매 상품의 기본 정보, 가격 및 연결된 Inventory를 관리하고, 활성화된 상품을 구매자에게 Read-Only로 제공합니다.
+Product는 ProductPost에 포함되는 **실제 구매 단위**입니다.
 
-하나의 Product는 하나의 Inventory와 연결됩니다.
+Product는 독립적인 관리 대상이 아니며, ProductPost 작성 및 수정 과정에서 관리됩니다.
 
-Product의 활성 상태는 **상품의 판매 가능 여부**를 관리하며, Inventory의 활성 상태는 **연결된 재고의 유효 여부**를 관리합니다.
+하나의 Product는 하나의 Inventory와 연결되며, **하나의 Inventory는 여러 Product에서 참조될 수 있습니다.**
+
+Product의 구매 가능 여부는 연결된 Inventory의 상태 및 재고를 기준으로 판단합니다.
 
 ---
 
@@ -22,12 +26,10 @@ Product의 활성 상태는 **상품의 판매 가능 여부**를 관리하며, 
 
 * Product ID
 * 상품명
-* 상품 코드
 * 대표 이미지
 * 추가 이미지
 * 상품 설명
 * 가격
-* 활성 상태
 * Inventory ID
 
 ### 2.2 Inventory 연동 정보
@@ -40,74 +42,58 @@ Product의 활성 상태는 **상품의 판매 가능 여부**를 관리하며, 
 
 > SKU 코드, 메타 정보 및 재고 수량은 Inventory 모듈에서 관리합니다.
 >
-> Product는 연결된 Inventory의 정보를 조회하여 판매 상품 정보를 구성합니다.
+> Product는 연결된 Inventory의 정보를 조회하여 구매 상품 정보를 구성합니다.
 
 ---
 
 ## 3. 기능 요구사항 (Functional Requirements)
 
-### 3.1 상품 등록
+### 3.1 Product 생성
 
-* 어드민이 상품을 등록할 수 있어야 합니다.
-* 상품명, 상품 코드, 이미지, 설명, 가격 등의 기본 정보를 등록할 수 있어야 합니다.
-* 활성 상태의 Inventory만 상품에 연결할 수 있어야 합니다.
-* 신규 상품은 활성 상태로 생성할 수 있어야 합니다.
+* Product는 ProductPost 작성 과정에서 생성할 수 있어야 합니다.
+* Product 생성 시 기존 Inventory를 선택할 수 있어야 합니다.
+* 하나의 Inventory를 여러 Product에서 사용할 수 있어야 합니다.
+* Product 생성 중인 데이터는 임시 상태로 관리할 수 있어야 합니다.
+* ProductPost 저장 시 실제 Product 데이터가 생성되어야 합니다.
 
-### 3.2 상품 조회
+### 3.2 Product 조회
 
-#### Admin
+* Product는 독립적인 조회 대상이 아닙니다.
+* Admin에서는 ProductPost에 포함된 Product 정보를 조회할 수 있어야 합니다.
+* Client에서는 ProductPost에 포함된 Product 정보를 조회할 수 있어야 합니다.
+* Product의 구매 가능 여부는 연결된 Inventory 상태 및 재고를 기준으로 판단합니다.
 
-* 전체 상품 목록 조회
-* 상품명 및 상품 코드 검색
-* 상품 상세 정보 조회
-* 연결된 Inventory 정보 조회
-* 활성 및 비활성 상품 조회
+### 3.3 Product 수정
 
-#### Client
-
-* 노출 가능한 상품 조회
-* 상품 목록 및 상세 정보 조회
-* 상품 정보를 Read-Only로 조회
-
-### 3.3 상품 수정
-
-* 상품명, 상품 코드, 이미지, 설명, 가격 등의 정보를 수정할 수 있어야 합니다.
+* Product는 ProductPost 수정 과정에서 수정할 수 있어야 합니다.
+* 상품명, 이미지, 설명 및 가격 등의 정보를 수정할 수 있어야 합니다.
 * 연결된 Inventory를 변경할 수 있어야 합니다.
-* 상품 활성 상태를 변경할 수 있어야 합니다.
-* 비활성 상태의 Inventory는 신규 연결 대상으로 사용할 수 없습니다.
+* Product 자체의 독립적인 수정 API 및 관리 화면은 제공하지 않습니다.
 
-### 3.4 상품 비활성화
+### 3.4 Product 제거
 
-* 더 이상 판매하지 않는 상품은 `isActive = false`로 비활성화할 수 있어야 합니다.
-* 상품 비활성화는 언제든지 수행할 수 있어야 합니다.
-* 비활성화된 상품은 Client에서 구매할 수 없어야 합니다.
-* Product가 포함된 게시물에서는 해당 상품을 **판매 중지 상태**로 표시할 수 있어야 합니다.
-* 비활성화된 상품은 Admin에서 계속 조회 및 관리할 수 있어야 합니다.
-* 기존 주문 등에서 참조되는 상품 정보는 주문 데이터에 보존되어야 합니다.
+* Product는 ProductPost의 상품 구성에서 제거할 수 있어야 합니다.
+* ProductPost에서 Product를 제거해도 Product 데이터 자체는 임의로 삭제하지 않습니다.
+* Product가 다른 ProductPost에서 사용 중인 경우 기존 연결 관계를 유지해야 합니다.
 
-### 3.5 상품 삭제
-
-* Product는 `isActive = false` 상태에서만 삭제할 수 있습니다.
-* 활성 상태의 Product는 삭제할 수 없습니다.
-* 삭제된 Product는 Client에 노출되지 않습니다.
-* Product 삭제 이후에도 기존 주문의 주문 정보가 변경되거나 손상되지 않아야 합니다.
-* 주문 당시의 상품명, 가격 및 옵션 정보는 Order Item의 Snapshot 데이터로 유지합니다.
-
-### 3.6 Inventory 연동
+### 3.5 Inventory 연동
 
 * 하나의 Product는 하나의 Inventory와 연결됩니다.
-* Product에 연결된 Inventory가 비활성화되면 해당 Product는 Client에 노출하지 않습니다.
-* Inventory가 다시 활성화되더라도 Product의 `isActive` 상태는 자동으로 변경하지 않습니다.
-* Product가 비활성화되어도 연결된 Inventory는 유지됩니다.
-* Inventory의 재고 수량 및 SKU 정보는 Inventory 모듈에서 관리합니다.
+* 하나의 Inventory는 여러 Product에서 참조될 수 있습니다.
+* Product 생성 시 기존 Inventory를 선택할 수 있어야 합니다.
+* Inventory의 SKU 정보 및 재고 수량은 Inventory 모듈에서 관리합니다.
+* ProductPost에서는 Inventory 정보를 직접 수정하지 않습니다.
+* 연결된 Inventory가 비활성 상태인 경우 해당 Product는 판매 및 노출 대상에서 제외할 수 있어야 합니다.
 
 ---
 
 ## 4. 권한 (Permissions)
 
-* **Super Admin**: 모든 상품 조회 및 관리
-* **Store Operator**: 허용된 상품 조회 및 관리
-* **Customer**: 노출 가능한 상품 조회만 가능하며 관리 기능은 사용할 수 없습니다.
+* Product 자체의 독립적인 CRUD 권한은 제공하지 않습니다.
+* Product에 대한 관리 권한은 ProductPost 관리 권한에 포함됩니다.
+* **Super Admin**: 모든 ProductPost 및 포함 Product 조회·관리
+* **Store Operator**: 허용된 ProductPost 및 포함 Product 조회·관리
+* **Customer**: 공개된 ProductPost 및 구매 가능한 Product 조회만 가능
 
 ---
 
@@ -115,15 +101,24 @@ Product의 활성 상태는 **상품의 판매 가능 여부**를 관리하며, 
 
 ### 5.1 접근 제어
 
-* 상품 관리 API는 어드민 권한을 가진 사용자만 사용할 수 있어야 합니다.
-* Client API는 상품 조회 기능만 제공합니다.
-* Client에서는 상품 데이터를 직접 수정할 수 없어야 합니다.
+* Product 관리 기능은 ProductPost 관리 API를 통해서만 제공합니다.
+* Product 독립적인 CRUD API는 제공하지 않습니다.
+* Client에서는 Product 데이터를 직접 수정할 수 없어야 합니다.
 
 ### 5.2 데이터 무결성
 
-* Product와 Inventory의 1:1 연결 관계를 유지해야 합니다.
-* 비활성화된 Inventory는 신규 Product 연결 대상에서 제외합니다.
-* Inventory 비활성화 시 연결된 Product는 Client에 노출하지 않습니다.
-* Product의 활성 상태는 Inventory 상태와 별도로 관리합니다.
-* Product 삭제는 반드시 비활성 상태에서만 수행할 수 있어야 합니다.
-* 기존 주문의 상품 정보는 Product 삭제 이후에도 유지되어야 합니다.
+* Product와 Inventory는 **1:N 관계**를 유지해야 합니다.
+* 하나의 Inventory는 여러 Product에서 참조될 수 있어야 합니다.
+* ProductPost와 Product의 연결 관계를 유지해야 합니다.
+* ProductPost 생성 시 생성되는 Product는 동일한 저장 작업에서 함께 처리해야 합니다.
+* ProductPost 저장이 실패한 경우 생성 예정 Product도 저장되지 않아야 합니다.
+* 기존 주문의 상품 정보는 OrderItem Snapshot을 통해 보존해야 합니다.
+
+### 5.3 데이터 책임 분리
+
+* **ProductPost**: 게시물 콘텐츠, 노출 정보 및 Product 관리
+* **Product**: 실제 구매 상품 정보
+* **Inventory**: SKU 및 재고 정보
+* **Order**: 주문 시점의 Product 정보 Snapshot
+
+> Product는 독립적인 관리 모듈이 아니라 **ProductPost에 종속된 구매 상품 데이터**입니다.

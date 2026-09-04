@@ -3,7 +3,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useProduct } from "./useProduct";
+import { useProduct } from "./useProductPost";
 import type { Product } from "@mall/types";
 
 interface ProductReview {
@@ -44,8 +44,8 @@ export function useProductDetail(id: string | undefined) {
 
     const reviews = id
         ? MOCK_REVIEWS.filter(
-              (review) => review.productId === id,
-          )
+            (review) => review.productId === id,
+        )
         : [];
 
     return {

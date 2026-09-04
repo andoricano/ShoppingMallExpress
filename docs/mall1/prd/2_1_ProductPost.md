@@ -109,6 +109,9 @@ Product는 상품 게시물에 포함되는 **실제 구매 단위**이며, Prod
 * 비공개 게시물은 Client에 노출하지 않습니다.
 * 게시물에 포함된 Product의 Inventory 상태 및 재고 정보를 기준으로 구매 가능 여부를 판단합니다.
 * 구매할 수 없는 Product는 게시물에서 구매 제한 상태로 표시할 수 있어야 합니다.
+* Product에 연결된 Inventory가 비활성화된 경우 해당 Product를 게시물의 판매 품목에서 제외합니다.
+* Inventory가 비활성 상태인 Product는 Client에 노출하지 않습니다.
+* Inventory가 다시 활성화되면 해당 Product를 다시 판매 품목으로 포함할 수 있습니다.
 
 ### 3.5 상품 게시 중지
 
@@ -130,10 +133,13 @@ Product는 상품 게시물에 포함되는 **실제 구매 단위**이며, Prod
 ### 3.7 Inventory 연동
 
 * 하나의 Product는 하나의 Inventory와 연결됩니다.
-* Product 생성 시 Inventory를 선택해야 합니다.
+* 하나의 Inventory는 여러 Product에서 참조될 수 있습니다.
+* Product 생성 시 기존 Inventory를 선택할 수 있어야 합니다.
+* 동일한 Inventory를 여러 Product에서 사용할 수 있습니다.
 * Inventory의 SKU 정보 및 재고 수량은 Inventory 모듈에서 관리합니다.
 * Product는 Inventory의 현재 상태를 조회하여 구매 가능 여부를 판단합니다.
 * Inventory 정보 자체는 ProductPost에서 직접 수정하지 않습니다.
+
 
 ---
 
@@ -159,12 +165,13 @@ Product는 상품 게시물에 포함되는 **실제 구매 단위**이며, Prod
 ### 5.2 데이터 일관성
 
 * ProductPost와 Product의 연결 관계를 유지해야 합니다.
-* Product와 Inventory의 1:1 연결 관계를 유지해야 합니다.
+* Product와 Inventory는 **1:N 관계**를 유지해야 합니다.
+* 하나의 Inventory는 여러 Product에서 참조될 수 있습니다.
 * ProductPost 생성 시 생성되는 Product는 동일한 저장 작업에서 함께 처리해야 합니다.
 * ProductPost 저장이 실패한 경우 생성 예정 Product도 저장되지 않아야 합니다.
 * 기존 주문에 사용된 Product 정보는 OrderItem Snapshot을 통해 보존해야 합니다.
 * ProductPost의 비공개 전환은 Product 및 Inventory의 상태를 변경하지 않습니다.
-
+* 
 ### 5.3 데이터 책임 분리
 
 * **ProductPost**: 게시물 콘텐츠, 노출 정보 및 Product 관리

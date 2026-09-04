@@ -1,23 +1,21 @@
 // 백엔드 내부용 DB 테이블, 컬럼명 및 Enum 정의
 
-// 1. DB 테이블명 상수
 export const DB_TABLES = {
-    // 1-1. 재고 모듈
-    INVENTORY_ITEMS: 'inventory_items',
-    INVENTORY_LOGS: 'inventory_logs',
+    INVENTORY_ITEMS: "inventory_items",
+    INVENTORY_LOGS: "inventory_logs",
 
-    // 1-2. 상품 및 카테고리 모듈
-    PRODUCTS: 'products',                       // 상품 마스터
-    PRODUCT_OPTIONS: 'product_options',         // 상품 옵션 및 SKU 매핑
-    CATEGORIES: 'categories',                   // 카테고리 마스터 (계층형)
-    PRODUCT_CATEGORIES: 'product_categories',   // 상품-카테고리 다중 매핑
-    WISHLISTS: 'wishlists',                     // 관심상품 (위시리스트)
+    PRODUCTS: "products",
 
-    // 1-3. 주문 모듈 [추가]
-    ORDERS: 'orders',                           // 주문 마스터
-    ORDER_ITEMS: 'order_items',                 // 주문 상세 품목
+    PRODUCT_POSTS: "product_posts",
+    PRODUCT_POST_PRODUCTS: "product_post_products",
+
+    CATEGORIES: "categories",
+    PRODUCT_CATEGORIES: "product_categories",
+    WISHLISTS: "wishlists",
+
+    ORDERS: "orders",
+    ORDER_ITEMS: "order_items",
 } as const;
-
 
 // 2. 주요 DB 컬럼명 상수 (선택 - 오탈자 방지용) 주석: 자주 쓰이는 PK/FK 및 정렬 컬럼명 상수화
 export const DB_COLUMNS = {
@@ -27,10 +25,17 @@ export const DB_COLUMNS = {
         DISPLAY_ORDER: 'display_order', // 주석: sort_order와 혼동 방지
         DEPTH: 'depth',
     },
-    PRODUCTS: {
-        PRODUCT_ID: 'product_id',
-        STATUS: 'status',
-        SORT_ORDER: 'sort_order',
+    PRODUCT_POSTS: {
+        PRODUCT_POST_ID: "product_post_id",
+        IS_PUBLISHED: "is_published",
+        PUBLISHED_AT: "published_at",
+        VIEW_COUNT: "view_count",
+    },
+
+    PRODUCT_POST_PRODUCTS: {
+        PRODUCT_POST_ID: "product_post_id",
+        PRODUCT_ID: "product_id",
+        DISPLAY_ORDER: "display_order",
     },
     PRODUCT_CATEGORIES: {
         PRODUCT_ID: 'product_id',

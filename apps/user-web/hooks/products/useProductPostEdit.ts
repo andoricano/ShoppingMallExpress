@@ -19,33 +19,16 @@ import { API_ENDPOINTS } from "@mall/constants";
 // Types
 // ==========================================
 
-interface ProductPostDetailProduct {
-    id: string;
-    name: string;
-
-    main_image_url: string;
-    image_urls: string[];
-    description: string;
-
-    price: number;
-
-    inventory_id: string;
-
-    created_at: string;
-    updated_at: string;
-}
-
 interface ProductPostDetailRelation {
     id: string;
-    product_id: string;
-    display_order: number;
-
-    products: ProductPostDetailProduct;
+    productId: string;
+    displayOrder: number;
+    products: Product;
 }
 
 interface ProductPostDetailResponse
     extends ProductPost {
-    product_post_products: ProductPostDetailRelation[];
+    productPostProducts: ProductPostDetailRelation[];
 }
 
 export interface ProductPostEditDraft {
@@ -78,7 +61,6 @@ export function useProductPostEdit(
     // ==========================================
     // 1. ProductPost 조회
     // ==========================================
-
     const fetchProductPost = useCallback(
         async () => {
             setLoading(true);
@@ -102,73 +84,43 @@ export function useProductPostEdit(
                     );
                 }
 
-                const detail =
+                const data =
                     result.data as ProductPostDetailResponse;
 
-                const sortedRelations = [
-                    ...detail.product_post_products,
-                ].sort(
+                const relations =
+                    data.productPostProducts ?? [];
+
+                const sortedRelations = [...relations].sort(
                     (a, b) =>
-                        a.display_order -
-                        b.display_order,
+                        a.displayOrder - b.displayOrder,
                 );
 
-                setDraftPost({
-                    id: detail.id,
-                    title: detail.title,
-                    thumbnail: detail.thumbnail,
-                    imageUrls: detail.imageUrls,
-                    content: detail.content,
-                    productIds:
-                        sortedRelations.map(
-                            (item) =>
-                                item.product_id,
-                        ),
-                    isPublished:
-                        detail.isPublished,
-                    viewCount:
-                        detail.viewCount,
-                    publishedAt:
-                        detail.publishedAt,
-                    metadata: detail.metadata,
-                    createdAt:
-                        detail.createdAt,
-                    updatedAt:
-                        detail.updatedAt,
-                });
-
-                setDraftProducts(
-                    sortedRelations.map(
-                        (item) =>
-                            ({
-                                id: item.products.id,
-                                name:
-                                    item.products.name,
-                                mainImageUrl:
-                                    item.products
-                                        .main_image_url,
-                                imageUrls:
-                                    item.products
-                                        .image_urls,
-                                description:
-                                    item.products
-                                        .description,
-                                price:
-                                    item.products.price,
-                                inventoryId:
-                                    item.products
-                                        .inventory_id,
-                                createdAt:
-                                    item.products
-                                        .created_at,
-                                updatedAt:
-                                    item.products
-                                        .updated_at,
-                            }) satisfies Product,
+                const nextPost: ProductPost = {
+                    id: data.id,
+                    title: data.title,
+                    thumbnail: data.thumbnail,
+                    imageUrls: data.imageUrls,
+                    content: data.content,
+                    productIds: sortedRelations.map(
+                        (item) => item.productId,
                     ),
-                );
+                    isPublished: data.isPublished,
+                    viewCount: data.viewCount,
+                    publishedAt: data.publishedAt,
+                    metadata: data.metadata,
+                    createdAt: data.createdAt,
+                    updatedAt: data.updatedAt,
+                };
 
-                return detail;
+                const nextProducts: Product[] =
+                    sortedRelations.map(
+                        (item) => item.products,
+                    );
+
+                setDraftPost(nextPost);
+                setDraftProducts(nextProducts);
+
+                return nextPost;
             } catch (err) {
                 const message =
                     err instanceof Error
@@ -176,6 +128,8 @@ export function useProductPostEdit(
                         : "상품 게시물 조회에 실패했습니다.";
 
                 setError(message);
+                setDraftPost(null);
+                setDraftProducts([]);
 
                 return null;
             } finally {
@@ -184,6 +138,7 @@ export function useProductPostEdit(
         },
         [productPostId],
     );
+
 
     useEffect(() => {
         fetchProductPost();
