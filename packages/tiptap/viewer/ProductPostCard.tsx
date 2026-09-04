@@ -44,15 +44,26 @@ export function ProductPostCard({
                     </p>
                 )}
 
-                {discount > 0 && (
-                    <p className="mt-2 text-sm font-semibold text-rose-600">
-                        {discount}% 할인
-                    </p>
-                )}
+                {/* 가격 */}
+                <div className="mt-3">
+                    {discount > 0 ? (
+                        <>
+                            {/* 원래 가격 */}
+                            <p className="text-sm text-slate-400 line-through">
+                                {price.toLocaleString()}원
+                            </p>
 
-                <p className="mt-1 text-sm font-bold text-neutral-900">
-                    {price.toLocaleString()}원
-                </p>
+                            {/* 할인가 */}
+                            <p className="mt-0.5 text-xl font-bold text-rose-600">
+                                {discount.toLocaleString()}원
+                            </p>
+                        </>
+                    ) : (
+                        <p className="text-xl font-bold text-neutral-900">
+                            {price.toLocaleString()}원
+                        </p>
+                    )}
+                </div>
 
                 {tags.length > 0 && (
                     <div className="mt-3 flex flex-wrap gap-1.5">

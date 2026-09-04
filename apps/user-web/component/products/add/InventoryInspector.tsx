@@ -114,7 +114,7 @@ export const InventoryInspector: React.FC<InventoryInspectorProps> = ({
                         onClick={() => onRegister(inventory)}
                         className="w-full rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 active:bg-blue-800"
                     >
-                        등록하러 가기
+                        상품 등록
                     </button>
                 </div>
             </div>

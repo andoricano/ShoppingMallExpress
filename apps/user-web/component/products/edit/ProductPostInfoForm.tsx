@@ -2,6 +2,7 @@
 
 "use client";
 
+import { useState } from "react";
 import type { ProductPost } from "@mall/types";
 
 import FormField from "@/component/common/field/FormField";
@@ -16,6 +17,8 @@ export function ProductPostInfoForm({
     post,
     onChange,
 }: ProductPostInfoFormProps) {
+    const [error, setError] = useState<string | null>(null);
+
     const updateThumbnail = (
         patch: Partial<ProductPost["thumbnail"]>,
     ) => {
@@ -26,6 +29,21 @@ export function ProductPostInfoForm({
                 ...patch,
             },
         });
+    };
+
+    const handleApply = () => {
+        setError(null);
+
+        if (
+            post.thumbnail.discount >
+            post.thumbnail.price
+        ) {
+            setError(
+                "할인 가격은 표시 가격보다 높을 수 없습니다.",
+            );
+            return;
+        }
+
     };
 
     return (
@@ -39,12 +57,14 @@ export function ProductPostInfoForm({
             <FormField
                 label="게시물 제목"
                 value={post.title}
-                onChange={(value) =>
+                onChange={(value) => {
+                    setError(null);
+
                     onChange({
                         ...post,
                         title: value,
-                    })
-                }
+                    });
+                }}
                 placeholder="게시물 제목을 입력하세요."
             />
 
@@ -59,33 +79,28 @@ export function ProductPostInfoForm({
             <FormField
                 label="썸네일 제목"
                 value={post.thumbnail.title}
-                onChange={(value) =>
+                onChange={(value) => {
+                    setError(null);
+
                     updateThumbnail({
                         title: value,
-                    })
-                }
+                    });
+                }}
                 placeholder="썸네일 제목을 입력하세요."
             />
 
             <FormField
-                label="썸네일 요약"
-                value={post.thumbnail.summary ?? ""}
-                onChange={(value) =>
-                    updateThumbnail({
-                        summary: value,
-                    })
-                }
-                placeholder="썸네일 요약을 입력하세요."
-            />
+                label="할인 가격"
+                value={String(
+                    post.thumbnail.discount,
+                )}
+                onChange={(value) => {
+                    setError(null);
 
-            <FormField
-                label="할인율"
-                value={String(post.thumbnail.discount)}
-                onChange={(value) =>
                     updateThumbnail({
                         discount: Number(value),
-                    })
-                }
+                    });
+                }}
                 type="number"
                 min={0}
                 step={1}
@@ -93,16 +108,34 @@ export function ProductPostInfoForm({
 
             <FormField
                 label="표시 가격"
-                value={String(post.thumbnail.price)}
-                onChange={(value) =>
+                value={String(
+                    post.thumbnail.price,
+                )}
+                onChange={(value) => {
+                    setError(null);
+
                     updateThumbnail({
                         price: Number(value),
-                    })
-                }
+                    });
+                }}
                 type="number"
                 min={0}
                 step={1}
             />
+
+            {error && (
+                <div className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">
+                    {error}
+                </div>
+            )}
+
+            <button
+                type="button"
+                onClick={handleApply}
+                className="w-full rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 active:bg-blue-800"
+            >
+                반영하기
+            </button>
         </section>
     );
 }

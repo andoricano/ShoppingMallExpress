@@ -1,24 +1,21 @@
+// component/products/add/ProductInventorySection.tsx
+
 "use client";
 
 import { useEffect } from "react";
-import type { Product, SkuInventory } from "@mall/types";
+import type { SkuInventory } from "@mall/types";
 
 import { useProductAdd } from "@/hooks/products/useProductAdd";
 
 import { InventorySearchBar } from "./InventorSearchBar";
 import { InventoryList } from "./InventoryList";
 import { InventoryInspector } from "./InventoryInspector";
-import { ProductsTable } from "./ProductsTable";
 
 interface ProductInventorySectionProps {
-    products?: Product[];
-    isLoadingProducts?: boolean;
     onRegister: (inventory: SkuInventory) => void;
 }
 
 export function ProductInventorySection({
-    products = [],
-    isLoadingProducts = false,
     onRegister,
 }: ProductInventorySectionProps) {
     const {
@@ -60,12 +57,6 @@ export function ProductInventorySection({
             <InventoryInspector
                 inventory={selectedInventory}
                 onRegister={onRegister}
-            />
-
-            <ProductsTable
-                items={inventoryList}
-                products={products}
-                isLoading={isLoadingProducts}
             />
         </section>
     );

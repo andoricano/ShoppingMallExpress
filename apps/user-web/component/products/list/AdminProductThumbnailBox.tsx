@@ -27,7 +27,8 @@ export function AdminProductPostCard({
                 tags={post.thumbnail.tags}
             />
 
-            <div className="p-4 pt-0">
+            {/* Admin 영역 */}
+            <div className="border-t border-slate-200 p-5">
                 {/* 게시 상태 */}
                 <div className="mb-4">
                     <span
@@ -36,14 +37,17 @@ export function AdminProductPostCard({
                                 : "border-slate-200 bg-slate-100 text-slate-500"
                             }`}
                     >
-                        {post.isPublished ? "게시" : "비공개"}
+                        {post.isPublished
+                            ? "게시"
+                            : "비공개"}
                     </span>
                 </div>
 
                 {/* 날짜 */}
-                <div className="space-y-1 border-t border-slate-100 pt-3 text-xs text-slate-400">
+                <div className="space-y-2 border-t border-slate-100 pt-4 text-xs text-slate-400">
                     <div className="flex justify-between gap-3">
                         <span>생성</span>
+
                         <span className="text-right text-slate-500">
                             {new Date(
                                 post.createdAt,
@@ -53,6 +57,7 @@ export function AdminProductPostCard({
 
                     <div className="flex justify-between gap-3">
                         <span>수정</span>
+
                         <span className="text-right text-slate-500">
                             {new Date(
                                 post.updatedAt,
@@ -62,11 +67,13 @@ export function AdminProductPostCard({
                 </div>
 
                 {/* 관리 버튼 */}
-                <div className="mt-4 flex items-center gap-2">
+                <div className="mt-5 flex items-center gap-2">
                     {onEdit && (
                         <button
                             type="button"
-                            onClick={() => onEdit(post)}
+                            onClick={() =>
+                                onEdit(post)
+                            }
                             className="flex-1 rounded-md border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 transition-colors hover:bg-slate-50"
                         >
                             수정
@@ -76,7 +83,9 @@ export function AdminProductPostCard({
                     {onDelete && (
                         <button
                             type="button"
-                            onClick={() => onDelete(post.id)}
+                            onClick={() =>
+                                onDelete(post.id)
+                            }
                             className="flex-1 rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-medium text-rose-600 transition-colors hover:bg-rose-100"
                         >
                             삭제

@@ -1,14 +1,19 @@
 // @/types/productPost.ts
 
+// @/types/productPost.ts
+
 export interface ThumbnailInfo {
     imageUrl: string;
     title: string;
     summary?: string;
+
+    // 할인 적용 후 최종 판매 가격
+    // (discountPrice 의미로 사용)
     discount: number;
+
     price: number;
     tags: string[];
 }
-
 /**
  * 상품 게시물
  */
