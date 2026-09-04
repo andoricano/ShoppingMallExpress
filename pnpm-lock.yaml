@@ -131,6 +131,9 @@ importers:
       '@mall/constants':
         specifier: workspace:*
         version: link:../../packages/constants
+      '@mall/tiptap':
+        specifier: workspace:*
+        version: link:../../packages/tiptap
       '@mall/types':
         specifier: workspace:*
         version: link:../../packages/types
@@ -140,9 +143,6 @@ importers:
       '@supabase/supabase-js':
         specifier: ^2.49.1
         version: 2.112.3
-      '@tiptap/static-renderer':
-        specifier: ^3.31.2
-        version: 3.31.2(@tiptap/core@3.31.0(@tiptap/pm@3.31.0))(@tiptap/pm@3.31.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       lucide-react:
         specifier: ^1.40.0
         version: 1.40.0(react@19.2.8)
@@ -1219,14 +1219,6 @@ packages:
     peerDependencies:
       '@tiptap/core': 3.31.0
       '@tiptap/pm': 3.31.0
-      react: ^17.0.0 || ^18.0.0 || ^19.0.0
-      react-dom: ^17.0.0 || ^18.0.0 || ^19.0.0
-
-  '@tiptap/static-renderer@3.31.2':
-    resolution: {integrity: sha512-90pwEolJM6w5cu4VtW7ePWJyYqq4HetlQmS7SG8jwmwGiDylhcpDsKnoc6wXE8UuJQSgT97yRwUqyDy6317obw==}
-    peerDependencies:
-      '@tiptap/core': 3.31.2
-      '@tiptap/pm': 3.31.2
       react: ^17.0.0 || ^18.0.0 || ^19.0.0
       react-dom: ^17.0.0 || ^18.0.0 || ^19.0.0
 
@@ -3894,13 +3886,6 @@ snapshots:
       '@tiptap/pm': 3.31.0
 
   '@tiptap/static-renderer@3.31.0(@tiptap/core@3.31.0(@tiptap/pm@3.31.0))(@tiptap/pm@3.31.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
-    dependencies:
-      '@tiptap/core': 3.31.0(@tiptap/pm@3.31.0)
-      '@tiptap/pm': 3.31.0
-      react: 19.2.8
-      react-dom: 19.2.8(react@19.2.8)
-
-  '@tiptap/static-renderer@3.31.2(@tiptap/core@3.31.0(@tiptap/pm@3.31.0))(@tiptap/pm@3.31.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
     dependencies:
       '@tiptap/core': 3.31.0(@tiptap/pm@3.31.0)
       '@tiptap/pm': 3.31.0
