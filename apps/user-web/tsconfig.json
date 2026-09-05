@@ -37,7 +37,10 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
-    "**/*.mts"
+    "**/*.mts",
+    "../client-web/hooks/useClientAuth.ts",
+    "../client-web/app/auth/page.tsx",
+    "../client-web/lib/supabase/route.ts"
   ],
   "exclude": [
     "node_modules"
