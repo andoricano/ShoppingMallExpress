@@ -8,7 +8,7 @@ import type {
   ProductSection,
 } from "@mall/types";
 
-import { ClientProductPostCard } from "./ProductThumbnailBox";
+import { ClientProductPostCard } from "./ClientProductPostCard";
 
 interface ProductSectionProps {
   section: ProductSection;

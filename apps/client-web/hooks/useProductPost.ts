@@ -3,8 +3,23 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import type { ProductPost } from "@mall/types";
+import type {
+  Product,
+  ProductPost,
+} from "@mall/types";
 import { API_ENDPOINTS } from "@mall/constants";
+
+
+interface ProductPostDetailResponse
+  extends ProductPost {
+  productPostProducts: {
+    id: string;
+    productId: string;
+    displayOrder: number;
+    products: Product;
+  }[];
+}
+
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL ||
@@ -23,10 +38,13 @@ export function useProductPost() {
   const [error, setError] =
     useState<string | null>(null);
 
+  const [products, setProducts] =
+    useState<Product[]>([]);
+
+
   // ==========================================
   // 1. Client 상품 게시물 목록 조회
   // ==========================================
-
   const fetchPosts = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -128,20 +146,40 @@ export function useProductPost() {
           );
         }
 
-        const postData =
-          result?.data ?? null;
 
-        console.log(
-          "[useProductPost] detail result:",
-          result,
-        );
+        const postData =
+          result?.data as
+          | ProductPostDetailResponse
+          | null;
+
+        if (!postData) {
+          setPost(null);
+          setProducts([]);
+
+          return null;
+        }
+
+        const productList = [
+          ...(postData.productPostProducts ?? []),
+        ]
+          .sort(
+            (a, b) =>
+              a.displayOrder -
+              b.displayOrder,
+          )
+          .map(
+            (item) => item.products,
+          );
 
         setPost(postData);
+        setProducts(productList);
 
-        return postData as
-          | ProductPost
-          | null;
+        return postData as ProductPost;
+
+
       } catch (err) {
+
+
         console.error(
           "[useProductPost] 상품 게시물 상세 조회 실패:",
           err,
@@ -154,6 +192,7 @@ export function useProductPost() {
         );
 
         setPost(null);
+        setProducts([]);
 
         return null;
       } finally {
@@ -169,6 +208,7 @@ export function useProductPost() {
 
   const clearPost = useCallback(() => {
     setPost(null);
+    setProducts([]);
   }, []);
 
   const clearPosts = useCallback(() => {
@@ -178,6 +218,7 @@ export function useProductPost() {
   return {
     postList,
     post,
+    products,
 
     loading,
     error,

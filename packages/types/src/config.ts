@@ -31,10 +31,13 @@ export interface MainSectionBase {
  */
 export interface HeroSection {
     id: string;
-    productId?: string;
+
     imageUrl?: string;
     title?: string;
     description?: string;
+
+    relativePath?: string;
+
     order: number;
     isActive: boolean;
 }
@@ -74,7 +77,7 @@ export interface BannerSection extends MainSectionBase {
     title?: string;
     description?: string;
 
-    link?: string;
+    relativePath?: string;
 }
 
 /**

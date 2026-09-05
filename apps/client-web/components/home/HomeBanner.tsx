@@ -1,4 +1,4 @@
-import { HeroSection } from "@mall/types";
+import type { HeroSection } from "@mall/types";
 import Link from "next/link";
 
 interface HeroBannerProps {
@@ -36,9 +36,9 @@ export default function HeroBanner({
                     </p>
                 )}
 
-                {section.productId && (
+                {section.relativePath && (
                     <Link
-                        href={`/products/${section.productId}`}
+                        href={section.relativePath}
                         className="inline-block bg-white px-8 py-3.5 font-medium text-black transition-colors hover:bg-neutral-200"
                     >
                         지금 둘러보기
