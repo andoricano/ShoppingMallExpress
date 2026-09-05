@@ -8,6 +8,9 @@ interface OrderListItemProps {
     product: Product;
     quantity: number;
 
+    selected?: boolean;
+    onSelect?: (selected: boolean) => void;
+
     onQuantityChange?: (
         quantity: number,
     ) => void;
@@ -18,6 +21,8 @@ interface OrderListItemProps {
 export function OrderListItem({
     product,
     quantity,
+    selected = false,
+    onSelect,
     onQuantityChange,
     onRemove,
 }: OrderListItemProps) {
@@ -36,7 +41,26 @@ export function OrderListItem({
     };
 
     return (
-        <article className="flex gap-4 border-b border-slate-200 py-5 last:border-b-0">
+        <article
+            className={`flex gap-4 border-b border-slate-200 py-5 last:border-b-0 ${selected
+                    ? "bg-slate-50"
+                    : "bg-white"
+                }`}
+        >
+            {/* 선택 */}
+            <button
+                type="button"
+                aria-pressed={selected}
+                onClick={() =>
+                    onSelect?.(!selected)
+                }
+                className="flex h-6 w-6 shrink-0 items-center justify-center rounded border border-slate-300 bg-white"
+            >
+                {selected && (
+                    <span className="h-3 w-3 rounded-sm bg-slate-900" />
+                )}
+            </button>
+
             {/* 상품 이미지 */}
             <div className="h-24 w-24 shrink-0 overflow-hidden rounded-lg bg-slate-100">
                 {product.mainImageUrl && (

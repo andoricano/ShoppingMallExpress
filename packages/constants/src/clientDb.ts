@@ -1,11 +1,15 @@
 // clientDb.ts
 
-export const CLIENT_DB_TABLES = {
+// ==========================================
+// Client Order DB
+// ==========================================
+
+export const CLIENT_ORDER_TABLES = {
     ORDERS: "orders",
     ORDER_ITEMS: "order_items",
 } as const;
 
-export const CLIENT_DB_COLUMNS = {
+export const CLIENT_ORDER_COLUMNS = {
     ORDERS: {
         CLIENT_ID: "client_id",
         PAYMENT_ID: "payment_id",
@@ -23,4 +27,13 @@ export const CLIENT_DB_COLUMNS = {
         QUANTITY: "quantity",
         INVENTORY_META: "inventory_meta",
     },
+} as const;
+
+
+// ==========================================
+// Client Order API
+// ==========================================
+
+export const CLIENT_ORDER_API = {
+    BASE: "/api/client/orders",
 } as const;

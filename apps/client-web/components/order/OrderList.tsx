@@ -14,6 +14,13 @@ interface OrderListData {
 interface OrderListProps {
     items: OrderListData[];
 
+    selectedItemIds: string[];
+
+    onSelect?: (
+        productId: string,
+        selected: boolean,
+    ) => void;
+
     onQuantityChange?: (
         index: number,
         quantity: number,
@@ -24,6 +31,8 @@ interface OrderListProps {
 
 export function OrderList({
     items,
+    selectedItemIds,
+    onSelect,
     onQuantityChange,
     onRemove,
 }: OrderListProps) {
@@ -52,6 +61,15 @@ export function OrderList({
                             key={item.product.id}
                             product={item.product}
                             quantity={item.quantity}
+                            selected={selectedItemIds.includes(
+                                item.product.id,
+                            )}
+                            onSelect={(selected) =>
+                                onSelect?.(
+                                    item.product.id,
+                                    selected,
+                                )
+                            }
                             onQuantityChange={(
                                 quantity,
                             ) =>

@@ -5,6 +5,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Product } from "@mall/types";
+import { useCartStore } from "@/store/cartStore";
 
 interface ProductPurchaseProps {
     products: Product[];
@@ -13,7 +14,6 @@ interface ProductPurchaseProps {
 export function ProductPurchase({
     products,
 }: ProductPurchaseProps) {
-    console.log('products:', products)
     const router = useRouter();
 
     const [selectedProductId, setSelectedProductId] =
@@ -36,10 +36,20 @@ export function ProductPurchase({
         setQuantity(Math.max(1, value));
     };
 
+    const addItem = useCartStore(
+        (state) => state.addItem,
+    );
+
     const handlePurchase = () => {
         if (!selectedProduct) {
             return;
         }
+
+        addItem({
+            product: selectedProduct,
+            quantity,
+        });
+
         router.push("/order");
     };
 
