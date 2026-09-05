@@ -3,43 +3,16 @@
 "use client";
 
 import { OrderSection } from "@/components/order/OrderSection";
-import { useClientOrder } from "@/hooks/useClientOrder";
+import { useClientOrderApi } from "@/hooks/useClientOrderApi";
 
 export default function OrderPage() {
   const {
-    items,
-    selectedItems,
-    selectedItemIds,
-    shippingAddress,
-    productPrice,
-
-    selectItem,
-    handleQuantityChange,
-    handleRemove,
-    handleAddressChange,
-
-    submitOrder,
-  } = useClientOrder();
+    createOrder,
+  } = useClientOrderApi();
 
   return (
     <OrderSection
-      items={items}
-      selectedItemIds={
-        selectedItemIds
-      }
-      shippingAddress={
-        shippingAddress
-      }
-      productPrice={productPrice}
-      onSelect={selectItem}
-      onQuantityChange={
-        handleQuantityChange
-      }
-      onRemove={handleRemove}
-      onAddressChange={
-        handleAddressChange
-      }
-      onSubmit={submitOrder}
+      onOrderSubmit={createOrder}
     />
   );
 }

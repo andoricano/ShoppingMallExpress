@@ -13,6 +13,7 @@ export type OrderStatus =
  * 주문 배송지
  */
 export interface OrderShippingAddress {
+    name: string;
     recipient: string;
     phone: string;
 

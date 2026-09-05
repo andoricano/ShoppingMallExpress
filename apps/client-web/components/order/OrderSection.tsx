@@ -2,66 +2,66 @@
 
 "use client";
 
-import type { Product } from "@mall/types";
+import type {
+    OrderShippingAddress,
+} from "@mall/types";
 
 import { OrderSummary } from "./OrderSummary";
 import { OrderList } from "./OrderList";
-import { OrderShippingAddress } from "./OrderShippingAddress";
+import { OrderShippingAddress as OrderShippingAddressComponent } from "./OrderShippingAddress";
 import { OrderShippingAddressCheckBox } from "./OrderShippingAddressCheckBox";
 import { OrderPaymentSummary } from "./OrderPaymentSummary";
 import { OrderSubmit } from "./OrderSubmit";
 
-interface OrderItemData {
-    product: Product;
-    quantity: number;
-}
+import { useOrderSection } from "@/hooks/useOrderSection";
 
 interface OrderSectionProps {
-    items: OrderItemData[];
-
-    selectedItemIds: string[];
-    shippingAddress: string;
-
-    productPrice: number;
-
-    onSelect: (
-        productId: string,
-        selected: boolean,
+    onOrderSubmit: (
+        clientId: string,
+        paymentId: string,
+        items: {
+            productId: string;
+            quantity: number;
+        }[],
+        shippingAddress: OrderShippingAddress,
     ) => void;
-
-    onQuantityChange: (
-        index: number,
-        quantity: number,
-    ) => void;
-
-    onRemove: (
-        index: number,
-    ) => void;
-
-    onAddressChange: (
-        address: string,
-    ) => void;
-
-    onSubmit: () => void;
 }
 
 export function OrderSection({
-    items,
-    selectedItemIds,
-    shippingAddress,
-    productPrice,
-    onSelect,
-    onQuantityChange,
-    onRemove,
-    onAddressChange,
-    onSubmit,
+    onOrderSubmit,
 }: OrderSectionProps) {
-    const selectedItems = items.filter(
-        (item) =>
-            selectedItemIds.includes(
-                item.product.id,
+    const {
+        items,
+        selectedItems,
+        selectedItemIds,
+        shippingAddress,
+        productPrice,
+
+        selectItem,
+        handleQuantityChange,
+        handleRemove,
+        handleAddressChange,
+    } = useOrderSection();
+
+    const handleSubmit = () => {
+        if (selectedItems.length === 0) {
+            return;
+        }
+
+        onOrderSubmit(
+            "",
+            "",
+            selectedItems.map(
+                (item) => ({
+                    productId:
+                        item.product.id,
+                    quantity:
+                        item.quantity,
+                }),
             ),
-    );
+            shippingAddress,
+        );
+    };
 
     return (
         <main className="min-h-screen bg-slate-50">
@@ -76,28 +76,38 @@ export function OrderSection({
                         selectedItemIds={
                             selectedItemIds
                         }
-                        onSelect={onSelect}
+                        onSelect={selectItem}
                         onQuantityChange={
-                            onQuantityChange
+                            handleQuantityChange
                         }
-                        onRemove={onRemove}
+                        onRemove={
+                            handleRemove
+                        }
                     />
 
-                    <OrderShippingAddress
+                    <OrderShippingAddressComponent
                         address={
-                            shippingAddress
+                            shippingAddress.address
                         }
-                        onAddressChange={
-                            onAddressChange
+                        onAddressChange={(
+                            address,
+                        ) =>
+                            handleAddressChange({
+                                ...shippingAddress,
+                                address,
+                            })
                         }
                     />
 
                     <OrderShippingAddressCheckBox
                         value={
-                            shippingAddress
+                            shippingAddress.address
                         }
-                        onChange={
-                            onAddressChange
+                        onChange={(address) =>
+                            handleAddressChange({
+                                ...shippingAddress,
+                                address,
+                            })
                         }
                     />
 
@@ -115,7 +125,9 @@ export function OrderSection({
                             selectedItems.length ===
                             0
                         }
-                        onSubmit={onSubmit}
+                        onSubmit={
+                            handleSubmit
+                        }
                     />
                 </div>
             </div>
