@@ -40,10 +40,7 @@ export function ProductPurchase({
         if (!selectedProduct) {
             return;
         }
-
-        router.push(
-            `/purchase/${selectedProduct.id}`,
-        );
+        router.push("/order");
     };
 
     return (
