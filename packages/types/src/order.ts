@@ -4,11 +4,10 @@
  * 주문 상태
  */
 export type OrderStatus =
-    | "PENDING"   // 출고 대기
-    | "SHIPPING"  // 배송 중
-    | "COMPLETED" // 배송 완료
-    | "CANCELLED"; // 취소
-
+    | "PENDING"
+    | "SHIPPING"
+    | "COMPLETED"
+    | "CANCELLED";
 
 /**
  * 주문 배송지
@@ -22,7 +21,6 @@ export interface OrderShippingAddress {
     detailAddress?: string;
 }
 
-
 /**
  * 주문 배송 정보
  */
@@ -31,7 +29,6 @@ export interface OrderDelivery {
     trackingNumber: string;
     shippedAt: string;
 }
-
 
 /**
  * 주문 상품
@@ -47,12 +44,12 @@ export interface OrderItem {
 
     productName: string;
     skuCode: string;
+
     price: number;
     quantity: number;
 
     inventoryMeta?: Record<string, unknown>;
 }
-
 
 /**
  * 주문
@@ -72,6 +69,4 @@ export interface Order {
     items: OrderItem[];
 
     createdAt: string;
-    shippedAt?: string;
-    completedAt?: string;
 }

@@ -9,6 +9,8 @@ import productPostRoutes from "./routes/productPost.routes.js";
 import categoryRoutes from './routes/category.routes.js';
 import orderRoutes from './routes/order.routes.js';
 import displayRoutes from './routes/client/display.routes.js';
+import clientOrderRoutes from "./routes/client/order.routes.js";
+
 
 const app = express();
 const PORT: number = Number(process.env['PORT']) || 8080;
@@ -35,6 +37,7 @@ app.use('/api', productPostRoutes);
 
 // Client ProductPost
 app.use('/api/product-posts', displayRoutes);
+app.use('/api/client/orders', clientOrderRoutes);
 
 // Server
 app.listen(PORT, () => {
