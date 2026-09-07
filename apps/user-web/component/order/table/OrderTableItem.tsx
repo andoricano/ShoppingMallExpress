@@ -1,0 +1,178 @@
+// components/orders/list/OrderTableItem.tsx
+
+"use client";
+
+import type { Order } from "@mall/types";
+
+interface OrderTableItemProps {
+    order: Order;
+
+    onShip?: (order: Order) => void;
+    onCancel?: (order: Order) => void;
+    onDetail?: (order: Order) => void;
+}
+
+const ORDER_STATUS_LABEL: Record<
+    Order["status"],
+    string
+> = {
+    PENDING: "대기중",
+    SHIPPING: "배송중",
+    COMPLETED: "완료",
+    CANCELLED: "취소",
+};
+
+const ORDER_STATUS_CLASS: Record<
+    Order["status"],
+    string
+> = {
+    PENDING:
+        "bg-amber-50 text-amber-700 border-amber-200",
+    SHIPPING:
+        "bg-blue-50 text-blue-700 border-blue-200",
+    COMPLETED:
+        "bg-emerald-50 text-emerald-700 border-emerald-200",
+    CANCELLED:
+        "bg-slate-100 text-slate-500 border-slate-200",
+};
+
+export function OrderTableItem({
+    order,
+    onShip,
+    onCancel,
+    onDetail,
+}: OrderTableItemProps) {
+    const items = Array.isArray(
+        order.items,
+    )
+        ? order.items
+        : [];
+
+    const firstItem = items[0];
+
+    let itemSummary =
+        "주문 상품 정보 없음";
+
+    if (items.length === 1) {
+        itemSummary =
+            firstItem?.productName ??
+            "상품 정보 없음";
+    } else if (items.length > 1) {
+        itemSummary = `${firstItem?.productName ??
+            "상품"
+            } 외 ${items.length - 1}개`;
+    }
+
+    return (
+        <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 transition-colors hover:border-slate-300 hover:bg-slate-50/50">
+            {/* 1줄 : 주문 기본 정보 */}
+            <div className="flex items-center justify-between gap-4">
+                <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                        <span className="truncate text-sm font-semibold text-slate-800">
+                            {itemSummary}
+                        </span>
+
+                        <span
+                            className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${ORDER_STATUS_CLASS[order.status]}`}
+                        >
+                            {
+                                ORDER_STATUS_LABEL[
+                                order.status
+                                ]
+                            }
+                        </span>
+                    </div>
+                </div>
+
+                <span className="shrink-0 text-sm font-bold text-slate-900">
+                    {(
+                        order.totalPrice ??
+                        0
+                    ).toLocaleString()}
+                    원
+                </span>
+            </div>
+
+            {/* 2줄 : 주문 / 구매자 정보 */}
+            <div className="mt-1 flex items-center gap-3 text-xs text-slate-500">
+                <span>
+                    주문번호{" "}
+                    <span className="font-mono text-slate-600">
+                        {order.id
+                            ? order.id.slice(
+                                0,
+                                8,
+                            )
+                            : "-"}
+                    </span>
+                </span>
+
+                <span className="text-slate-300">
+                    ·
+                </span>
+
+                <span>
+                    {order.createdAt
+                        ? new Date(
+                            order.createdAt,
+                        ).toLocaleDateString(
+                            "ko-KR",
+                        )
+                        : "날짜 정보 없음"}
+                </span>
+            </div>
+
+            {/* 3줄 : 액션 */}
+            <div className="mt-3 flex items-center justify-between gap-2">
+                <span className="truncate text-xs text-slate-400">
+                    {order.clientId ||
+                        "Client 정보 없음"}
+                </span>
+
+                <div className="flex shrink-0 items-center gap-1.5">
+                    {order.status ===
+                        "PENDING" && (
+                            <>
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        onShip?.(
+                                            order,
+                                        )
+                                    }
+                                    className="rounded-md bg-slate-900 px-2.5 py-1.5 text-[11px] font-semibold text-white transition-colors hover:bg-slate-700"
+                                >
+                                    출고
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        onCancel?.(
+                                            order,
+                                        )
+                                    }
+                                    className="rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-slate-600 transition-colors hover:bg-slate-50"
+                                >
+                                    취소
+                                </button>
+                            </>
+                        )}
+
+                    <button
+                        type="button"
+                        onClick={() =>
+                            onDetail?.(
+                                order,
+                            )
+                        }
+                        className="rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-slate-600 transition-colors hover:bg-slate-50"
+                    >
+                        자세히
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}

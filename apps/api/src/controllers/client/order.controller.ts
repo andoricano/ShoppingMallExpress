@@ -1,5 +1,3 @@
-// controllers/client/order.controller.ts
-
 import type { Request, Response } from "express";
 
 import { supabase } from "../../config/supabase.js";
@@ -27,308 +25,86 @@ interface CreateOrderPayload {
     };
 }
 
+// ==========================================
+// Request Validation
+// ==========================================
+
+function validateCreateOrder(
+    payload: CreateOrderPayload,
+) {
+    if (!payload.clientId) {
+        return "clientId가 필요합니다.";
+    }
+
+    if (!payload.paymentId) {
+        return "paymentId가 필요합니다.";
+    }
+
+    if (
+        !Array.isArray(payload.items) ||
+        payload.items.length === 0
+    ) {
+        return "주문 상품이 없습니다.";
+    }
+
+    return null;
+}
 
 // ==========================================
-// 1. Client 주문 생성
+// Client 주문 생성
 // ==========================================
 
 export const createOrder = async (
-    req: Request<{}, {}, CreateOrderPayload>,
+    req: Request<
+        {},
+        {},
+        CreateOrderPayload
+    >,
     res: Response,
 ) => {
     try {
-        const {
-            clientId,
-            paymentId,
-            items,
-            shippingAddress,
-        } = req.body;
+        const payload = req.body;
 
-        // ==========================================
-        // 기본 요청 검증
-        // ==========================================
-
-        if (!clientId) {
-            return res.status(400).json({
-                success: false,
-                message: "clientId가 필요합니다.",
-            });
-        }
-
-        if (!paymentId) {
-            return res.status(400).json({
-                success: false,
-                message: "paymentId가 필요합니다.",
-            });
-        }
-
-        if (
-            !Array.isArray(items) ||
-            items.length === 0
-        ) {
-            return res.status(400).json({
-                success: false,
-                message: "주문 상품이 없습니다.",
-            });
-        }
-
-        // ==========================================
-        // Product 조회
-        // ==========================================
-
-        const productIds = items.map(
-            (item) => item.productId,
-        );
-
-        const {
-            data: products,
-            error: productError,
-        } = await supabase
-            .from("products")
-            .select(`
-                id,
-                name,
-                price,
-                inventory_id
-            `)
-            .in("id", productIds);
-
-        if (productError) {
-            throw productError;
-        }
-
-        if (
-            !products ||
-            products.length !== productIds.length
-        ) {
-            return res.status(400).json({
-                success: false,
-                message:
-                    "존재하지 않는 상품이 포함되어 있습니다.",
-            });
-        }
-
-        // ==========================================
-        // Inventory 조회
-        // ==========================================
-
-        const inventoryIds = products.map(
-            (product) =>
-                product.inventory_id,
-        );
-
-        const {
-            data: inventories,
-            error: inventoryError,
-        } = await supabase
-            .from("inventory_items")
-            .select(`
-                id,
-                sku_code,
-                current_stock,
-                is_active,
-                meta
-            `)
-            .in("id", inventoryIds);
-
-        if (inventoryError) {
-            throw inventoryError;
-        }
-
-        if (
-            !inventories ||
-            inventories.length !==
-            inventoryIds.length
-        ) {
-            return res.status(400).json({
-                success: false,
-                message:
-                    "상품의 재고 정보를 찾을 수 없습니다.",
-            });
-        }
-
-        // ==========================================
-        // Inventory 검증 + 주문 금액 계산
-        // ==========================================
-
-        let totalPrice = 0;
-
-        const orderItems = [];
-
-        for (const item of items) {
-            // --------------------------------------
-            // 수량 검증
-            // --------------------------------------
-
-            if (
-                !Number.isInteger(
-                    item.quantity,
-                ) ||
-                item.quantity <= 0
-            ) {
-                return res.status(400).json({
-                    success: false,
-                    message:
-                        "주문 수량이 올바르지 않습니다.",
-                });
-            }
-
-            // --------------------------------------
-            // Product 조회
-            // --------------------------------------
-
-            const product =
-                products.find(
-                    (value) =>
-                        value.id ===
-                        item.productId,
-                );
-
-            if (!product) {
-                return res.status(400).json({
-                    success: false,
-                    message:
-                        "상품을 찾을 수 없습니다.",
-                });
-            }
-
-            // --------------------------------------
-            // Inventory 조회
-            // --------------------------------------
-
-            const inventory =
-                inventories.find(
-                    (value) =>
-                        value.id ===
-                        product.inventory_id,
-                );
-
-            if (!inventory) {
-                return res.status(400).json({
-                    success: false,
-                    message:
-                        "상품의 재고 정보를 찾을 수 없습니다.",
-                });
-            }
-
-            // --------------------------------------
-            // 판매 상태
-            // --------------------------------------
-
-            if (!inventory.is_active) {
-                return res.status(400).json({
-                    success: false,
-                    message:
-                        "판매할 수 없는 상품이 포함되어 있습니다.",
-                });
-            }
-
-            // --------------------------------------
-            // 재고 수량
-            // --------------------------------------
-
-            if (
-                inventory.current_stock <
-                item.quantity
-            ) {
-                return res.status(400).json({
-                    success: false,
-                    message:
-                        `${product.name}의 재고가 부족합니다.`,
-                });
-            }
-
-            // --------------------------------------
-            // 주문 금액
-            // --------------------------------------
-
-            totalPrice +=
-                product.price *
-                item.quantity;
-
-            // --------------------------------------
-            // OrderItem Snapshot
-            // --------------------------------------
-
-            orderItems.push({
-                product_id:
-                    product.id,
-
-                inventory_id:
-                    inventory.id,
-
-                product_name:
-                    product.name,
-
-                sku_code:
-                    inventory.sku_code,
-
-                price:
-                    product.price,
-
-                quantity:
-                    item.quantity,
-
-                inventory_meta:
-                    inventory.meta,
-            });
-        }
-
-
-        // ==========================================
-        // Order 생성
-        // ==========================================
-
-        const {
-            data: order,
-            error: orderError,
-        } = await supabase
-            .from("orders")
-            .insert({
-                client_id: clientId,
-                payment_id: paymentId,
-                status: "PENDING",
-                total_price: totalPrice,
-                shipping_address:
-                    shippingAddress,
-            })
-            .select("*")
-            .single();
-
-        if (orderError) {
-            throw orderError;
-        }
-
-        // ==========================================
-        // Order Item 생성
-        // ==========================================
-
-        const {
-            error: itemError,
-        } = await supabase
-            .from("order_items")
-            .insert(
-                orderItems.map((item) => ({
-                    ...item,
-                    order_id: order.id,
-                })),
+        const validationError =
+            validateCreateOrder(
+                payload,
             );
 
-        if (itemError) {
-            throw itemError;
+        if (validationError) {
+            return res.status(400).json({
+                success: false,
+                message:
+                    validationError,
+            });
+        }
+
+        const {
+            data,
+            error,
+        } = await supabase.rpc(
+            "create_order",
+            {
+                p_client_id:
+                    payload.clientId,
+
+                p_payment_id:
+                    payload.paymentId,
+
+                p_shipping_address:
+                    payload.shippingAddress,
+
+                p_items:
+                    payload.items,
+            },
+        );
+
+        if (error) {
+            throw error;
         }
 
         return res.status(201).json({
             success: true,
-            data: toCamelCase({
-                ...order,
-                items: orderItems.map(
-                    (item) => ({
-                        ...item,
-                        order_id: order.id,
-                    }),
-                ),
-            }),
+            data: toCamelCase(data),
         });
     } catch (error) {
         console.error(

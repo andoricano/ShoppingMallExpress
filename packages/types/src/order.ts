@@ -65,7 +65,7 @@ export interface Order {
     totalPrice: number;
 
     shippingAddress: OrderShippingAddress;
-    delivery?: OrderDelivery;
+    delivery: OrderDelivery | null;
 
     items: OrderItem[];
 

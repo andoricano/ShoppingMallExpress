@@ -54,4 +54,13 @@ export const API_ENDPOINTS = {
             `/api/admin/categories/${id}`,
         REORDER: "/api/admin/categories/reorder",
     },
+
+    // ==========================================
+    // 주문 관리 - Admin
+    // ==========================================
+    ORDERS: {
+        BASE: "/api/orders",
+        BY_ID: (id: string) =>
+            `/api/orders/${id}`,
+    },
 } as const;

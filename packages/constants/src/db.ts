@@ -17,14 +17,14 @@ export const DB_TABLES = {
     ORDER_ITEMS: "order_items",
 } as const;
 
-// 2. 주요 DB 컬럼명 상수 (선택 - 오탈자 방지용) 주석: 자주 쓰이는 PK/FK 및 정렬 컬럼명 상수화
 export const DB_COLUMNS = {
     CATEGORIES: {
-        CATEGORY_ID: 'category_id',
-        PARENT_ID: 'parent_id',
-        DISPLAY_ORDER: 'display_order', // 주석: sort_order와 혼동 방지
-        DEPTH: 'depth',
+        CATEGORY_ID: "category_id",
+        PARENT_ID: "parent_id",
+        DISPLAY_ORDER: "display_order",
+        DEPTH: "depth",
     },
+
     PRODUCT_POSTS: {
         PRODUCT_POST_ID: "product_post_id",
         IS_PUBLISHED: "is_published",
@@ -37,23 +37,33 @@ export const DB_COLUMNS = {
         PRODUCT_ID: "product_id",
         DISPLAY_ORDER: "display_order",
     },
+
     PRODUCT_CATEGORIES: {
-        PRODUCT_ID: 'product_id',
-        CATEGORY_ID: 'category_id',
+        PRODUCT_ID: "product_id",
+        CATEGORY_ID: "category_id",
     },
-    // [추가] 주문 관련 주요 컬럼명 상수화
+
     ORDERS: {
-        ORDER_ID: 'order_id',
-        USER_ID: 'user_id',
-        ORDER_STATUS: 'order_status',
-        HOLD_EXPIRES_AT: 'hold_expires_at',
+        ID: "id",
+        CLIENT_ID: "client_id",
+        PAYMENT_ID: "payment_id",
+        STATUS: "status",
+        TOTAL_PRICE: "total_price",
+        SHIPPING_ADDRESS: "shipping_address",
+        DELIVERY: "delivery",
+        CREATED_AT: "created_at",
     },
+
     ORDER_ITEMS: {
-        ORDER_ITEM_ID: 'order_item_id',
-        ORDER_ID: 'order_id',
-        PRODUCT_ID: 'product_id',
-        OPTION_ID: 'option_id',
-        SKU_ID: 'sku_id',
+        ID: "id",
+        ORDER_ID: "order_id",
+        PRODUCT_ID: "product_id",
+        INVENTORY_ID: "inventory_id",
+        PRODUCT_NAME: "product_name",
+        SKU_CODE: "sku_code",
+        PRICE: "price",
+        QUANTITY: "quantity",
+        INVENTORY_META: "inventory_meta",
     },
 } as const;
 
@@ -77,13 +87,14 @@ export const DISCOUNT_TYPE = {
 
 export type DiscountType = typeof DISCOUNT_TYPE[keyof typeof DISCOUNT_TYPE];
 
-
-// 5. 주문 상태 Enum 상수 [추가] 주석: orders의 order_status 값 상수화
 export const ORDER_STATUS = {
-    PAYMENT_PENDING: 'PAYMENT_PENDING', // 결제 대기
-    ORDER_RECEIVED: 'ORDER_RECEIVED',   // 주문 접수
-    CANCELLED: 'CANCELLED',             // 취소/만료
-    COMPLETED: 'COMPLETED',             // 완료
+    PENDING: "PENDING",
+    SHIPPING: "SHIPPING",
+    COMPLETED: "COMPLETED",
+    CANCELLED: "CANCELLED",
 } as const;
 
-export type OrderStatus = typeof ORDER_STATUS[keyof typeof ORDER_STATUS];
+export type OrderStatus =
+    typeof ORDER_STATUS[
+    keyof typeof ORDER_STATUS
+    ];
