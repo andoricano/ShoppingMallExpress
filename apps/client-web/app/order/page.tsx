@@ -12,7 +12,18 @@ export default function OrderPage() {
 
   return (
     <OrderSection
-      onOrderSubmit={createOrder}
+      onOrderSubmit={(
+        clientId,
+        _paymentId,
+        items,
+        shippingAddress,
+      ) =>
+        createOrder(
+          "TEMP-PAYMENT-ID",
+          items,
+          shippingAddress,
+        )
+      }
     />
   );
 }

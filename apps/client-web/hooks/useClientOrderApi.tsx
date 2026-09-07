@@ -16,23 +16,35 @@ import type {
     OrderShippingAddress,
 } from "@mall/types";
 
+import { useClientAuthStore } from "@/store/useClientAuthStore";
+
 const API_BASE_URL =
     process.env.NEXT_PUBLIC_API_URL ||
     "http://localhost:8080";
 
 export function useClientOrderApi() {
-    const [order, setOrder] =
-        useState<Order | null>(null);
+    const [
+        order,
+        setOrder,
+    ] = useState<Order | null>(null);
 
-    const [loading, setLoading] =
-        useState(false);
+    const [
+        loading,
+        setLoading,
+    ] = useState(false);
 
-    const [error, setError] =
-        useState<string | null>(null);
+    const [
+        error,
+        setError,
+    ] = useState<string | null>(null);
+
+    const authUserId =
+        useClientAuthStore(
+            (state) => state.authUserId,
+        );
 
     const createOrder = useCallback(
         async (
-            clientId: string,
             paymentId: string,
             items: {
                 productId: string;
@@ -40,36 +52,50 @@ export function useClientOrderApi() {
             }[],
             shippingAddress: OrderShippingAddress,
         ) => {
+            if (!authUserId) {
+                setError(
+                    "로그인이 필요합니다.",
+                );
+
+                return null;
+            }
+
             setLoading(true);
             setError(null);
 
             try {
-                const response =
-                    await fetch(
-                        `${API_BASE_URL}${CLIENT_ORDER_API.BASE}`,
-                        {
-                            method: "POST",
-                            headers: {
-                                "Content-Type":
-                                    "application/json",
-                            },
-                            body: JSON.stringify({
-                                clientId,
-                                paymentId,
-                                items,
-                                shippingAddress,
-                            }),
+                const response = await fetch(
+                    `${API_BASE_URL}${CLIENT_ORDER_API.BASE}`,
+                    {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
                         },
-                    );
-
-                const result =
-                    await response
-                        .json()
-                        .catch(() => null);
-                console.error(
-                    "[useClientOrderApi] API error:",
-                    result,
+                        body: JSON.stringify({
+                            clientId: authUserId,
+                            paymentId,
+                            items,
+                            shippingAddress,
+                        }),
+                    },
                 );
+
+                console.log(
+                    "[useClientOrderApi] status:",
+                    response.status,
+                );
+
+                const text = await response.text();
+
+                console.log(
+                    "[useClientOrderApi] response:",
+                    text,
+                );
+
+                const result = text
+                    ? JSON.parse(text)
+                    : null;
+
                 if (!response.ok) {
                     throw new Error(
                         result?.message ||
@@ -97,13 +123,14 @@ export function useClientOrderApi() {
                 setLoading(false);
             }
         },
-        [],
+        [authUserId],
     );
 
-    const clearOrder = useCallback(() => {
-        setOrder(null);
-        setError(null);
-    }, []);
+    const clearOrder =
+        useCallback(() => {
+            setOrder(null);
+            setError(null);
+        }, []);
 
     return {
         order,

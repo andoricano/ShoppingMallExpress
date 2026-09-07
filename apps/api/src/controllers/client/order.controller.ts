@@ -44,6 +44,10 @@ export const createOrder = async (
             shippingAddress,
         } = req.body;
 
+        // ==========================================
+        // 기본 요청 검증
+        // ==========================================
+
         if (!clientId) {
             return res.status(400).json({
                 success: false,
@@ -69,7 +73,7 @@ export const createOrder = async (
         }
 
         // ==========================================
-        // Product + Inventory 조회
+        // Product 조회
         // ==========================================
 
         const productIds = items.map(
@@ -85,14 +89,7 @@ export const createOrder = async (
                 id,
                 name,
                 price,
-                inventory_id,
-                inventory_items (
-                    id,
-                    sku_code,
-                    current_stock,
-                    is_active,
-                    meta
-                )
+                inventory_id
             `)
             .in("id", productIds);
 
@@ -112,6 +109,45 @@ export const createOrder = async (
         }
 
         // ==========================================
+        // Inventory 조회
+        // ==========================================
+
+        const inventoryIds = products.map(
+            (product) =>
+                product.inventory_id,
+        );
+
+        const {
+            data: inventories,
+            error: inventoryError,
+        } = await supabase
+            .from("inventory_items")
+            .select(`
+                id,
+                sku_code,
+                current_stock,
+                is_active,
+                meta
+            `)
+            .in("id", inventoryIds);
+
+        if (inventoryError) {
+            throw inventoryError;
+        }
+
+        if (
+            !inventories ||
+            inventories.length !==
+            inventoryIds.length
+        ) {
+            return res.status(400).json({
+                success: false,
+                message:
+                    "상품의 재고 정보를 찾을 수 없습니다.",
+            });
+        }
+
+        // ==========================================
         // Inventory 검증 + 주문 금액 계산
         // ==========================================
 
@@ -120,8 +156,14 @@ export const createOrder = async (
         const orderItems = [];
 
         for (const item of items) {
+            // --------------------------------------
+            // 수량 검증
+            // --------------------------------------
+
             if (
-                !Number.isInteger(item.quantity) ||
+                !Number.isInteger(
+                    item.quantity,
+                ) ||
                 item.quantity <= 0
             ) {
                 return res.status(400).json({
@@ -131,10 +173,16 @@ export const createOrder = async (
                 });
             }
 
-            const product = products.find(
-                (value) =>
-                    value.id === item.productId,
-            );
+            // --------------------------------------
+            // Product 조회
+            // --------------------------------------
+
+            const product =
+                products.find(
+                    (value) =>
+                        value.id ===
+                        item.productId,
+                );
 
             if (!product) {
                 return res.status(400).json({
@@ -144,8 +192,16 @@ export const createOrder = async (
                 });
             }
 
+            // --------------------------------------
+            // Inventory 조회
+            // --------------------------------------
+
             const inventory =
-                product.inventory_items?.[0];
+                inventories.find(
+                    (value) =>
+                        value.id ===
+                        product.inventory_id,
+                );
 
             if (!inventory) {
                 return res.status(400).json({
@@ -155,6 +211,10 @@ export const createOrder = async (
                 });
             }
 
+            // --------------------------------------
+            // 판매 상태
+            // --------------------------------------
+
             if (!inventory.is_active) {
                 return res.status(400).json({
                     success: false,
@@ -162,6 +222,10 @@ export const createOrder = async (
                         "판매할 수 없는 상품이 포함되어 있습니다.",
                 });
             }
+
+            // --------------------------------------
+            // 재고 수량
+            // --------------------------------------
 
             if (
                 inventory.current_stock <
@@ -174,23 +238,42 @@ export const createOrder = async (
                 });
             }
 
+            // --------------------------------------
+            // 주문 금액
+            // --------------------------------------
+
             totalPrice +=
-                product.price * item.quantity;
+                product.price *
+                item.quantity;
+
+            // --------------------------------------
+            // OrderItem Snapshot
+            // --------------------------------------
 
             orderItems.push({
-                product_id: product.id,
-                inventory_id: inventory.id,
+                product_id:
+                    product.id,
 
-                product_name: product.name,
-                sku_code: inventory.sku_code,
+                inventory_id:
+                    inventory.id,
 
-                price: product.price,
-                quantity: item.quantity,
+                product_name:
+                    product.name,
+
+                sku_code:
+                    inventory.sku_code,
+
+                price:
+                    product.price,
+
+                quantity:
+                    item.quantity,
 
                 inventory_meta:
-                    inventory.meta ?? null,
+                    inventory.meta,
             });
         }
+
 
         // ==========================================
         // Order 생성

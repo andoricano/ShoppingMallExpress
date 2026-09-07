@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useState } from "react";
 import type { MainHeaderConfig } from "@mall/types";
-import UserAuthAction from "./UserAuthAction";
+import UserAuthAction from "../auth/UserAuthAction";
+import { useClientAuthStore } from "@/store/useClientAuthStore";
 
 interface HeaderProps {
     config: MainHeaderConfig;
@@ -61,6 +62,11 @@ const menuData: HeaderMenu[] = [
 export default function Header({ config }: HeaderProps) {
     const [hoveredMenu, setHoveredMenu] = useState<string | null>(null);
 
+    const user = useClientAuthStore(
+        (state) => state.user,
+    );
+
+    const isLoggedIn = user !== null;
     if (!config.isActive) {
         return null;
     }
@@ -128,9 +134,9 @@ export default function Header({ config }: HeaderProps) {
 
                     {/* User */}
                     <UserAuthAction
-                        isLoggedIn={false}
+                        isLoggedIn={isLoggedIn}
                         cartItemCount={0}
-                        onLogout={() => {}}
+                        onLogout={() => { }}
                     />
                 </div>
             </div>
