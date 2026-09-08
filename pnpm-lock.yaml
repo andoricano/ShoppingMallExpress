@@ -241,6 +241,9 @@ importers:
       '@mall/constants':
         specifier: workspace:*
         version: link:../../packages/constants
+      '@mall/mall-page-viewer':
+        specifier: workspace:*
+        version: link:../../packages/mall-page-viewer
       '@mall/tiptap':
         specifier: workspace:*
         version: link:../../packages/tiptap

@@ -1,6 +1,7 @@
 {
   "name": "@mall/mall-page-viewer",
   "private": true,
+  "main": "./src/index.ts",
   "dependencies": {},
   "devDependencies": {
     "@types/react": "^19.0.0",

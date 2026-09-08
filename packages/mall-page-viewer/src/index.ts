@@ -1,4 +1,7 @@
 // packages/mall-page-viewer/src/index.ts
+export {
+    default as MallTemplate,
+} from "./components/template/MallTemplate";
 
 export {
     mainPageMock,
@@ -71,3 +74,4 @@ export {
 export {
     default as BusinessInfoFooter,
 } from "./components/footer/BusinessInfoFooter";
+
