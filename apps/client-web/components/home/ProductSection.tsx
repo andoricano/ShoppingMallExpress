@@ -19,16 +19,6 @@ export default function ProductSection({
   section,
   posts,
 }: ProductSectionProps) {
-  console.log(
-    "[ProductSection] postIds:",
-    section.postIds,
-  );
-
-  console.log(
-    "[ProductSection] posts:",
-    posts,
-  );
-
   const sectionPosts = section.postIds
     .map((postId) =>
       posts.find(

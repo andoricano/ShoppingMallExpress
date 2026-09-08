@@ -53,18 +53,8 @@ export function useProductPost() {
       const url =
         `${API_BASE_URL}${API_ENDPOINTS.CLIENT_PRODUCT_POSTS.BASE}`;
 
-      console.log(
-        "[useProductPost] 상품 게시물 목록 요청:",
-        url,
-      );
-
       const response = await fetch(url);
 
-      console.log(
-        "[useProductPost] response:",
-        response.status,
-        response.statusText,
-      );
 
       const result = await response
         .json()

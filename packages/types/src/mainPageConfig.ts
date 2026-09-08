@@ -1,5 +1,3 @@
-// @/types/mainPage.ts
-
 /**
  * 메인 페이지 Section 타입
  */
@@ -28,6 +26,9 @@ export interface MainSectionBase {
 
 /**
  * Hero Section
+ *
+ * 메인 페이지 최상단 전용 영역
+ * MainSection과 별도로 관리
  */
 export interface HeroSection {
     id: string;
@@ -44,14 +45,16 @@ export interface HeroSection {
 
 /**
  * Product Section
- *
- * 대표 상품 / 신상품 / 추천 상품 등을 공통으로 사용
  */
-export interface ProductSection extends MainSectionBase {
+export interface ProductSection
+    extends MainSectionBase {
     type: "PRODUCT";
 
     title: string;
 
+    /**
+     * Product Post ID
+     */
     postIds: string[];
 
     layout: ProductSectionLayout;
@@ -60,7 +63,8 @@ export interface ProductSection extends MainSectionBase {
 /**
  * Category Section
  */
-export interface CategorySection extends MainSectionBase {
+export interface CategorySection
+    extends MainSectionBase {
     type: "CATEGORY";
 
     categoryIds: string[];
@@ -69,7 +73,8 @@ export interface CategorySection extends MainSectionBase {
 /**
  * Banner Section
  */
-export interface BannerSection extends MainSectionBase {
+export interface BannerSection
+    extends MainSectionBase {
     type: "BANNER";
 
     imageUrl: string;
@@ -120,8 +125,14 @@ export interface ClientPageConfig {
 
     header: MainHeaderConfig;
 
+    /**
+     * 메인 최상단 Hero
+     */
     hero: HeroSection[];
 
+    /**
+     * Hero 아래의 동적 Section
+     */
     sections: MainSection[];
 
     footer: MainFooterConfig;
