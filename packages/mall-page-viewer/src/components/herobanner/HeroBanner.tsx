@@ -1,0 +1,69 @@
+// packages/mall-page-viewer/src/components/HeroBanner.tsx
+
+"use client";
+
+import { HeroSectionConfig } from "../../types/mainPage";
+
+
+interface HeroBannerProps {
+    section: HeroSectionConfig;
+    onNavigate?: (path: string) => void;
+}
+
+export default function HeroBanner({
+    section,
+    onNavigate,
+}: HeroBannerProps) {
+    if (!section.isActive) {
+        return null;
+    }
+
+    const handleNavigate = () => {
+        if (!section.relativePath) {
+            return;
+        }
+
+        onNavigate?.(section.relativePath);
+    };
+
+    return (
+        <section className="relative flex h-[500px] w-full items-center justify-center overflow-hidden bg-neutral-900 text-white">
+            {/* 배경 이미지 */}
+            {section.imageUrl && (
+                <img
+                    src={section.imageUrl}
+                    alt=""
+                    className="absolute inset-0 h-full w-full object-cover"
+                />
+            )}
+
+            {/* Overlay */}
+            <div className="absolute inset-0 bg-black/40" />
+
+            {/* Content */}
+            <div className="relative z-10 max-w-2xl px-4 text-center">
+                {section.title && (
+                    <h1 className="mb-4 text-4xl font-bold tracking-tight md:text-5xl">
+                        {section.title}
+                    </h1>
+                )}
+
+                {section.description && (
+                    <p className="mb-8 text-lg font-light text-neutral-200">
+                        {section.description}
+                    </p>
+                )}
+
+                {section.relativePath && (
+                    <button
+                        type="button"
+                        onClick={handleNavigate}
+                        className="inline-block bg-white px-8 py-3.5 font-medium text-black transition-colors hover:bg-neutral-200"
+                    >
+                        지금 둘러보기
+                    </button>
+                )}
+            </div>
+        </section>
+    );
+}

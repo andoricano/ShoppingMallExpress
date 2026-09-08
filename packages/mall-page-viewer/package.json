@@ -4,7 +4,8 @@
   "dependencies": {},
   "devDependencies": {
     "@types/react": "^19.0.0",
-    "@types/react-dom": "^19.0.0"
+    "@types/react-dom": "^19.0.0",
+    "lucide-react": "^0.468.0"
   },
   "peerDependencies": {
     "react": "^19.0.0",
