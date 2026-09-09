@@ -3,11 +3,14 @@
 "use client";
 
 import type {
+    HeroSectionConfig,
     PageConfig,
 } from "@mall/mall-page-viewer";
 
 import { usePageEditor } from "@/hooks/design/usePageEditor";
+import AdminHeroBanner from "./herobanner/AdminHerorBanner";
 import AdminMainHeader from "./header/Header";
+
 
 interface PageDesignWorkspaceProps {
     config: PageConfig;
@@ -28,12 +31,37 @@ export function PageDesignWorkspace({
         initialConfig: config,
     });
 
+    const handleHeaderChange = (
+        updater: (
+            header: PageConfig["header"],
+        ) => PageConfig["header"],
+    ) => {
+        updateHeader((header) => {
+            const nextHeader = updater(header);
+
+            console.log(
+                "[Design] Header 변경:",
+                nextHeader,
+            );
+
+            return nextHeader;
+        });
+    };
+
+    const handleHeroChange = (
+        heroes: HeroSectionConfig[],
+    ) => {
+        console.log(
+            "[Design] Hero 변경:",
+            heroes,
+        );
+
+        updateHero(() => heroes);
+    };
+
     return (
         <div className="space-y-6">
-            {/* ==========================================
-                Workspace Header
-            ========================================== */}
-
+            {/* Workspace Header */}
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-xl font-bold text-slate-900">
@@ -54,14 +82,16 @@ export function PageDesignWorkspace({
                 </button>
             </div>
 
-            {/* ==========================================
-                Editor
-            ========================================== */}
-
+            {/* Editor */}
             <div className="space-y-6">
                 <AdminMainHeader
                     config={editingConfig.header}
-                    onChange={updateHeader}
+                    onChange={handleHeaderChange}
+                />
+
+                <AdminHeroBanner
+                    heroes={editingConfig.hero}
+                    onChange={handleHeroChange}
                 />
             </div>
         </div>
