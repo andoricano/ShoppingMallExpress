@@ -5,12 +5,15 @@
 import type {
     HeroSectionConfig,
     PageConfig,
+    PageSection,
+    PromotionSectionConfig,
 } from "@mall/mall-page-viewer";
 
 import { usePageEditor } from "@/hooks/design/usePageEditor";
+
 import AdminHeroBanner from "./herobanner/AdminHerorBanner";
 import AdminMainHeader from "./header/Header";
-
+import AdminPromotionSection from "./promotion/PromotionSection";
 
 interface PageDesignWorkspaceProps {
     config: PageConfig;
@@ -31,6 +34,10 @@ export function PageDesignWorkspace({
         initialConfig: config,
     });
 
+    // ==========================================
+    // Header
+    // ==========================================
+
     const handleHeaderChange = (
         updater: (
             header: PageConfig["header"],
@@ -48,6 +55,10 @@ export function PageDesignWorkspace({
         });
     };
 
+    // ==========================================
+    // Hero
+    // ==========================================
+
     const handleHeroChange = (
         heroes: HeroSectionConfig[],
     ) => {
@@ -58,6 +69,43 @@ export function PageDesignWorkspace({
 
         updateHero(() => heroes);
     };
+
+    // ==========================================
+    // Sections
+    // ==========================================
+
+    const handleSectionChange = (
+        updatedSection: PageSection,
+    ) => {
+        updateSections((sections) => {
+            const nextSections =
+                sections.map((section) =>
+                    section.id ===
+                        updatedSection.id
+                        ? updatedSection
+                        : section,
+                );
+
+            console.log(
+                "[Design] Section 변경:",
+                nextSections,
+            );
+
+            return nextSections;
+        });
+    };
+
+    // ==========================================
+    // Promotion Sections
+    // ==========================================
+
+    const promotionSections =
+        editingConfig.sections.filter(
+            (
+                section,
+            ): section is PromotionSectionConfig =>
+                section.type === "PROMOTION",
+        );
 
     return (
         <div className="space-y-6">
@@ -93,6 +141,18 @@ export function PageDesignWorkspace({
                     heroes={editingConfig.hero}
                     onChange={handleHeroChange}
                 />
+
+                {promotionSections.map(
+                    (section) => (
+                        <AdminPromotionSection
+                            key={section.id}
+                            section={section}
+                            onChange={
+                                handleSectionChange
+                            }
+                        />
+                    ),
+                )}
             </div>
         </div>
     );

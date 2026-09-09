@@ -1,124 +1,262 @@
-// packages/mall-page-viewer/src/components/promotion/PromotionSection.tsx
+// apps/user-web/component/design/main/promotion/AdminPromotionSection.tsx
 
 "use client";
 
-import { useRef } from "react";
+import { useState } from "react";
 
+import type {
+    PromotionSectionConfig,
+} from "@mall/mall-page-viewer";
 
-import PromotionCard from "./PromotionCard";
-import { PromotionSectionConfig } from "../../types/mainPage";
-
-interface PromotionSectionProps {
+interface AdminPromotionSectionProps {
     section: PromotionSectionConfig;
-    onNavigate?: (path: string) => void;
+
+    onChange: (
+        section: PromotionSectionConfig,
+    ) => void;
+
+    onDelete?: () => void;
 }
 
-export default function PromotionSection({
+export default function AdminPromotionSection({
     section,
-    onNavigate,
-}: PromotionSectionProps) {
-    const containerRef =
-        useRef<HTMLDivElement>(null);
+    onChange,
+    onDelete,
+}: AdminPromotionSectionProps) {
+    const [isEditorOpen, setIsEditorOpen] =
+        useState(false);
 
-    if (!section.isActive) {
-        return null;
-    }
-
-    const promotions = Array.isArray(
-        section.promotions,
-    )
-        ? section.promotions
-        : [];
-
-    if (promotions.length === 0) {
-        return null;
-    }
-
-    const scroll = (
-        direction: "left" | "right",
+    const updateSection = (
+        updates: Partial<PromotionSectionConfig>,
     ) => {
-        const container =
-            containerRef.current;
-
-        if (!container) {
-            return;
-        }
-
-        const amount =
-            container.clientWidth * 0.8;
-
-        container.scrollBy({
-            left:
-                direction === "right"
-                    ? amount
-                    : -amount,
-            behavior: "smooth",
+        onChange({
+            ...section,
+            ...updates,
         });
     };
 
     return (
-        <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-            {/* Section Header */}
-            {section.title && (
-                <div className="mb-5 flex items-center justify-between">
-                    <h2 className="text-2xl font-bold tracking-tight text-neutral-900">
-                        {section.title}
+        <section className="rounded-xl border border-slate-200 bg-white p-6">
+            {/* Header */}
+            <div className="flex items-center justify-between">
+                <div>
+                    <h2 className="text-lg font-semibold text-slate-900">
+                        Promotion
                     </h2>
+
+                    <p className="mt-1 text-sm text-slate-500">
+                        프로모션 Section의 콘텐츠를 관리합니다.
+                    </p>
                 </div>
-            )}
 
-            {/* Promotion Queue */}
-            <div className="relative">
-                {/* Left */}
-                <button
-                    type="button"
-                    onClick={() =>
-                        scroll("left")
-                    }
-                    aria-label="이전 프로모션"
-                    className="absolute left-2 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-neutral-200 bg-white/90 text-lg text-neutral-700 shadow-sm backdrop-blur transition-colors hover:bg-white"
-                >
-                    ‹
-                </button>
+                <div className="flex items-center gap-3">
+                    <span
+                        className={
+                            section.isActive
+                                ? "text-sm text-emerald-600"
+                                : "text-sm text-slate-400"
+                        }
+                    >
+                        {section.isActive
+                            ? "활성"
+                            : "비활성"}
+                    </span>
 
-                {/* Cards */}
-                <div
-                    ref={containerRef}
-                    className="flex gap-5 overflow-x-auto scroll-smooth px-1 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-                >
-                    {promotions.map(
-                        (promotion) => (
-                            <div
-                                key={
-                                    promotion.id
+                    {onDelete && (
+                        <button
+                            type="button"
+                            onClick={onDelete}
+                            className="text-xs text-rose-500 transition-colors hover:text-rose-700"
+                        >
+                            삭제
+                        </button>
+                    )}
+
+                    <button
+                        type="button"
+                        onClick={() =>
+                            setIsEditorOpen(
+                                (current) =>
+                                    !current,
+                            )
+                        }
+                        className="rounded-md border border-slate-200 px-3 py-2 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-50"
+                    >
+                        {isEditorOpen
+                            ? "편집 닫기"
+                            : "편집하기"}
+                    </button>
+                </div>
+            </div>
+
+            {/* Summary */}
+            <div className="mt-6 rounded-lg bg-slate-50 p-4">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <p className="text-sm font-medium text-slate-700">
+                            {section.title ||
+                                "제목 없음"}
+                        </p>
+
+                        <p className="mt-1 text-xs text-slate-400">
+                            프로모션{" "}
+                            {
+                                section.promotions
+                                    .length
+                            }
+                            개
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            {/* Editor */}
+            {isEditorOpen && (
+                <div className="mt-6 border-t border-slate-100 pt-6">
+                    <div className="space-y-5">
+                        {/* Title */}
+                        <div>
+                            <label className="text-sm font-medium text-slate-700">
+                                Section 제목
+                            </label>
+
+                            <input
+                                type="text"
+                                value={
+                                    section.title ??
+                                    ""
                                 }
-                                className="w-[calc(100%-48px)] shrink-0 sm:w-[70%] lg:w-[60%]"
+                                onChange={(
+                                    event,
+                                ) =>
+                                    updateSection({
+                                        title: event
+                                            .target
+                                            .value,
+                                    })
+                                }
+                                placeholder="Promotion Section 제목"
+                                className="mt-2 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-slate-400"
+                            />
+                        </div>
+
+                        {/* Active */}
+                        <div className="flex items-center justify-between rounded-lg border border-slate-200 px-4 py-3">
+                            <div>
+                                <p className="text-sm font-medium text-slate-700">
+                                    Section 노출
+                                </p>
+
+                                <p className="mt-1 text-xs text-slate-400">
+                                    비활성화하면 Client에 표시되지 않습니다.
+                                </p>
+                            </div>
+
+                            <button
+                                type="button"
+                                onClick={() =>
+                                    updateSection(
+                                        {
+                                            isActive:
+                                                !section.isActive,
+                                        },
+                                    )
+                                }
+                                className={
+                                    section.isActive
+                                        ? "relative h-6 w-11 rounded-full bg-slate-900"
+                                        : "relative h-6 w-11 rounded-full bg-slate-300"
+                                }
                             >
-                                <PromotionCard
-                                    promotion={
-                                        promotion
-                                    }
-                                    onNavigate={
-                                        onNavigate
+                                <span
+                                    className={
+                                        section.isActive
+                                            ? "absolute left-6 top-1 h-4 w-4 rounded-full bg-white"
+                                            : "absolute left-1 top-1 h-4 w-4 rounded-full bg-white"
                                     }
                                 />
-                            </div>
-                        ),
-                    )}
-                </div>
+                            </button>
+                        </div>
 
-                {/* Right */}
-                <button
-                    type="button"
-                    onClick={() =>
-                        scroll("right")
-                    }
-                    aria-label="다음 프로모션"
-                    className="absolute right-2 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-neutral-200 bg-white/90 text-lg text-neutral-700 shadow-sm backdrop-blur transition-colors hover:bg-white"
-                >
-                    ›
-                </button>
-            </div>
+                        {/* Promotions */}
+                        <div>
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <h3 className="text-sm font-semibold text-slate-800">
+                                        Promotion
+                                    </h3>
+
+                                    <p className="mt-1 text-xs text-slate-400">
+                                        현재 Section에 포함된 프로모션입니다.
+                                    </p>
+                                </div>
+
+                                <span className="text-xs text-slate-400">
+                                    {
+                                        section
+                                            .promotions
+                                            .length
+                                    }
+                                    개
+                                </span>
+                            </div>
+
+                            <div className="mt-4 space-y-2">
+                                {section.promotions.map(
+                                    (
+                                        promotion,
+                                    ) => (
+                                        <div
+                                            key={
+                                                promotion.id
+                                            }
+                                            className="flex items-center gap-3 rounded-lg border border-slate-200 px-4 py-3"
+                                        >
+                                            <div className="h-12 w-20 shrink-0 overflow-hidden rounded-md bg-slate-100">
+                                                {promotion.imageUrl ? (
+                                                    <img
+                                                        src={
+                                                            promotion.imageUrl
+                                                        }
+                                                        alt=""
+                                                        className="h-full w-full object-cover"
+                                                    />
+                                                ) : (
+                                                    <div className="flex h-full items-center justify-center text-[10px] text-slate-400">
+                                                        없음
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            <div className="min-w-0 flex-1">
+                                                <p className="truncate text-sm font-medium text-slate-700">
+                                                    {
+                                                        promotion.title
+                                                    }
+                                                </p>
+
+                                                <p className="mt-1 truncate text-xs text-slate-400">
+                                                    {
+                                                        promotion.description
+                                                    }
+                                                </p>
+                                            </div>
+                                        </div>
+                                    ),
+                                )}
+
+                                {section.promotions
+                                    .length ===
+                                    0 && (
+                                        <div className="rounded-lg border border-dashed border-slate-300 py-8 text-center text-xs text-slate-400">
+                                            등록된 프로모션이 없습니다.
+                                        </div>
+                                    )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </section>
     );
 }
