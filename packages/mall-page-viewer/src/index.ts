@@ -32,7 +32,7 @@ export type {
 // Header
 // ==========================================
 
-export { default as Header } from "./components/header/Header";
+export { default as Header } from "./components/header/MainHeader";
 export { default as UserAuthAction } from "./components/header/UserAuthAction";
 
 // ==========================================

@@ -2,13 +2,13 @@
 
 "use client";
 
-import Header from "../header/Header";
 import HeroBanner from "../herobanner/HeroBanner";
 import ProductSection from "../product/ProductSection";
 import PromotionSection from "../promotion/PromotionSection";
 import BusinessInfoFooter from "../footer/BusinessInfoFooter";
 
 import type { PageConfig } from "../../types/mainPage";
+import MainHeader from "../header/MainHeader";
 
 interface MallTemplateProps {
     config: PageConfig;
@@ -39,7 +39,7 @@ export default function MallTemplate({
 
     return (
         <div className="min-h-screen bg-white">
-            <Header
+            <MainHeader
                 config={config.header}
                 isLoggedIn={isLoggedIn}
                 cartItemCount={cartItemCount}

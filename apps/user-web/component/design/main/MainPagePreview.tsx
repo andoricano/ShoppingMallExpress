@@ -1,4 +1,4 @@
-// app/main-page/MainPagePreview.tsx
+// apps/user-web/component/design/main/MainPagePreview.tsx
 
 "use client";
 

@@ -1,6 +1,7 @@
 // app/main-page/page.tsx
 
-import MainPagePreview from "@/component/design/MainPagePreview";
+import MainPagePreview from "@/component/design/main/MainPagePreview";
+
 
 
 export default function MainPageConfigPage() {

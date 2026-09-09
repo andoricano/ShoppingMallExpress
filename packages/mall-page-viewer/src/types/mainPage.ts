@@ -155,19 +155,27 @@ export type PageSection =
 
 
 /**
- * ==========================================
- * Header
- * ==========================================
+ * Header Menu Item
+ *
+ * Header에서 표시할 메뉴와 하위 메뉴를 정의합니다.
  */
+export interface HeaderMenuItem {
+    id: string;
+
+    title: string;
+    href: string;
+
+    children?: HeaderMenuItem[];
+}
 
 /**
  * Header 설정
  */
 export interface PageHeaderConfig {
     isActive: boolean;
-    menuIds: string[];
-}
 
+    menus: HeaderMenuItem[];
+}
 
 /**
  * ==========================================

@@ -14,10 +14,46 @@ export const mainPageMock: PageConfig = {
     header: {
         isActive: true,
 
-        menuIds: [
-            "menu-1",
-            "menu-2",
-            "menu-3",
+        menus: [
+            {
+                id: "menu-1",
+                title: "신상품",
+                href: "/products?categoryId=new",
+            },
+            {
+                id: "menu-2",
+                title: "여성",
+                href: "/products?categoryId=women",
+                children: [
+                    {
+                        id: "menu-2-1",
+                        title: "의류",
+                        href: "/products?categoryId=women-clothing",
+                    },
+                    {
+                        id: "menu-2-2",
+                        title: "신발",
+                        href: "/products?categoryId=women-shoes",
+                    },
+                ],
+            },
+            {
+                id: "menu-3",
+                title: "남성",
+                href: "/products?categoryId=men",
+                children: [
+                    {
+                        id: "menu-3-1",
+                        title: "의류",
+                        href: "/products?categoryId=men-clothing",
+                    },
+                    {
+                        id: "menu-3-2",
+                        title: "신발",
+                        href: "/products?categoryId=men-shoes",
+                    },
+                ],
+            },
         ],
     },
 
