@@ -14,6 +14,8 @@ export const mainPageMock: PageConfig = {
     header: {
         isActive: true,
 
+        menuMode: "NONE",
+
         menus: [
             {
                 id: "menu-1",
@@ -56,7 +58,6 @@ export const mainPageMock: PageConfig = {
             },
         ],
     },
-
     // ==========================================
     // Hero
     // ==========================================

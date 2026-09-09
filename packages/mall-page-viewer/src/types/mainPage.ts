@@ -171,8 +171,14 @@ export interface HeaderMenuItem {
 /**
  * Header 설정
  */
+export type HeaderMenuMode =
+    | "NONE"
+    | "DROPDOWN"
+    | "MEGA";
 export interface PageHeaderConfig {
     isActive: boolean;
+
+    menuMode: HeaderMenuMode;
 
     menus: HeaderMenuItem[];
 }

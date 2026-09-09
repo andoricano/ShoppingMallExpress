@@ -1,159 +1,252 @@
-// packages/mall-page-viewer/src/components/header/Header.tsx
-
 "use client";
 
 import { useState } from "react";
 
-import UserAuthAction from "./UserAuthAction";
-import { PageHeaderConfig } from "@mall/mall-page-viewer";
+import type {
+    PageHeaderConfig,
+} from "@mall/mall-page-viewer";
+import { HeaderMenuItem, HeaderMenuMode } from "@mall/mall-page-viewer/src/types/mainPage";
+import AdminMainHeaderMenuEditor from "./AdminMainHeaderMenuEditor";
 
-interface HeaderProps {
+interface AdminMainHeaderProps {
     config: PageHeaderConfig;
 
-    isLoggedIn: boolean;
-
-    cartItemCount?: number;
-    wishlistItemCount?: number;
-
-    onNavigate: (path: string) => void;
-    onLogout?: () => void;
+    onChange: (
+        updater: (
+            header: PageHeaderConfig,
+        ) => PageHeaderConfig,
+    ) => void;
 }
 
-interface HeaderMenu {
-    id: string;
-    title: string;
-    href: string;
-    children?: HeaderMenu[];
-}
-
-export default function Header({
+export default function AdminMainHeader({
     config,
-    isLoggedIn,
-    cartItemCount = 0,
-    wishlistItemCount = 0,
-    onNavigate,
-    onLogout,
-}: HeaderProps) {
+    onChange,
+}: AdminMainHeaderProps) {
     const [
-        hoveredMenu,
-        setHoveredMenu,
-    ] = useState<string | null>(null);
+        isEditorOpen,
+        setIsEditorOpen,
+    ] = useState(false);
 
-    if (!config.isActive) {
-        return null;
-    }
+    const updateConfig = (
+        updater: (
+            config: PageHeaderConfig,
+        ) => PageHeaderConfig,
+    ) => {
+        // onChange(
+        // updater(
+        //     structuredClone(config),
+        // ),
+        // );
+    };
 
-    const menus = config.menuIds
-        .map((menuId) =>
-            menuData.find(
-                (menu) => menu.id === menuId,
+    const updateMenuMode = (
+        menuMode: HeaderMenuMode,
+    ) => {
+        updateConfig((current) => ({
+            ...current,
+            menuMode,
+        }));
+    };
+
+    const toggleActive = () => {
+        updateConfig((current) => ({
+            ...current,
+            isActive: !current.isActive,
+        }));
+    };
+
+    const updateMenus = (
+        menus: HeaderMenuItem[],
+    ) => {
+        updateConfig((current) => ({
+            ...current,
+            menus,
+        }));
+    };
+
+    const addMenu = () => {
+        const menu: HeaderMenuItem = {
+            id: crypto.randomUUID(),
+            title: "새 메뉴",
+            href: "/",
+        };
+
+        updateMenus([
+            ...config.menus,
+            menu,
+        ]);
+    };
+
+    const removeMenu = (
+        menuId: string,
+    ) => {
+        updateMenus(
+            config.menus.filter(
+                (menu) =>
+                    menu.id !== menuId,
             ),
-        )
-        .filter(
-            (menu): menu is HeaderMenu =>
-                menu !== undefined,
         );
+    };
+
+    const updateMenu = (
+        menuId: string,
+        updater: (
+            menu: HeaderMenuItem,
+        ) => HeaderMenuItem,
+    ) => {
+        updateMenus(
+            config.menus.map((menu) =>
+                menu.id === menuId
+                    ? updater(
+                        structuredClone(
+                            menu,
+                        ),
+                    )
+                    : menu,
+            ),
+        );
+    };
+
+    const addChildMenu = (
+        menuId: string,
+    ) => {
+        updateMenu(menuId, (menu) => ({
+            ...menu,
+            children: [
+                ...(menu.children ?? []),
+                {
+                    id: crypto.randomUUID(),
+                    title: "새 하위 메뉴",
+                    href: "/",
+                },
+            ],
+        }));
+    };
+
+    const removeChildMenu = (
+        menuId: string,
+        childId: string,
+    ) => {
+        updateMenu(menuId, (menu) => ({
+            ...menu,
+            children:
+                menu.children?.filter(
+                    (child) =>
+                        child.id !== childId,
+                ),
+        }));
+    };
+
+    const updateChildMenu = (
+        menuId: string,
+        childId: string,
+        updater: (
+            menu: HeaderMenuItem,
+        ) => HeaderMenuItem,
+    ) => {
+        updateMenu(menuId, (menu) => ({
+            ...menu,
+            children:
+                menu.children?.map(
+                    (child) =>
+                        child.id === childId
+                            ? updater(
+                                structuredClone(
+                                    child,
+                                ),
+                            )
+                            : child,
+                ),
+        }));
+    };
 
     return (
-        <header className="sticky top-0 z-50 border-b border-neutral-200 bg-white/80 backdrop-blur-md">
-            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                <div className="flex h-16 items-center justify-between">
-                    {/* Logo */}
-                    <div className="shrink-0">
+        <>
+            {/* Header Section */}
+            <section className="rounded-xl border border-slate-200 bg-white p-6">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h2 className="text-lg font-semibold text-slate-900">
+                            헤더
+                        </h2>
+
+                        <p className="mt-1 text-sm text-slate-500">
+                            메인 페이지의 메뉴 구성을 관리합니다.
+                        </p>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                        <span
+                            className={
+                                config.isActive
+                                    ? "text-sm text-emerald-600"
+                                    : "text-sm text-slate-400"
+                            }
+                        >
+                            {config.isActive
+                                ? "활성"
+                                : "비활성"}
+                        </span>
+
+                        <button
+                            type="button"
+                            onClick={toggleActive}
+                            className="rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50"
+                        >
+                            {config.isActive
+                                ? "비활성화"
+                                : "활성화"}
+                        </button>
+
                         <button
                             type="button"
                             onClick={() =>
-                                onNavigate("/")
+                                setIsEditorOpen(
+                                    true,
+                                )
                             }
-                            className="text-xl font-bold tracking-wider text-neutral-900"
+                            className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
                         >
-                            MALL
+                            헤더 편집
                         </button>
                     </div>
+                </div>
 
-                    {/* Category Menu */}
-                    <nav className="hidden space-x-8 md:flex">
-                        {menus.map((menu) => (
+                <div className="mt-6 flex flex-wrap gap-2">
+                    {config.menus.map(
+                        (menu) => (
                             <div
                                 key={menu.id}
-                                className="group relative py-5"
-                                onMouseEnter={() =>
-                                    setHoveredMenu(
-                                        menu.id,
-                                    )
-                                }
-                                onMouseLeave={() =>
-                                    setHoveredMenu(
-                                        null,
-                                    )
-                                }
+                                className="rounded-md bg-slate-50 px-3 py-2 text-sm text-slate-700"
                             >
-                                <button
-                                    type="button"
-                                    onClick={() =>
-                                        onNavigate(
-                                            menu.href,
-                                        )
-                                    }
-                                    className="text-sm font-medium text-neutral-700 transition-colors hover:text-neutral-900"
-                                >
-                                    {menu.title}
-                                </button>
+                                {menu.title}
 
                                 {menu.children &&
                                     menu.children.length >
-                                    0 &&
-                                    hoveredMenu ===
-                                    menu.id && (
-                                        <div className="absolute left-0 top-full z-10 w-48 rounded-b-md border border-neutral-100 bg-white py-2 shadow-lg">
-                                            {menu.children.map(
-                                                (
-                                                    child,
-                                                ) => (
-                                                    <button
-                                                        key={
-                                                            child.id
-                                                        }
-                                                        type="button"
-                                                        onClick={() =>
-                                                            onNavigate(
-                                                                child.href,
-                                                            )
-                                                        }
-                                                        className="block w-full px-4 py-2 text-left text-xs text-neutral-600 transition-colors hover:bg-neutral-50"
-                                                    >
-                                                        {
-                                                            child.title
-                                                        }
-                                                    </button>
-                                                ),
-                                            )}
-                                        </div>
+                                    0 && (
+                                        <span className="ml-1 text-xs text-slate-400">
+                                            +
+                                            {
+                                                menu
+                                                    .children
+                                                    .length
+                                            }
+                                        </span>
                                     )}
                             </div>
-                        ))}
-                    </nav>
-
-                    {/* User */}
-                    <UserAuthAction
-                        isLoggedIn={
-                            isLoggedIn
-                        }
-                        cartItemCount={
-                            cartItemCount
-                        }
-                        wishlistItemCount={
-                            wishlistItemCount
-                        }
-                        onNavigate={
-                            onNavigate
-                        }
-                        onLogout={
-                            onLogout
-                        }
-                    />
+                        ),
+                    )}
                 </div>
-            </div>
-        </header>
+            </section>
+            {isEditorOpen && (
+                <AdminMainHeaderMenuEditor
+                    config={config}
+                    onChange={onChange}
+                    onClose={() =>
+                        setIsEditorOpen(false)
+                    }
+                />
+            )}
+        </>
     );
 }

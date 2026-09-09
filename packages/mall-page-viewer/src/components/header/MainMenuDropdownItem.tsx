@@ -5,23 +5,23 @@
 import type { HeaderMenuItem } from "../../types/mainPage";
 
 interface MainMenuDropdownItemProps {
-    menu: HeaderMenuItem;
+    item: HeaderMenuItem;
     onNavigate: (path: string) => void;
 }
 
 export default function MainMenuDropdownItem({
-    menu,
+    item,
     onNavigate,
 }: MainMenuDropdownItemProps) {
     return (
         <button
             type="button"
             onClick={() =>
-                onNavigate(menu.href)
+                onNavigate(item.href)
             }
-            className="block w-full px-4 py-2 text-left text-xs text-neutral-600 transition-colors hover:bg-neutral-50"
+            className="block w-full px-4 py-2 text-left text-sm text-neutral-600 transition-colors hover:bg-neutral-50 hover:text-neutral-900"
         >
-            {menu.title}
+            {item.title}
         </button>
     );
 }
