@@ -1,93 +1,195 @@
-// packages/mall-page-viewer/src/components/footer/Footer.tsx
+// apps/user-web/component/design/main/footer/AdminBusinessInfoFooter.tsx
 
 "use client";
 
-import type { PageFooterConfig } from "../../types/mainPage";
+import type { PageFooterConfig } from "@mall/mall-page-viewer";
 
-interface BusinessInfoFooterProps {
+interface AdminBusinessInfoFooterProps {
     config: PageFooterConfig;
+
+    onChange: (
+        updater: (
+            footer: PageFooterConfig,
+        ) => PageFooterConfig,
+    ) => void;
 }
 
-export default function BusinessInfoFooter({
+export default function AdminBusinessInfoFooter({
     config,
-}: BusinessInfoFooterProps) {
-    if (!config.isActive) {
-        return null;
-    }
+    onChange,
+}: AdminBusinessInfoFooterProps) {
+    const updateConfig = (
+        updates: Partial<PageFooterConfig>,
+    ) => {
+        onChange((current) => ({
+            ...current,
+            ...updates,
+        }));
+    };
 
     return (
-        <footer className="border-t border-neutral-800 bg-neutral-900 py-12 text-xs text-neutral-400">
-            <div className="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
-                <div className="flex flex-col justify-between gap-6 md:flex-row">
-                    {/* 사업자 기본 정보 */}
-                    <div className="space-y-1.5 leading-relaxed">
-                        <p className="mb-2 text-sm font-bold text-white">
-                            {config.businessName}
-                        </p>
+        <section className="rounded-xl border border-slate-200 bg-white p-6">
+            <div className="flex items-center justify-between">
+                <div>
+                    <h2 className="text-lg font-semibold text-slate-900">
+                        Footer
+                    </h2>
 
-                        <p>
-                            대표자:{" "}
-                            {config.representativeName}
-                            {" | "}
-                            사업자등록번호:{" "}
-                            {config.businessNumber}
-                        </p>
-
-                        <p>
-                            주소: {config.address}
-                        </p>
-                    </div>
-
-                    {/* 고객센터 */}
-                    {config.customerCenter && (
-                        <div className="space-y-1.5 leading-relaxed">
-                            <p className="mb-2 text-sm font-bold text-white">
-                                고객센터
-                            </p>
-
-                            <p className="text-base font-semibold text-white">
-                                {
-                                    config.customerCenter
-                                }
-                            </p>
-                        </div>
-                    )}
+                    <p className="mt-1 text-sm text-slate-500">
+                        쇼핑몰의 사업자 및 고객센터 정보를 관리합니다.
+                    </p>
                 </div>
 
-                {/* 추가 정보 */}
-                {config.additionalInfo && (
-                    <div className="leading-relaxed text-neutral-500">
-                        {
-                            config.additionalInfo
+                <div className="flex items-center gap-3">
+                    <span
+                        className={
+                            config.isActive
+                                ? "text-sm text-emerald-600"
+                                : "text-sm text-slate-400"
                         }
-                    </div>
-                )}
+                    >
+                        {config.isActive
+                            ? "활성"
+                            : "비활성"}
+                    </span>
 
-                <div className="flex items-center justify-between border-t border-neutral-800 pt-6 text-[11px] text-neutral-500">
-                    <p>
-                        ©{" "}
-                        {new Date().getFullYear()}{" "}
-                        {config.businessName}. All
-                        rights reserved.
-                    </p>
-
-                    <div className="flex gap-4">
-                        <button
-                            type="button"
-                            className="hover:underline"
-                        >
-                            이용약관
-                        </button>
-
-                        <button
-                            type="button"
-                            className="font-bold text-neutral-300 hover:underline"
-                        >
-                            개인정보처리방침
-                        </button>
-                    </div>
+                    <button
+                        type="button"
+                        onClick={() =>
+                            updateConfig({
+                                isActive:
+                                    !config.isActive,
+                            })
+                        }
+                        className="rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-600 transition-colors hover:bg-slate-50"
+                    >
+                        {config.isActive
+                            ? "비활성화"
+                            : "활성화"}
+                    </button>
                 </div>
             </div>
-        </footer>
+
+            <div className="mt-6 grid gap-4 sm:grid-cols-2">
+                <div>
+                    <label className="text-sm font-medium text-slate-700">
+                        사업자명
+                    </label>
+
+                    <input
+                        value={config.businessName}
+                        onChange={(event) =>
+                            updateConfig({
+                                businessName:
+                                    event.target
+                                        .value,
+                            })
+                        }
+                        className="mt-2 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-slate-400"
+                    />
+                </div>
+
+                <div>
+                    <label className="text-sm font-medium text-slate-700">
+                        대표자명
+                    </label>
+
+                    <input
+                        value={
+                            config.representativeName
+                        }
+                        onChange={(event) =>
+                            updateConfig({
+                                representativeName:
+                                    event.target
+                                        .value,
+                            })
+                        }
+                        className="mt-2 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-slate-400"
+                    />
+                </div>
+
+                <div>
+                    <label className="text-sm font-medium text-slate-700">
+                        사업자등록번호
+                    </label>
+
+                    <input
+                        value={
+                            config.businessNumber
+                        }
+                        onChange={(event) =>
+                            updateConfig({
+                                businessNumber:
+                                    event.target
+                                        .value,
+                            })
+                        }
+                        className="mt-2 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-slate-400"
+                    />
+                </div>
+
+                <div>
+                    <label className="text-sm font-medium text-slate-700">
+                        고객센터
+                    </label>
+
+                    <input
+                        value={
+                            config.customerCenter ??
+                            ""
+                        }
+                        onChange={(event) =>
+                            updateConfig({
+                                customerCenter:
+                                    event.target
+                                        .value,
+                            })
+                        }
+                        className="mt-2 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-slate-400"
+                    />
+                </div>
+
+                <div className="sm:col-span-2">
+                    <label className="text-sm font-medium text-slate-700">
+                        주소
+                    </label>
+
+                    <input
+                        value={config.address}
+                        onChange={(event) =>
+                            updateConfig({
+                                address:
+                                    event.target
+                                        .value,
+                            })
+                        }
+                        className="mt-2 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-slate-400"
+                    />
+                </div>
+
+                <div className="sm:col-span-2">
+                    <label className="text-sm font-medium text-slate-700">
+                        추가 정보
+                    </label>
+
+                    <textarea
+                        value={
+                            config.additionalInfo ??
+                            ""
+                        }
+                        onChange={(event) =>
+                            updateConfig({
+                                additionalInfo:
+                                    event.target
+                                        .value,
+                            })
+                        }
+                        rows={4}
+                        className="mt-2 w-full resize-none rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-slate-400"
+                    />
+                </div>
+            </div>
+        </section>
     );
 }

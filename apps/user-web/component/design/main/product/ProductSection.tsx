@@ -6,7 +6,7 @@
 
 import { ProductDetailedThumbnailCard } from "./ProductDetailedThumbnailCard";
 import { ProductCard } from "./ProductCard";
-import { ProductCardData, ProductSectionConfig } from "../../types/mainPage";
+import { ProductCardData, ProductSectionConfig } from "@mall/mall-page-viewer";
 
 interface ProductSectionProps {
     section: ProductSectionConfig;

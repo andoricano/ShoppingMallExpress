@@ -2,7 +2,8 @@
 
 "use client";
 
-import type { PromotionCardData } from "../../types/mainPage";
+import { PromotionCardData } from "@mall/mall-page-viewer";
+
 
 interface PromotionCardProps {
     promotion: PromotionCardData;

@@ -14,6 +14,7 @@ import { usePageEditor } from "@/hooks/design/usePageEditor";
 import AdminHeroBanner from "./herobanner/AdminHerorBanner";
 import AdminMainHeader from "./header/Header";
 import AdminPromotionSection from "./promotion/PromotionSection";
+import AdminBusinessInfoFooter from "./footer/BusinessInfoFooter";
 
 interface PageDesignWorkspaceProps {
     config: PageConfig;
@@ -153,6 +154,11 @@ export function PageDesignWorkspace({
                         />
                     ),
                 )}
+
+                <AdminBusinessInfoFooter
+                    config={editingConfig.footer}
+                    onChange={updateFooter}
+                />
             </div>
         </div>
     );
