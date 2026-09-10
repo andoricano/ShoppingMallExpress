@@ -12,6 +12,7 @@
     "@mall/constants": "workspace:*",
     "@mall/types": "workspace:*",
     "@mall/tiptap": "workspace:*",
+    "@mall/mall-page-viewer": "workspace:*",
     "@supabase/ssr": "^0.12.4",
     "@supabase/supabase-js": "^2.49.1",
     "lucide-react": "^1.40.0",
