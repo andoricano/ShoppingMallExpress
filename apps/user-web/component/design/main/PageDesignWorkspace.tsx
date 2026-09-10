@@ -6,24 +6,28 @@ import type {
     HeroSectionConfig,
     PageConfig,
     PageSection,
+    ProductSectionConfig,
     PromotionSectionConfig,
 } from "@mall/mall-page-viewer";
 
 import { usePageEditor } from "@/hooks/design/usePageEditor";
 
 import AdminHeroBanner from "./herobanner/AdminHerorBanner";
-import AdminPromotionSection from "./promotion/PromotionSection";
 import AdminBusinessInfoFooter from "./footer/BusinessInfoFooter";
 import AdminMainHeader from "./header/AdminMainHeader";
+import AdminProductSection from "./product/AdminProductSection";
+import AdminPromotionSection from "./promotion/PromotionSection";
 
 interface PageDesignWorkspaceProps {
     config: PageConfig;
     section: string;
+    onClose: () => void;
 }
 
 export function PageDesignWorkspace({
     config,
     section,
+    onClose,
 }: PageDesignWorkspaceProps) {
     const {
         config: editingConfig,
@@ -31,14 +35,9 @@ export function PageDesignWorkspace({
         updateHero,
         updateSections,
         updateFooter,
-        resetConfig,
     } = usePageEditor({
         initialConfig: config,
     });
-
-    // ==========================================
-    // Header
-    // ==========================================
 
     const handleHeaderChange = (
         updater: (
@@ -57,10 +56,6 @@ export function PageDesignWorkspace({
         });
     };
 
-    // ==========================================
-    // Hero
-    // ==========================================
-
     const handleHeroChange = (
         heroes: HeroSectionConfig[],
     ) => {
@@ -72,82 +67,85 @@ export function PageDesignWorkspace({
         updateHero(() => heroes);
     };
 
-    // ==========================================
-    // Section
-    // ==========================================
-
     const handleSectionChange = (
         updatedSection: PageSection,
     ) => {
-        updateSections((sections) => {
-            const nextSections =
-                sections.map((section) =>
-                    section.id ===
-                        updatedSection.id
-                        ? updatedSection
-                        : section,
-                );
-
-            console.log(
-                "[Design] Section 변경:",
-                nextSections,
-            );
-
-            return nextSections;
-        });
+        updateSections((sections) =>
+            sections.map((currentSection) =>
+                currentSection.id ===
+                    updatedSection.id
+                    ? updatedSection
+                    : currentSection,
+            ),
+        );
     };
-
-    // ==========================================
-    // Promotion
-    // ==========================================
 
     const promotionSections =
         editingConfig.sections.filter(
             (
-                section,
-            ): section is PromotionSectionConfig =>
-                section.type === "PROMOTION",
+                currentSection,
+            ): currentSection is PromotionSectionConfig =>
+                currentSection.type === "PROMOTION",
+        );
+
+    const productSections =
+        editingConfig.sections.filter(
+            (
+                currentSection,
+            ): currentSection is ProductSectionConfig =>
+                currentSection.type === "PRODUCT",
         );
 
     return (
         <div className="space-y-6">
-            {/* Workspace Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-xl font-bold text-slate-900">
-                        Page Design
+                    <h1 className="text-xl font-semibold text-slate-900">
+                        {section}
                     </h1>
 
                     <p className="mt-1 text-sm text-slate-500">
-                        메인 페이지 구성을 관리합니다.
+                        선택한 영역을 편집합니다.
                     </p>
                 </div>
 
                 <button
                     type="button"
-                    onClick={resetConfig}
-                    className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50"
+                    onClick={onClose}
+                    className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50"
                 >
-                    초기화
+                    닫기
                 </button>
             </div>
 
-            {/* Selected Editor */}
-            {section === "header" && (
+            {section === "HEADER" && (
                 <AdminMainHeader
                     config={editingConfig.header}
                     onChange={handleHeaderChange}
                 />
             )}
 
-            {section === "hero" && (
+            {section === "HERO" && (
                 <AdminHeroBanner
                     heroes={editingConfig.hero}
                     onChange={handleHeroChange}
                 />
             )}
 
-            {section === "promotion" &&
+            {section === "PRODUCT" &&
+                productSections.map(
+                    (productSection) => (
+                        <AdminProductSection
+                            key={productSection.id}
+                            section={productSection}
+                            onChange={
+                                handleSectionChange
+                            }
+                        />
+                    ),
+                )}
+
+            {section === "PROMOTION" &&
                 promotionSections.map(
                     (promotionSection) => (
                         <AdminPromotionSection
@@ -164,7 +162,7 @@ export function PageDesignWorkspace({
                     ),
                 )}
 
-            {section === "footer" && (
+            {section === "FOOTER" && (
                 <AdminBusinessInfoFooter
                     config={editingConfig.footer}
                     onChange={updateFooter}

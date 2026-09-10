@@ -26,18 +26,17 @@ export default function PromotionCard({
     };
 
     return (
-        <article className="group relative overflow-hidden rounded-xl bg-neutral-100">
+        <article className="group relative h-[400px] w-full overflow-hidden rounded-xl bg-neutral-100">
             {promotion.imageUrl ? (
                 <img
                     src={promotion.imageUrl}
                     alt={
-                        promotion.title ??
-                        ""
+                        promotion.title ?? ""
                     }
                     className="h-full w-full object-cover"
                 />
             ) : (
-                <div className="flex aspect-[16/7] items-center justify-center text-sm text-neutral-400">
+                <div className="flex h-full w-full items-center justify-center text-sm text-neutral-400">
                     프로모션 이미지 없음
                 </div>
             )}
