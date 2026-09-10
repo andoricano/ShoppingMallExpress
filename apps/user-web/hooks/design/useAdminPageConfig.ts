@@ -12,9 +12,23 @@ import {
     type PageConfig,
 } from "@mall/mall-page-viewer";
 
+export type DesignEditorSection =
+    | "HEADER"
+    | "HERO"
+    | "PRODUCT"
+    | "PROMOTION"
+    | "FOOTER";
+
 export function useAdminPageConfig() {
     const [config, setConfig] =
         useState<PageConfig | null>(null);
+
+    const [
+        selectedEditor,
+        setSelectedEditor,
+    ] = useState<
+        DesignEditorSection | null
+    >(null);
 
     const [loading, setLoading] =
         useState(false);
@@ -84,6 +98,7 @@ export function useAdminPageConfig() {
                         );
 
                     setConfig(savedConfig);
+                    setSelectedEditor(null);
 
                     return savedConfig;
                 } catch (err) {
@@ -114,13 +129,35 @@ export function useAdminPageConfig() {
                 );
 
             setConfig(reset);
+            setSelectedEditor(null);
             setError(null);
 
             return reset;
         }, []);
 
+    // ==========================================
+    // Editor
+    // ==========================================
+
+    const openEditor =
+        useCallback(
+            (
+                section: DesignEditorSection,
+            ) => {
+                setSelectedEditor(section);
+            },
+            [],
+        );
+
+    const closeEditor =
+        useCallback(() => {
+            setSelectedEditor(null);
+        }, []);
+
     return {
         config,
+
+        selectedEditor,
 
         loading,
         saving,
@@ -129,5 +166,8 @@ export function useAdminPageConfig() {
         fetchConfig,
         saveConfig,
         resetConfig,
+
+        openEditor,
+        closeEditor,
     };
 }

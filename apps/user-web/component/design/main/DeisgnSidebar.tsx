@@ -1,34 +1,44 @@
+// apps/user-web/component/design/main/DeisgnSidebar.tsx
+
 "use client";
 
+import type {
+    DesignEditorSection,
+} from "@/hooks/design/useAdminPageConfig";
+
 interface DesignSidebarProps {
-    selectedSection?: string;
+    selectedSection?: DesignEditorSection;
+
     onSelectSection?: (
-        section: string,
+        section: DesignEditorSection,
     ) => void;
 }
 
-const sections = [
-    {
-        id: "HEADER",
-        label: "Header",
-    },
-    {
-        id: "HERO",
-        label: "Hero",
-    },
-    {
-        id: "PRODUCT",
-        label: "Product",
-    },
-    {
-        id: "PROMOTION",
-        label: "Promotion",
-    },
-    {
-        id: "FOOTER",
-        label: "Footer",
-    },
-];
+const sections: {
+    id: DesignEditorSection;
+    label: string;
+}[] = [
+        {
+            id: "HEADER",
+            label: "Header",
+        },
+        {
+            id: "HERO",
+            label: "Hero",
+        },
+        {
+            id: "PRODUCT",
+            label: "Product",
+        },
+        {
+            id: "PROMOTION",
+            label: "Promotion",
+        },
+        {
+            id: "FOOTER",
+            label: "Footer",
+        },
+    ];
 
 export default function DesignSidebar({
     selectedSection,

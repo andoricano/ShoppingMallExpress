@@ -18,10 +18,12 @@ import AdminMainHeader from "./header/AdminMainHeader";
 
 interface PageDesignWorkspaceProps {
     config: PageConfig;
+    section: string;
 }
 
 export function PageDesignWorkspace({
     config,
+    section,
 }: PageDesignWorkspaceProps) {
     const {
         config: editingConfig,
@@ -130,23 +132,31 @@ export function PageDesignWorkspace({
                 </button>
             </div>
 
-            {/* Admin Editors */}
-            <div className="space-y-6">
+            {/* Selected Editor */}
+            {section === "header" && (
                 <AdminMainHeader
                     config={editingConfig.header}
                     onChange={handleHeaderChange}
                 />
+            )}
 
+            {section === "hero" && (
                 <AdminHeroBanner
                     heroes={editingConfig.hero}
                     onChange={handleHeroChange}
                 />
+            )}
 
-                {promotionSections.map(
-                    (section) => (
+            {section === "promotion" &&
+                promotionSections.map(
+                    (promotionSection) => (
                         <AdminPromotionSection
-                            key={section.id}
-                            section={section}
+                            key={
+                                promotionSection.id
+                            }
+                            section={
+                                promotionSection
+                            }
                             onChange={
                                 handleSectionChange
                             }
@@ -154,11 +164,12 @@ export function PageDesignWorkspace({
                     ),
                 )}
 
+            {section === "footer" && (
                 <AdminBusinessInfoFooter
                     config={editingConfig.footer}
                     onChange={updateFooter}
                 />
-            </div>
+            )}
         </div>
     );
 }
