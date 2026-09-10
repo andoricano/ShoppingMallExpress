@@ -4,9 +4,8 @@
 
 import { useRef } from "react";
 
-
 import PromotionCard from "./PromotionCard";
-import { PromotionSectionConfig } from "../../types/mainPage";
+import type { PromotionSectionConfig } from "../../types/mainPage";
 
 interface PromotionSectionProps {
     section: PromotionSectionConfig;
@@ -57,8 +56,7 @@ export default function PromotionSection({
     };
 
     return (
-        <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-            {/* Section Header */}
+        <section className="mx-auto w-full max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
             {section.title && (
                 <div className="mb-5 flex items-center justify-between">
                     <h2 className="text-2xl font-bold tracking-tight text-neutral-900">
@@ -67,9 +65,7 @@ export default function PromotionSection({
                 </div>
             )}
 
-            {/* Promotion Queue */}
-            <div className="relative">
-                {/* Left */}
+            <div className="relative w-full">
                 <button
                     type="button"
                     onClick={() =>
@@ -81,18 +77,15 @@ export default function PromotionSection({
                     ‹
                 </button>
 
-                {/* Cards */}
                 <div
                     ref={containerRef}
-                    className="flex gap-5 overflow-x-auto scroll-smooth px-1 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                    className="flex w-full gap-5 overflow-x-auto scroll-smooth px-1 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
                 >
                     {promotions.map(
                         (promotion) => (
                             <div
-                                key={
-                                    promotion.id
-                                }
-                                className="w-[calc(100%-48px)] shrink-0 sm:w-[70%] lg:w-[60%]"
+                                key={promotion.id}
+                                className="w-full shrink-0"
                             >
                                 <PromotionCard
                                     promotion={
@@ -107,7 +100,6 @@ export default function PromotionSection({
                     )}
                 </div>
 
-                {/* Right */}
                 <button
                     type="button"
                     onClick={() =>

@@ -3,13 +3,18 @@
 "use client";
 
 import type {
+    HeroSectionConfig,
     PageConfig,
+    PageSection,
+    PromotionSectionConfig,
 } from "@mall/mall-page-viewer";
 
 import { usePageEditor } from "@/hooks/design/usePageEditor";
 
-import MainPagePreview from "@/component/design/main/MainPagePreview";
-import DesignSidebar from "./DeisgnSidebar";
+import AdminHeroBanner from "./herobanner/AdminHerorBanner";
+import AdminPromotionSection from "./promotion/PromotionSection";
+import AdminBusinessInfoFooter from "./footer/BusinessInfoFooter";
+import AdminMainHeader from "./header/AdminMainHeader";
 
 interface PageDesignWorkspaceProps {
     config: PageConfig;
@@ -20,21 +25,140 @@ export function PageDesignWorkspace({
 }: PageDesignWorkspaceProps) {
     const {
         config: editingConfig,
+        updateHeader,
+        updateHero,
+        updateSections,
+        updateFooter,
+        resetConfig,
     } = usePageEditor({
         initialConfig: config,
     });
 
-    return (
-        <div className="flex min-h-screen overflow-hidden rounded-xl border border-slate-200 bg-white">
-            {/* Sidebar */}
-            <DesignSidebar />
+    // ==========================================
+    // Header
+    // ==========================================
 
-            {/* Preview */}
-            <main className="min-w-0 flex-1 overflow-auto bg-slate-100 p-6">
-                <MainPagePreview
-                    config={editingConfig}
+    const handleHeaderChange = (
+        updater: (
+            header: PageConfig["header"],
+        ) => PageConfig["header"],
+    ) => {
+        updateHeader((header) => {
+            const nextHeader = updater(header);
+
+            console.log(
+                "[Design] Header 변경:",
+                nextHeader,
+            );
+
+            return nextHeader;
+        });
+    };
+
+    // ==========================================
+    // Hero
+    // ==========================================
+
+    const handleHeroChange = (
+        heroes: HeroSectionConfig[],
+    ) => {
+        console.log(
+            "[Design] Hero 변경:",
+            heroes,
+        );
+
+        updateHero(() => heroes);
+    };
+
+    // ==========================================
+    // Section
+    // ==========================================
+
+    const handleSectionChange = (
+        updatedSection: PageSection,
+    ) => {
+        updateSections((sections) => {
+            const nextSections =
+                sections.map((section) =>
+                    section.id ===
+                        updatedSection.id
+                        ? updatedSection
+                        : section,
+                );
+
+            console.log(
+                "[Design] Section 변경:",
+                nextSections,
+            );
+
+            return nextSections;
+        });
+    };
+
+    // ==========================================
+    // Promotion
+    // ==========================================
+
+    const promotionSections =
+        editingConfig.sections.filter(
+            (
+                section,
+            ): section is PromotionSectionConfig =>
+                section.type === "PROMOTION",
+        );
+
+    return (
+        <div className="space-y-6">
+            {/* Workspace Header */}
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-xl font-bold text-slate-900">
+                        Page Design
+                    </h1>
+
+                    <p className="mt-1 text-sm text-slate-500">
+                        메인 페이지 구성을 관리합니다.
+                    </p>
+                </div>
+
+                <button
+                    type="button"
+                    onClick={resetConfig}
+                    className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50"
+                >
+                    초기화
+                </button>
+            </div>
+
+            {/* Admin Editors */}
+            <div className="space-y-6">
+                <AdminMainHeader
+                    config={editingConfig.header}
+                    onChange={handleHeaderChange}
                 />
-            </main>
+
+                <AdminHeroBanner
+                    heroes={editingConfig.hero}
+                    onChange={handleHeroChange}
+                />
+
+                {promotionSections.map(
+                    (section) => (
+                        <AdminPromotionSection
+                            key={section.id}
+                            section={section}
+                            onChange={
+                                handleSectionChange
+                            }
+                        />
+                    ),
+                )}
+
+                <AdminBusinessInfoFooter
+                    config={editingConfig.footer}
+                    onChange={updateFooter}
+                />
+            </div>
         </div>
     );
 }

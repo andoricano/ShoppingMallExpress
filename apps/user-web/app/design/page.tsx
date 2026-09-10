@@ -3,11 +3,15 @@
 "use client";
 
 import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 
-import { PageDesignWorkspace } from "@/component/design/main/PageDesignWorkspace";
+import MainPagePreview from "@/component/design/main/MainPagePreview";
+import DesignSidebar from "@/component/design/main/DeisgnSidebar";
 import { useAdminPageConfig } from "@/hooks/design/useAdminPageConfig";
 
 export default function MainPageConfigPage() {
+  const router = useRouter();
+
   const {
     config,
     loading,
@@ -44,10 +48,22 @@ export default function MainPageConfigPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50/50 p-6 md:p-8">
-      <PageDesignWorkspace
-        config={config}
+    <div className="flex min-h-screen overflow-hidden bg-slate-100">
+      {/* Sidebar */}
+      <DesignSidebar
+        onSelectSection={(section) =>
+          router.push(
+            `/main-page/${section.toLowerCase()}`,
+          )
+        }
       />
+
+      {/* Preview */}
+      <main className="min-w-0 flex-1 overflow-auto p-6 md:p-8">
+        <MainPagePreview
+          config={config}
+        />
+      </main>
     </div>
   );
 }
