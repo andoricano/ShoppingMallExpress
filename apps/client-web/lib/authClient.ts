@@ -35,24 +35,23 @@ export const authProfile = {
     // ==========================================
     // Client Profile
     // ==========================================
-
     async getProfile(): Promise<ClientProfile | null> {
         const supabase =
             createClient();
 
         const {
             data: {
-                user: authUser,
+                session,
             },
-            error: authError,
+            error: sessionError,
         } =
-            await supabase.auth.getUser();
+            await supabase.auth.getSession();
 
-        if (authError) {
-            throw authError;
+        if (sessionError) {
+            throw sessionError;
         }
 
-        if (!authUser) {
+        if (!session?.user) {
             return null;
         }
 
@@ -63,14 +62,14 @@ export const authProfile = {
             await supabase
                 .from("users")
                 .select("*")
-                .eq("id", authUser.id)
+                .eq("id", session.user.id)
                 .single();
 
         if (profileError) {
             throw profileError;
         }
 
-        const clientProfile: ClientProfile = {
+        return {
             id: profile.id,
             email: profile.email,
             name: profile.name,
@@ -106,8 +105,6 @@ export const authProfile = {
             updatedAt:
                 profile.updated_at,
         };
-
-        return clientProfile;
     },
 
     // ==========================================

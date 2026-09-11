@@ -1,5 +1,3 @@
-// app/Initializer.tsx
-
 "use client";
 
 import { useEffect } from "react";
@@ -22,11 +20,12 @@ export function Initializer() {
             (state) => state.getProfile,
         );
 
-    useEffect(() => {
-        // ==========================================
-        // Client Auth 초기화
-        // ==========================================
+    const authUserId =
+        useClientAuthStore(
+            (state) => state.authUserId,
+        );
 
+    useEffect(() => {
         const initializeAuth =
             async () => {
                 console.log(
@@ -34,23 +33,23 @@ export function Initializer() {
                 );
 
                 await getSession();
-                await getProfile();
             };
 
         initializeAuth();
+    }, [getSession]);
+
+    useEffect(() => {
+        if (!authUserId) {
+            return;
+        }
+
+        getProfile();
     }, [
-        getSession,
+        authUserId,
         getProfile,
     ]);
 
     useEffect(() => {
-        // ==========================================
-        // Cart 초기화
-        // ==========================================
-
-        // TODO: 추후 Cart API 연결
-        // User의 원격 장바구니를 조회한 뒤
-        // Zustand Cart와 동기화
         console.log(
             "[Initializer] Cart initialized:",
             items,

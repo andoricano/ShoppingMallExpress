@@ -2,26 +2,29 @@
 
 "use client";
 
-import {
-  MallTemplate,
-  mainPageMock,
-} from "@mall/mall-page-viewer";
+import { useEffect } from "react";
+
+import { useProductPost } from "@/hooks/useProductPost";
+import MainPageTemplate from "@/components/home/MainPageTemplate";
 
 export default function HomePage() {
-  const handleNavigate = (
-    path: string,
-  ) => {
-    window.location.href = path;
-  };
+  const {
+    products,
+    loading,
+    error,
+    fetchPosts,
+  } = useProductPost();
+
+  useEffect(() => {
+    fetchPosts();
+  }, [fetchPosts]);
 
   return (
     <main className="min-h-screen">
-      <MallTemplate
-        config={mainPageMock}
-        isLoggedIn={false}
-        cartItemCount={0}
-        wishlistItemCount={0}
-        onNavigate={handleNavigate}
+      <MainPageTemplate
+        products={products}
+        loading={loading}
+        error={error}
       />
     </main>
   );
