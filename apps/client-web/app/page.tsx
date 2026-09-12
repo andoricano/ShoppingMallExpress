@@ -4,28 +4,33 @@
 
 import { useEffect } from "react";
 
+import {
+    mainPageMock,
+} from "@mall/mall-page-viewer";
+
+import MainPage from "@/components/home/MainPage";
 import { useProductPost } from "@/hooks/useProductPost";
-import MainPageTemplate from "@/components/home/MainPageTemplate";
 
 export default function HomePage() {
-  const {
-    products,
-    loading,
-    error,
-    fetchPosts,
-  } = useProductPost();
+    const {
+        postList,
+        loading,
+        error,
+        fetchPosts,
+    } = useProductPost();
 
-  useEffect(() => {
-    fetchPosts();
-  }, [fetchPosts]);
+    useEffect(() => {
+        fetchPosts();
+    }, [fetchPosts]);
 
-  return (
-    <main className="min-h-screen">
-      <MainPageTemplate
-        products={products}
-        loading={loading}
-        error={error}
-      />
-    </main>
-  );
+    return (
+        <main className="min-h-screen">
+            <MainPage
+                config={mainPageMock}
+                postList={postList}
+                loading={loading}
+                error={error}
+            />
+        </main>
+    );
 }
