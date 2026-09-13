@@ -8,3 +8,4 @@ export * from './mainPageConfig.js';
 export * from './masterConfig.js';
 export * from './productPost.js';
 export * from './cart.js';
+export * from './history.js';
