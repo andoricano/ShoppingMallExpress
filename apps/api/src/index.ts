@@ -11,6 +11,7 @@ import orderRoutes from './routes/order.routes.js';
 import displayRoutes from './routes/client/display.routes.js';
 import clientOrderRoutes from "./routes/client/order.routes.js";
 import pageConfig from "./routes/pageConfig.routes.js";
+import usersRoutes from "./routes/users.routes.js";
 
 
 const app = express();
@@ -28,13 +29,12 @@ app.get('/', (req: Request, res: Response) => {
   });
 });
 
-
 // page
 app.use('/api/page-config', pageConfig);
 
-
 // API Routes
 app.use('/api/inventory-items', inventoryRoutes);
+app.use('/api/users', usersRoutes);
 app.use('/api', categoryRoutes);
 app.use('/api/orders', orderRoutes);
 

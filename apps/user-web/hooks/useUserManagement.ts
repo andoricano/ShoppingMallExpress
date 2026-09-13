@@ -51,6 +51,60 @@ export function useUserManagement() {
     });
   }, []);
 
+
+  const fetchUsers = useCallback(async () => {
+    setIsLoading(true);
+
+    try {
+      const res = await fetch(
+        "/api/users",
+      );
+
+      const result =
+        await res
+          .json()
+          .catch(() => null);
+
+      console.log(
+        "[UserManagement] API Response:",
+        result,
+      );
+
+      if (!res.ok) {
+        throw new Error(
+          result?.message ||
+          "회원 목록 조회에 실패했습니다.",
+        );
+      }
+
+      const nextUsers =
+        Array.isArray(result?.data)
+          ? (result.data as UserProfile[])
+          : [];
+
+      console.log(
+        "[UserManagement] Users:",
+        nextUsers,
+      );
+
+      setUsers(nextUsers);
+
+      return nextUsers;
+    } catch (err) {
+      console.error(
+        "[UserManagement] 회원 목록 조회 실패:",
+        err,
+      );
+
+      setUsers([]);
+
+      return [];
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+
   // 5. 클라이언트 사이드 검색/필터링 필터링 로직 (Discriminated Union 적용)
   const filteredUsers = useMemo(() => {
     return users.filter((u) => {
@@ -114,7 +168,7 @@ export function useUserManagement() {
             return {
               ...u,
               role: "CLIENT",
-              isOnboarded: false, 
+              isOnboarded: false,
             };
           } else {
             return {
@@ -135,7 +189,6 @@ export function useUserManagement() {
     },
     [currentUser]
   );
-
   return {
     // State
     users: filteredUsers,
@@ -148,6 +201,7 @@ export function useUserManagement() {
     currentUser,
 
     // Handlers
+    fetchUsers,
     handleKeywordChange,
     handleRoleFilterChange,
     handleOnboardedFilterChange,
