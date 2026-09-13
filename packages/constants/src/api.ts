@@ -1,6 +1,14 @@
 // src/constants/api.ts
 
 export const API_ENDPOINTS = {
+
+    // ==========================================
+    // Config 값 설정 : Master
+    // ==========================================
+    PAGE_CONFIG: {
+        BASE: "/api/page-config",
+    },
+
     // ==========================================
     // 재고 관리 - Admin
     // ==========================================
@@ -63,4 +71,6 @@ export const API_ENDPOINTS = {
         BY_ID: (id: string) =>
             `/api/orders/${id}`,
     },
+
+
 } as const;

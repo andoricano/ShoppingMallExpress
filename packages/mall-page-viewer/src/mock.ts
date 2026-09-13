@@ -69,10 +69,10 @@ export const mainPageMock: PageConfig = {
             imageUrl:
                 "https://images.unsplash.com/photo-1441986300917-64674bd600d8",
 
-            title: "새로운 시즌을 만나보세요",
+            title: "새로운 페이지를 구성하세요!!",
 
             description:
-                "MALL의 새로운 상품을 지금 확인해보세요.",
+                "당신의 멋진 Home page를 만드시기 바랍니다.",
 
             relativePath: "/products",
 

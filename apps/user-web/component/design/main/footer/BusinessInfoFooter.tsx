@@ -8,9 +8,7 @@ interface AdminBusinessInfoFooterProps {
     config: PageFooterConfig;
 
     onChange: (
-        updater: (
-            footer: PageFooterConfig,
-        ) => PageFooterConfig,
+        footer: PageFooterConfig,
     ) => void;
 }
 
@@ -21,10 +19,10 @@ export default function AdminBusinessInfoFooter({
     const updateConfig = (
         updates: Partial<PageFooterConfig>,
     ) => {
-        onChange((current) => ({
-            ...current,
+        onChange({
+            ...config,
             ...updates,
-        }));
+        });
     };
 
     return (
@@ -61,7 +59,7 @@ export default function AdminBusinessInfoFooter({
                                     !config.isActive,
                             })
                         }
-                        className="rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-600 transition-colors hover:bg-slate-50"
+                        className="cursor-pointer rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-600 transition-colors hover:bg-slate-50"
                     >
                         {config.isActive
                             ? "비활성화"
@@ -81,8 +79,7 @@ export default function AdminBusinessInfoFooter({
                         onChange={(event) =>
                             updateConfig({
                                 businessName:
-                                    event.target
-                                        .value,
+                                    event.target.value,
                             })
                         }
                         className="mt-2 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-slate-400"
@@ -101,8 +98,7 @@ export default function AdminBusinessInfoFooter({
                         onChange={(event) =>
                             updateConfig({
                                 representativeName:
-                                    event.target
-                                        .value,
+                                    event.target.value,
                             })
                         }
                         className="mt-2 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-slate-400"
@@ -121,8 +117,7 @@ export default function AdminBusinessInfoFooter({
                         onChange={(event) =>
                             updateConfig({
                                 businessNumber:
-                                    event.target
-                                        .value,
+                                    event.target.value,
                             })
                         }
                         className="mt-2 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-slate-400"
@@ -142,8 +137,7 @@ export default function AdminBusinessInfoFooter({
                         onChange={(event) =>
                             updateConfig({
                                 customerCenter:
-                                    event.target
-                                        .value,
+                                    event.target.value,
                             })
                         }
                         className="mt-2 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-slate-400"
@@ -160,8 +154,7 @@ export default function AdminBusinessInfoFooter({
                         onChange={(event) =>
                             updateConfig({
                                 address:
-                                    event.target
-                                        .value,
+                                    event.target.value,
                             })
                         }
                         className="mt-2 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-slate-400"
@@ -181,8 +174,7 @@ export default function AdminBusinessInfoFooter({
                         onChange={(event) =>
                             updateConfig({
                                 additionalInfo:
-                                    event.target
-                                        .value,
+                                    event.target.value,
                             })
                         }
                         rows={4}

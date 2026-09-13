@@ -33,7 +33,6 @@ export const useAdminAuthStore = create<AdminAuthState>((set, get) => ({
             `${window.location.origin}/auth/callback?next=/`,
         },
       });
-    console.log("했는데도 안된다고요")
 
     if (error) {
       console.error(
@@ -53,11 +52,6 @@ export const useAdminAuthStore = create<AdminAuthState>((set, get) => ({
         data: { session },
         error: sessionError,
       } = await supabase.auth.getSession();
-
-      console.log(
-        "했는데 안된다고",
-        session,
-      );
 
       if (sessionError || !session) {
         console.log(

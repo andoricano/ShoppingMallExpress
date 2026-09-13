@@ -7,27 +7,37 @@ import { useEffect } from "react";
 import MainPagePreview from "@/component/design/main/MainPagePreview";
 import DesignSidebar from "@/component/design/main/DeisgnSidebar";
 import { PageDesignWorkspace } from "@/component/design/main/PageDesignWorkspace";
+import { PageConfigAdminHeader } from "@/component/design/main/PageConfigAdminHeader";
 import { useAdminPageConfig } from "@/hooks/design/useAdminPageConfig";
 
 export default function MainPageConfigPage() {
   const {
     config,
+    isMock,
+    isDirty,
+
     selectedEditor,
-    fetchConfig,
+
+    loadConfig,
     saveConfig,
+    resetConfig,
+    updateConfig,
+
     openEditor,
     closeEditor,
+
     loading,
     saving,
     error,
   } = useAdminPageConfig();
 
   useEffect(() => {
-    fetchConfig();
-  }, [fetchConfig]);
+    loadConfig();
+  }, [loadConfig]);
 
   const handleLoad = async () => {
-    const result = await fetchConfig();
+    const result =
+      await loadConfig();
 
     console.log(
       "[MainPageConfig] Load:",
@@ -36,7 +46,11 @@ export default function MainPageConfigPage() {
   };
 
   const handleSave = async () => {
-    if (!config) {
+    if (
+      !config ||
+      isMock ||
+      !isDirty
+    ) {
       return;
     }
 
@@ -49,7 +63,11 @@ export default function MainPageConfigPage() {
     );
   };
 
-  if (loading) {
+  const handleReset = () => {
+    resetConfig();
+  };
+
+  if (loading && !config) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         메인 페이지 설정을 불러오는 중입니다.
@@ -57,7 +75,7 @@ export default function MainPageConfigPage() {
     );
   }
 
-  if (error) {
+  if (error && !config) {
     return (
       <div className="flex min-h-screen items-center justify-center text-red-500">
         {error}
@@ -73,56 +91,83 @@ export default function MainPageConfigPage() {
     );
   }
 
+  console.log("[MainPageConfig PAGE]", {
+    isMock,
+    isDirty,
+  });
   return (
-    <div className="flex min-h-screen overflow-hidden bg-slate-100">
-      {/* Sidebar */}
-      <DesignSidebar
-        selectedSection={
-          selectedEditor ?? undefined
-        }
-        onSelectSection={openEditor}
-      />
+    <div className="min-h-screen overflow-hidden bg-slate-100">
+      {/* Header */}
+      <div className="border-b border-slate-200 bg-white px-6 py-5 md:px-8">
+        <PageConfigAdminHeader
+          title="메인 페이지 설정"
+          description="쇼핑몰 메인 페이지의 구성과 노출 상태를 관리합니다."
+          canSave={
+            !isMock &&
+            isDirty
+          }
+          isDirty={isDirty}
+          menu={[
+            {
+              menuTitle: "Load",
+              onClick:
+                handleLoad,
+            },
+            {
+              menuTitle: "Reset",
+              onClick:
+                handleReset,
+            },
+            {
+              menuTitle: "Save",
+              onClick:
+                handleSave,
+              locked:
+                isMock ||
+                !isDirty,
+              variant:
+                "primary",
+            },
+          ]}
+        />
+      </div>
 
-      {/* Content */}
-      <main className="min-w-0 flex-1 overflow-auto p-6 md:p-8">
-        {/* Config Test */}
-        <div className="mb-6 flex items-center gap-3">
-          <button
-            type="button"
-            onClick={handleLoad}
-            className="cursor-pointer rounded-md bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm ring-1 ring-slate-200 hover:bg-slate-50"
-          >
-            Load
-          </button>
+      {/* Editor */}
+      <div className="flex min-h-[calc(100vh-110px)]">
+        {/* Sidebar */}
+        <DesignSidebar
+          selectedSection={
+            selectedEditor ??
+            undefined
+          }
+          onSelectSection={
+            openEditor
+          }
+        />
 
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={saving}
-            className="cursor-pointer rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {saving
-              ? "Saving..."
-              : "Save"}
-          </button>
-        </div>
-
-        {selectedEditor === null ? (
-          <MainPagePreview
-            config={config}
-          />
-        ) : (
-          <PageDesignWorkspace
-            config={config}
-            section={
-              selectedEditor
-            }
-            onClose={
-              closeEditor
-            }
-          />
-        )}
-      </main>
+        {/* Main */}
+        <main className="min-w-0 flex-1 overflow-auto p-6 md:p-8">
+          {selectedEditor ===
+            null ? (
+            <MainPagePreview
+              config={config}
+            />
+          ) : (
+            <PageDesignWorkspace
+              config={config}
+              section={
+                selectedEditor
+              }
+              onClose={
+                closeEditor
+              }
+              onChangeConfig={
+                updateConfig
+              }
+            />
+          )}
+        </main>
+      </div>
     </div>
   );
 }

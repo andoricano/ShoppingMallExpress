@@ -22,12 +22,16 @@ interface PageDesignWorkspaceProps {
     config: PageConfig;
     section: string;
     onClose: () => void;
+    onChangeConfig: (
+        config: PageConfig,
+    ) => void;
 }
 
 export function PageDesignWorkspace({
     config,
     section,
     onClose,
+    onChangeConfig,
 }: PageDesignWorkspaceProps) {
     const {
         config: editingConfig,
@@ -52,6 +56,13 @@ export function PageDesignWorkspace({
                 nextHeader,
             );
 
+            const nextConfig: PageConfig = {
+                ...editingConfig,
+                header: nextHeader,
+            };
+
+            onChangeConfig(nextConfig);
+
             return nextHeader;
         });
     };
@@ -65,19 +76,42 @@ export function PageDesignWorkspace({
         );
 
         updateHero(() => heroes);
+
+        onChangeConfig({
+            ...editingConfig,
+            hero: heroes,
+        });
     };
 
     const handleSectionChange = (
         updatedSection: PageSection,
     ) => {
-        updateSections((sections) =>
-            sections.map((currentSection) =>
-                currentSection.id ===
-                    updatedSection.id
-                    ? updatedSection
-                    : currentSection,
-            ),
-        );
+        const nextSections =
+            editingConfig.sections.map(
+                (currentSection) =>
+                    currentSection.id ===
+                        updatedSection.id
+                        ? updatedSection
+                        : currentSection,
+            );
+
+        updateSections(() => nextSections);
+
+        onChangeConfig({
+            ...editingConfig,
+            sections: nextSections,
+        });
+    };
+
+    const handleFooterChange = (
+        footer: PageConfig["footer"],
+    ) => {
+        updateFooter(() => footer);
+
+        onChangeConfig({
+            ...editingConfig,
+            footer,
+        });
     };
 
     const promotionSections =
@@ -85,7 +119,8 @@ export function PageDesignWorkspace({
             (
                 currentSection,
             ): currentSection is PromotionSectionConfig =>
-                currentSection.type === "PROMOTION",
+                currentSection.type ===
+                "PROMOTION",
         );
 
     const productSections =
@@ -93,7 +128,8 @@ export function PageDesignWorkspace({
             (
                 currentSection,
             ): currentSection is ProductSectionConfig =>
-                currentSection.type === "PRODUCT",
+                currentSection.type ===
+                "PRODUCT",
         );
 
     return (
@@ -112,7 +148,7 @@ export function PageDesignWorkspace({
                 <button
                     type="button"
                     onClick={onClose}
-                    className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50"
+                    className="cursor-pointer rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50"
                 >
                     닫기
                 </button>
@@ -121,7 +157,9 @@ export function PageDesignWorkspace({
             {section === "HEADER" && (
                 <AdminMainHeader
                     config={editingConfig.header}
-                    onChange={handleHeaderChange}
+                    onChange={
+                        handleHeaderChange
+                    }
                 />
             )}
 
@@ -136,8 +174,12 @@ export function PageDesignWorkspace({
                 productSections.map(
                     (productSection) => (
                         <AdminProductSection
-                            key={productSection.id}
-                            section={productSection}
+                            key={
+                                productSection.id
+                            }
+                            section={
+                                productSection
+                            }
                             onChange={
                                 handleSectionChange
                             }
@@ -164,8 +206,12 @@ export function PageDesignWorkspace({
 
             {section === "FOOTER" && (
                 <AdminBusinessInfoFooter
-                    config={editingConfig.footer}
-                    onChange={updateFooter}
+                    config={
+                        editingConfig.footer
+                    }
+                    onChange={
+                        handleFooterChange
+                    }
                 />
             )}
         </div>

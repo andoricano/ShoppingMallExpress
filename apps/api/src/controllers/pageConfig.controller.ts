@@ -7,34 +7,50 @@ import type {
 
 import { supabase } from "../config/supabase.js";
 
-const CONFIG_KEY = "main_page";
-
 // ==========================================
-// 1. MainPage 설정 조회
+// Types
 // ==========================================
 
-export const getMainPage = async (
-    req: Request,
+interface PageConfigParams {
+    key: string;
+}
+
+// ==========================================
+// 1. Page Config 조회
+// ==========================================
+
+export const getPageConfig = async (
+    req: Request<PageConfigParams>,
     res: Response,
 ) => {
     try {
+        const { key } = req.params;
+
+        if (!key) {
+            return res.status(400).json({
+                success: false,
+                message:
+                    "페이지 설정 key가 필요합니다.",
+            });
+        }
+
         const { data, error } =
             await supabase
                 .from("site_configs")
                 .select("value")
-                .eq("key", CONFIG_KEY)
+                .eq("key", key)
                 .maybeSingle();
 
         if (error) {
             console.error(
-                "[MainPage] 조회 실패:",
+                "[PageConfig] 조회 실패:",
                 error,
             );
 
             return res.status(500).json({
                 success: false,
                 message:
-                    "메인 페이지 설정을 불러오지 못했습니다.",
+                    "페이지 설정을 불러오지 못했습니다.",
             });
         }
 
@@ -44,99 +60,64 @@ export const getMainPage = async (
         });
     } catch (error) {
         console.error(
-            "[MainPage] 조회 실패:",
+            "[PageConfig] 조회 실패:",
             error,
         );
 
         return res.status(500).json({
             success: false,
             message:
-                "메인 페이지 설정을 불러오지 못했습니다.",
+                "페이지 설정을 불러오지 못했습니다.",
         });
     }
 };
 
 // ==========================================
-// 2. MainPage 설정 생성
+// 2. Page Config 저장
 // ==========================================
 
-export const createMainPage = async (
-    req: Request,
+export const updatePageConfig = async (
+    req: Request<PageConfigParams>,
     res: Response,
 ) => {
     try {
-        const { data, error } =
-            await supabase
-                .from("site_configs")
-                .insert({
-                    key: CONFIG_KEY,
-                    value: req.body,
-                })
-                .select("value")
-                .single();
+        const { key } = req.params;
 
-        if (error) {
-            console.error(
-                "[MainPage] 생성 실패:",
-                error,
-            );
-
-            return res.status(500).json({
+        if (!key) {
+            return res.status(400).json({
                 success: false,
                 message:
-                    "메인 페이지 설정을 생성하지 못했습니다.",
+                    "페이지 설정 key가 필요합니다.",
             });
         }
 
-        return res.status(201).json({
-            success: true,
-            data: data.value,
-        });
-    } catch (error) {
-        console.error(
-            "[MainPage] 생성 실패:",
-            error,
-        );
-
-        return res.status(500).json({
-            success: false,
-            message:
-                "메인 페이지 설정을 생성하지 못했습니다.",
-        });
-    }
-};
-
-// ==========================================
-// 3. MainPage 설정 수정
-// ==========================================
-
-export const updateMainPage = async (
-    req: Request,
-    res: Response,
-) => {
-    try {
         const { data, error } =
             await supabase
                 .from("site_configs")
-                .update({
-                    value: req.body,
-                    updated_at:
-                        new Date().toISOString(),
-                })
-                .eq("key", CONFIG_KEY)
+                .upsert(
+                    {
+                        key,
+                        value: req.body,
+                        updated_at:
+                            new Date().toISOString(),
+                    },
+                    {
+                        onConflict: "key",
+                    },
+                )
                 .select("value")
                 .single();
 
         if (error) {
             console.error(
-                "[MainPage] 수정 실패:",
+                "[PageConfig] 저장 실패:",
                 error,
             );
 
             return res.status(500).json({
                 success: false,
                 message:
-                    "메인 페이지 설정을 수정하지 못했습니다.",
+                    "페이지 설정을 저장하지 못했습니다.",
             });
         }
 
@@ -146,14 +127,14 @@ export const updateMainPage = async (
         });
     } catch (error) {
         console.error(
-            "[MainPage] 수정 실패:",
+            "[PageConfig] 저장 실패:",
             error,
         );
 
         return res.status(500).json({
             success: false,
             message:
-                "메인 페이지 설정을 수정하지 못했습니다.",
+                "페이지 설정을 저장하지 못했습니다.",
         });
     }
 };
