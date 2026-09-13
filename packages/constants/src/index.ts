@@ -3,3 +3,4 @@
 export * from './db';
 export * from './clientDb';
 export * from './api';
+export * from './configConstant'

@@ -7,10 +7,10 @@ import {
     useState,
 } from "react";
 
-import {
-    mainPageMock,
-    type PageConfig,
-} from "@mall/mall-page-viewer";
+import type { PageConfig } from "@mall/mall-page-viewer";
+
+const PAGE_CONFIG_API =
+    "/api/page-config/main_page";
 
 export type DesignEditorSection =
     | "HEADER"
@@ -49,23 +49,36 @@ export function useAdminPageConfig() {
             setError(null);
 
             try {
-                // TODO:
-                // 추후 GET API 연결
-                // const res = await fetch(...);
+                const res = await fetch(
+                    PAGE_CONFIG_API,
+                    {
+                        method: "GET",
+                    },
+                );
 
-                const mockConfig: PageConfig =
-                    structuredClone(
-                        mainPageMock,
+                const result =
+                    await res.json().catch(
+                        () => null,
                     );
 
-                setConfig(mockConfig);
+                if (!res.ok) {
+                    throw new Error(
+                        result?.message ||
+                        "페이지 설정 조회에 실패했습니다.",
+                    );
+                }
 
-                return mockConfig;
+                const nextConfig =
+                    result?.data as PageConfig | null;
+
+                setConfig(nextConfig);
+
+                return nextConfig;
             } catch (err) {
                 const message =
                     err instanceof Error
                         ? err.message
-                        : "메인 페이지 설정 조회에 실패했습니다.";
+                        : "페이지 설정 조회에 실패했습니다.";
 
                 setError(message);
 
@@ -88,14 +101,37 @@ export function useAdminPageConfig() {
                 setError(null);
 
                 try {
-                    // TODO:
-                    // 추후 PATCH / PUT API 연결
-                    // await fetch(...);
+                    const res = await fetch(
+                        PAGE_CONFIG_API,
+                        {
+                            method: "PUT",
+                            headers: {
+                                "Content-Type":
+                                    "application/json",
+                            },
+                            body: JSON.stringify(
+                                nextConfig,
+                            ),
+                        },
+                    );
+
+                    const result =
+                        await res
+                            .json()
+                            .catch(
+                                () => null,
+                            );
+
+                    if (!res.ok) {
+                        throw new Error(
+                            result?.message ||
+                            "페이지 설정 저장에 실패했습니다.",
+                        );
+                    }
 
                     const savedConfig =
-                        structuredClone(
-                            nextConfig,
-                        );
+                        result
+                            ?.data as PageConfig;
 
                     setConfig(savedConfig);
                     setSelectedEditor(null);
@@ -105,7 +141,7 @@ export function useAdminPageConfig() {
                     const message =
                         err instanceof Error
                             ? err.message
-                            : "메인 페이지 설정 저장에 실패했습니다.";
+                            : "페이지 설정 저장에 실패했습니다.";
 
                     setError(message);
 
@@ -123,16 +159,11 @@ export function useAdminPageConfig() {
 
     const resetConfig =
         useCallback(() => {
-            const reset =
-                structuredClone(
-                    mainPageMock,
-                );
-
-            setConfig(reset);
+            setConfig(null);
             setSelectedEditor(null);
             setError(null);
 
-            return reset;
+            return null;
         }, []);
 
     // ==========================================

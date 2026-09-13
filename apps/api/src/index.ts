@@ -10,6 +10,7 @@ import categoryRoutes from './routes/category.routes.js';
 import orderRoutes from './routes/order.routes.js';
 import displayRoutes from './routes/client/display.routes.js';
 import clientOrderRoutes from "./routes/client/order.routes.js";
+import pageConfig from "./routes/pageConfig.routes.js";
 
 
 const app = express();
@@ -26,6 +27,11 @@ app.get('/', (req: Request, res: Response) => {
     status: 'success',
   });
 });
+
+
+// page
+app.use('/api/page-config', pageConfig);
+
 
 // API Routes
 app.use('/api/inventory-items', inventoryRoutes);

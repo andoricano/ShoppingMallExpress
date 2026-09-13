@@ -14,15 +14,40 @@ export default function MainPageConfigPage() {
     config,
     selectedEditor,
     fetchConfig,
+    saveConfig,
     openEditor,
     closeEditor,
     loading,
+    saving,
     error,
   } = useAdminPageConfig();
 
   useEffect(() => {
     fetchConfig();
   }, [fetchConfig]);
+
+  const handleLoad = async () => {
+    const result = await fetchConfig();
+
+    console.log(
+      "[MainPageConfig] Load:",
+      result,
+    );
+  };
+
+  const handleSave = async () => {
+    if (!config) {
+      return;
+    }
+
+    const result =
+      await saveConfig(config);
+
+    console.log(
+      "[MainPageConfig] Save:",
+      result,
+    );
+  };
 
   if (loading) {
     return (
@@ -60,6 +85,28 @@ export default function MainPageConfigPage() {
 
       {/* Content */}
       <main className="min-w-0 flex-1 overflow-auto p-6 md:p-8">
+        {/* Config Test */}
+        <div className="mb-6 flex items-center gap-3">
+          <button
+            type="button"
+            onClick={handleLoad}
+            className="cursor-pointer rounded-md bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm ring-1 ring-slate-200 hover:bg-slate-50"
+          >
+            Load
+          </button>
+
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={saving}
+            className="cursor-pointer rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {saving
+              ? "Saving..."
+              : "Save"}
+          </button>
+        </div>
+
         {selectedEditor === null ? (
           <MainPagePreview
             config={config}
@@ -67,8 +114,12 @@ export default function MainPageConfigPage() {
         ) : (
           <PageDesignWorkspace
             config={config}
-            section={selectedEditor}
-            onClose={closeEditor}
+            section={
+              selectedEditor
+            }
+            onClose={
+              closeEditor
+            }
           />
         )}
       </main>
