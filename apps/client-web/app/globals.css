@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@source "../../../packages/mall-page-viewer/src";
+
 :root {
   --background: #ffffff;
   --foreground: #171717;

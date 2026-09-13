@@ -1,3 +1,5 @@
+// packages/mall-page-viewer/src/components/Header/MainHeader.tsx
+
 "use client";
 
 import type { PageHeaderConfig } from "../../types/mainPage";
@@ -8,8 +10,6 @@ import UserAuthAction from "./UserAuthAction";
 interface MainHeaderProps {
     config: PageHeaderConfig;
     isLoggedIn: boolean;
-    cartItemCount?: number;
-    wishlistItemCount?: number;
     onNavigate: (path: string) => void;
     onLogout?: () => void;
 }
@@ -17,8 +17,6 @@ interface MainHeaderProps {
 export default function MainHeader({
     config,
     isLoggedIn,
-    cartItemCount = 0,
-    wishlistItemCount = 0,
     onNavigate,
     onLogout,
 }: MainHeaderProps) {
@@ -34,30 +32,40 @@ export default function MainHeader({
                     <div className="shrink-0">
                         <button
                             type="button"
-                            onClick={() => onNavigate("/")}
-                            className="text-xl font-bold tracking-wider text-neutral-900"
+                            onClick={() =>
+                                onNavigate("/")
+                            }
+                            className="cursor-pointer text-xl font-bold tracking-wider text-neutral-900"
                         >
                             MALL
                         </button>
                     </div>
 
-                    {/* Main Menu - flex-1과 min-w-0, h-full 적용 */}
-                    <div className="relative ml-12 flex-1 min-w-0 h-full flex items-center">
+                    {/* Main Menu */}
+                    <div className="relative ml-12 flex h-full min-w-0 flex-1 items-center">
                         <MainMenu
                             menus={config.menus}
-                            menuMode={config.menuMode}
-                            onNavigate={onNavigate}
+                            menuMode={
+                                config.menuMode
+                            }
+                            onNavigate={
+                                onNavigate
+                            }
                         />
                     </div>
 
                     {/* User */}
                     <div className="ml-8 shrink-0">
                         <UserAuthAction
-                            isLoggedIn={isLoggedIn}
-                            cartItemCount={cartItemCount}
-                            wishlistItemCount={wishlistItemCount}
-                            onNavigate={onNavigate}
-                            onLogout={onLogout}
+                            isLoggedIn={
+                                isLoggedIn
+                            }
+                            onNavigate={
+                                onNavigate
+                            }
+                            onLogout={
+                                onLogout
+                            }
                         />
                     </div>
                 </div>

@@ -2,7 +2,6 @@
 
 "use client";
 
-import type { ReactNode } from "react";
 import {
     Heart,
     ShoppingCart,
@@ -12,17 +11,13 @@ import {
 interface UserAuthActionProps {
     isLoggedIn?: boolean;
 
-    cartItemCount?: number;
-    wishlistItemCount?: number;
-
     onNavigate: (path: string) => void;
     onLogout?: () => void;
 }
 
 interface IconActionProps {
     label: string;
-    icon: ReactNode;
-    count?: number;
+    icon: React.ReactNode;
 
     onClick: () => void;
 }
@@ -30,7 +25,6 @@ interface IconActionProps {
 function IconAction({
     label,
     icon,
-    count = 0,
     onClick,
 }: IconActionProps) {
     return (
@@ -38,23 +32,16 @@ function IconAction({
             type="button"
             aria-label={label}
             onClick={onClick}
-            className="relative inline-flex items-center text-neutral-700 transition-colors hover:text-black"
+            style={{ cursor: "pointer" }}
+            className="inline-flex items-center text-neutral-700 transition-colors hover:text-black"
         >
             {icon}
-
-            {count > 0 && (
-                <span className="absolute -right-2 -top-2 min-w-4 rounded-full bg-neutral-900 px-1 text-center text-[9px] font-bold leading-4 text-white">
-                    {count}
-                </span>
-            )}
         </button>
     );
 }
 
 export default function UserAuthAction({
     isLoggedIn = false,
-    cartItemCount = 0,
-    wishlistItemCount = 0,
     onNavigate,
     onLogout,
 }: UserAuthActionProps) {
@@ -69,9 +56,10 @@ export default function UserAuthAction({
                             strokeWidth={1.8}
                         />
                     }
-                    count={cartItemCount}
                     onClick={() =>
-                        onNavigate("/cart")
+                        onNavigate(
+                            "/cart",
+                        )
                     }
                 />
 
@@ -83,7 +71,6 @@ export default function UserAuthAction({
                             strokeWidth={1.8}
                         />
                     }
-                    count={wishlistItemCount}
                     onClick={() =>
                         onNavigate(
                             "/wishlist",
@@ -100,7 +87,9 @@ export default function UserAuthAction({
                         />
                     }
                     onClick={() =>
-                        onNavigate("/mypage")
+                        onNavigate(
+                            "/mypage",
+                        )
                     }
                 />
 
@@ -109,7 +98,7 @@ export default function UserAuthAction({
                 <button
                     type="button"
                     onClick={onLogout}
-                    className="text-xs text-neutral-500 transition-colors hover:text-black"
+                    className="cursor-pointer text-xs text-neutral-500 transition-colors hover:text-black"
                 >
                     로그아웃
                 </button>
@@ -124,7 +113,7 @@ export default function UserAuthAction({
                 onClick={() =>
                     onNavigate("/auth")
                 }
-                className="rounded-md bg-neutral-900 px-3.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-neutral-800"
+                className="cursor-pointer rounded-md bg-neutral-900 px-3.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-neutral-800"
             >
                 Google 로그인
             </button>

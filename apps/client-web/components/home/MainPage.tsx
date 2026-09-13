@@ -31,7 +31,6 @@ export default function MainPage({
     error,
 }: MainPageProps) {
     const {
-        header,
         heroes,
         sections,
         footer,
@@ -56,18 +55,6 @@ export default function MainPage({
 
     return (
         <main className="min-h-screen">
-            {header.isActive && (
-                <Header
-                    config={header}
-                    isLoggedIn={false}
-                    cartItemCount={0}
-                    wishlistItemCount={0}
-                    onNavigate={
-                        handleNavigate
-                    }
-                />
-            )}
-
             {heroes.map((hero) => (
                 <HeroBanner
                     key={hero.id}

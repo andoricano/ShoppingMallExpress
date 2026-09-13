@@ -46,7 +46,7 @@ export default function MallTemplate({
     return (
         <div className="min-h-screen bg-white text-neutral-900">
             {/* Header */}
-            <MainHeader
+            {/* <MainHeader
                 config={config.header}
                 isLoggedIn={isLoggedIn}
                 cartItemCount={
@@ -57,7 +57,7 @@ export default function MallTemplate({
                 }
                 onNavigate={onNavigate}
                 onLogout={onLogout}
-            />
+            /> */}
 
             {/* Main */}
             <main>

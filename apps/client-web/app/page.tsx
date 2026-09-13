@@ -5,32 +5,62 @@
 import { useEffect } from "react";
 
 import {
-    mainPageMock,
+  Header,
+  mainPageMock,
 } from "@mall/mall-page-viewer";
 
 import MainPage from "@/components/home/MainPage";
 import { useProductPost } from "@/hooks/useProductPost";
+import { useClientAuthStore } from "@/store/useClientAuthStore";
 
 export default function HomePage() {
-    const {
-        postList,
-        loading,
-        error,
-        fetchPosts,
-    } = useProductPost();
+  const {
+    postList,
+    loading,
+    error,
+    fetchPosts,
+  } = useProductPost();
 
-    useEffect(() => {
-        fetchPosts();
-    }, [fetchPosts]);
-
-    return (
-        <main className="min-h-screen">
-            <MainPage
-                config={mainPageMock}
-                postList={postList}
-                loading={loading}
-                error={error}
-            />
-        </main>
+  const authUserId =
+    useClientAuthStore(
+      (state) => state.authUserId,
     );
+
+  const signOut =
+    useClientAuthStore(
+      (state) => state.signOut,
+    );
+
+  useEffect(() => {
+    fetchPosts();
+  }, [fetchPosts]);
+
+  const handleNavigate = (
+    path: string,
+  ) => {
+    window.location.href = path;
+  };
+
+  const isLoggedIn =
+    Boolean(authUserId);
+
+  return (
+    <main className="min-h-screen">
+      {mainPageMock.header.isActive && (
+        <Header
+          config={mainPageMock.header}
+          isLoggedIn={isLoggedIn}
+          onNavigate={handleNavigate}
+          onLogout={signOut}
+        />
+      )}
+
+      <MainPage
+        config={mainPageMock}
+        postList={postList}
+        loading={loading}
+        error={error}
+      />
+    </main>
+  );
 }
