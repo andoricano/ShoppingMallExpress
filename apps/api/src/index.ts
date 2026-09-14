@@ -13,6 +13,8 @@ import clientOrderRoutes from "./routes/client/order.routes.js";
 import pageConfig from "./routes/pageConfig.routes.js";
 import usersRoutes from "./routes/users.routes.js";
 import clientHistoryRoutes from "./routes/client/history.routes.js";
+import refundRoutes from "./routes/client/refund.routes.js";
+
 
 const app = express();
 const PORT: number = Number(process.env['PORT']) || 8080;
@@ -45,6 +47,8 @@ app.use('/api', productPostRoutes);
 app.use('/api/product-posts', displayRoutes);
 app.use('/api/client/orders', clientOrderRoutes);
 app.use("/api/client/history", clientHistoryRoutes,);
+app.use("/api/client/refunds", refundRoutes,);
+
 
 // Server
 app.listen(PORT, () => {

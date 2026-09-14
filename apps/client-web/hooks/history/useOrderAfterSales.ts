@@ -29,40 +29,73 @@ export function useOrderAfterSales() {
     // 1. 환불 요청
     // ==========================================
 
+    // ==========================================
+    // 1. 환불 요청
+    // ==========================================
+
     const requestRefund = useCallback(
         async (orderId: string) => {
             setLoading(true);
             setError(null);
 
-            console.log(
-                "[useOrderAction] 환불 요청:",
-                orderId,
-            );
-
             try {
-                // TODO:
-                // 환불 요청 API 연결
+                const session =
+                    await authProfile.getSession();
+
+                if (!session?.access_token) {
+                    throw new Error(
+                        "로그인이 필요합니다.",
+                    );
+                }
+
+                const url =
+                    `${API_BASE_URL}${API_ENDPOINTS.CLIENT_REFUNDS.BASE}`;
+
+                const response =
+                    await fetch(url, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type":
+                                "application/json",
+                            Authorization:
+                                `Bearer ${session.access_token}`,
+                        },
+                        body: JSON.stringify({
+                            orderId,
+                        }),
+                    });
+
+                const result =
+                    await response
+                        .json()
+                        .catch(() => null);
 
                 console.log(
-                    "[useOrderAction] 환불 요청 API 연결 예정:",
-                    orderId,
+                    "[useOrderAfterSales] 환불 요청 API result:",
+                    result,
                 );
 
-                return true;
+                if (!response.ok) {
+                    throw new Error(
+                        result?.message ||
+                        "환불 요청에 실패했습니다.",
+                    );
+                }
+
+                return result?.data;
             } catch (err) {
                 console.error(
-                    "[useOrderAction] 환불 요청 실패:",
+                    "[useOrderAfterSales] 환불 요청 실패:",
                     err,
                 );
 
-                const message =
+                setError(
                     err instanceof Error
                         ? err.message
-                        : "환불 요청에 실패했습니다.";
+                        : "환불 요청에 실패했습니다.",
+                );
 
-                setError(message);
-
-                return false;
+                return null;
             } finally {
                 setLoading(false);
             }

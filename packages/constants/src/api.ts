@@ -35,7 +35,9 @@ export const API_ENDPOINTS = {
         CANCEL: (id: string) =>
             `/api/client/orders/${id}/cancel`,
     },
-
+    CLIENT_REFUNDS: {
+        BASE: "/api/client/refunds",
+    },
     // ==========================================
     // 재고 관리 - Admin
     // ==========================================

@@ -23,6 +23,7 @@ export default function HistoryOrderPage() {
 
     const {
         loading: actionLoading,
+        requestRefund,
         requestCancel,
         error: actionError,
     } = useOrderAfterSales();
@@ -80,7 +81,6 @@ export default function HistoryOrderPage() {
                             <HistoryOrderHeader
                                 order={order}
                             />
-
                             <OrderDetailContent
                                 order={order}
                                 deliveryStatus={
@@ -93,6 +93,11 @@ export default function HistoryOrderPage() {
                                 }
                                 onCancel={() =>
                                     requestCancel(
+                                        order.id,
+                                    )
+                                }
+                                onRefund={() =>
+                                    requestRefund(
                                         order.id,
                                     )
                                 }
