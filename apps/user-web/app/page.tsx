@@ -123,7 +123,7 @@ export default function MainPage() {
             data.claim.pendingReturnCount
           }
           badgeColor="#ff4d4f"
-          href="/claims"
+          href="/refund"
         />
 
         <DashboardCard
