@@ -3,19 +3,23 @@
 import { useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 
-import { useOrderHistory } from "@/hooks/history/useOrderHistory";
-import { useOrderClient } from "@/hooks/history/useOrderClient";
-import HistoryOrderHeader from "@/components/mypage/history/HistoryOrderHeader";
-import OrderDetailContent from "@/components/mypage/history/order/OrderDetailContent";
-import { useOrderAfterSales } from "@/hooks/history/useOrderAfterSales";
+import {
+    useOrderHistory,
+} from "@/hooks/history/useOrderHistory";
 
-export default function HistoryOrderPage() {
+import {
+    useOrderAfterSales,
+} from "@/hooks/history/useOrderAfterSales";
+
+import HistoryOrderHeader from "@/components/mypage/history/HistoryOrderHeader";
+import OrderEditSection from "@/components/mypage/history/order/edit/OrderEditSection";
+
+export default function OrderUpdatePage() {
     const params = useParams();
     const router = useRouter();
 
     const {
         order,
-        deliveryStatus,
         loading: orderLoading,
         error: orderError,
         fetchOrderDetail,
@@ -23,14 +27,9 @@ export default function HistoryOrderPage() {
 
     const {
         loading: actionLoading,
-        requestCancel,
+        updateOrder,
         error: actionError,
     } = useOrderAfterSales();
-
-    const {
-        loading: clientLoading,
-        error: clientError,
-    } = useOrderClient();
 
     const orderId =
         typeof params.id === "string"
@@ -50,17 +49,39 @@ export default function HistoryOrderPage() {
 
     const loading =
         orderLoading ||
-        actionLoading ||
-        clientLoading;
+        actionLoading;
 
     const error =
         orderError ||
-        actionError ||
-        clientError;
+        actionError;
+
+    const handleSubmit = async (
+        shippingAddress: Parameters<
+            typeof updateOrder
+        >[1],
+    ) => {
+        if (!orderId) {
+            return;
+        }
+
+        const result =
+            await updateOrder(
+                orderId,
+                shippingAddress,
+            );
+
+        if (!result) {
+            return;
+        }
+
+        router.push(
+            `/mypage/order-history/${orderId}`,
+        );
+    };
 
     return (
         <div className="min-h-screen bg-slate-50">
-            <div className="mx-auto w-full max-w-6xl px-6 py-10">
+            <div className="mx-auto w-full max-w-5xl px-6 py-10">
                 {loading && (
                     <div className="flex min-h-[500px] items-center justify-center">
                         주문 정보를 불러오는 중...
@@ -76,25 +97,18 @@ export default function HistoryOrderPage() {
                 {!loading &&
                     !error &&
                     order && (
-                        <div className="space-y-10">
+                        <div className="space-y-8">
                             <HistoryOrderHeader
                                 order={order}
                             />
 
-                            <OrderDetailContent
+                            <OrderEditSection
                                 order={order}
-                                deliveryStatus={
-                                    deliveryStatus
+                                loading={
+                                    actionLoading
                                 }
-                                onEdit={() =>
-                                    router.push(
-                                        `/mypage/order-history/${order.id}/edit`,
-                                    )
-                                }
-                                onCancel={() =>
-                                    requestCancel(
-                                        order.id,
-                                    )
+                                onSubmit={
+                                    handleSubmit
                                 }
                             />
                         </div>

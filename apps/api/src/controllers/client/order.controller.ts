@@ -416,3 +416,171 @@ export const cancelOrder = async (
         });
     }
 };
+
+interface UpdateOrderPayload {
+    shippingAddress: {
+        name: string;
+        recipient: string;
+        phone: string;
+        postalCode: string;
+        address: string;
+        detailAddress?: string;
+    };
+}
+
+// ==========================================
+// Client 주문 정보 수정
+// ==========================================
+
+export const updateOrder = async (
+    req: Request<
+        {
+            id: string;
+        },
+        {},
+        UpdateOrderPayload
+    >,
+    res: Response,
+) => {
+    try {
+        // ==========================================
+        // 1. Authorization
+        // ==========================================
+
+        const authHeader =
+            req.headers.authorization;
+
+        if (
+            !authHeader ||
+            !authHeader.startsWith("Bearer ")
+        ) {
+            return res.status(401).json({
+                success: false,
+                message:
+                    "로그인이 필요합니다.",
+            });
+        }
+
+        const accessToken =
+            authHeader.substring(7);
+
+        // ==========================================
+        // 2. User Supabase Client
+        // ==========================================
+
+        const userSupabase =
+            createClient(
+                process.env["SUPABASE_URL"]!,
+                process.env[
+                    "SUPABASE_SECRET_KEY"
+                ]!,
+                {
+                    global: {
+                        headers: {
+                            Authorization:
+                                `Bearer ${accessToken}`,
+                        },
+                    },
+                },
+            );
+
+        // ==========================================
+        // 3. 현재 Client 확인
+        // ==========================================
+
+        const {
+            data: {
+                user,
+            },
+            error: userError,
+        } = await userSupabase.auth.getUser();
+
+        if (userError) {
+            throw userError;
+        }
+
+        if (!user) {
+            return res.status(401).json({
+                success: false,
+                message:
+                    "로그인이 필요합니다.",
+            });
+        }
+
+        // ==========================================
+        // 4. Order ID 확인
+        // ==========================================
+
+        const { id } =
+            req.params;
+
+        if (!id) {
+            return res.status(400).json({
+                success: false,
+                message:
+                    "주문 ID가 필요합니다.",
+            });
+        }
+
+        // ==========================================
+        // 5. Request Validation
+        // ==========================================
+
+        const {
+            shippingAddress,
+        } = req.body;
+
+        if (!shippingAddress) {
+            return res.status(400).json({
+                success: false,
+                message:
+                    "배송지 정보가 필요합니다.",
+            });
+        }
+
+        // ==========================================
+        // 6. Order 수정 RPC
+        // ==========================================
+
+        const {
+            data,
+            error,
+        } = await userSupabase.rpc(
+            "update_order",
+            {
+                p_order_id: id,
+                p_client_id: user.id,
+                p_shipping_address:
+                    shippingAddress,
+            },
+        );
+
+        if (error) {
+            throw error;
+        }
+
+        // ==========================================
+        // 7. Response
+        // ==========================================
+
+        return res.json({
+            success: true,
+            data: toCamelCase(data),
+        });
+    } catch (error) {
+        console.error(
+            "Update client order failed:",
+            error,
+        );
+
+        return res.status(500).json({
+            success: false,
+            message:
+                "주문 정보 수정에 실패했습니다.",
+            error:
+                error instanceof Error
+                    ? error.message
+                    : JSON.stringify(error),
+        });
+    }
+};
