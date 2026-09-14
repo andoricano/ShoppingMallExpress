@@ -2,10 +2,17 @@
 
 "use client";
 
+import { authProfile } from "@/lib/authClient";
+import { API_ENDPOINTS } from "@mall/constants";
 import {
     useCallback,
     useState,
 } from "react";
+
+const API_BASE_URL =
+    process.env.NEXT_PUBLIC_API_URL ||
+    "http://localhost:8080";
+
 
 export function useOrderAction() {
     const [
@@ -163,8 +170,74 @@ export function useOrderAction() {
         );
 
     // ==========================================
-    // 4. Error 초기화
+    // 3. 주문 취소
     // ==========================================
+    const requestCancel = useCallback(
+        async (orderId: string) => {
+            setLoading(true);
+            setError(null);
+
+            try {
+                const session =
+                    await authProfile.getSession();
+
+                if (!session?.access_token) {
+                    throw new Error(
+                        "로그인이 필요합니다.",
+                    );
+                }
+
+                const url =
+                    `${API_BASE_URL}${API_ENDPOINTS.CLIENT_ORDERS.CANCEL(
+                        orderId,
+                    )}`;
+
+                const response =
+                    await fetch(url, {
+                        method: "PATCH",
+                        headers: {
+                            Authorization:
+                                `Bearer ${session.access_token}`,
+                        },
+                    });
+
+                const result =
+                    await response
+                        .json()
+                        .catch(() => null);
+
+                console.log(
+                    "[useOrderAction] 주문 취소 API result:",
+                    result,
+                );
+
+                if (!response.ok) {
+                    throw new Error(
+                        result?.message ||
+                        "주문 취소에 실패했습니다.",
+                    );
+                }
+
+                return result?.data;
+            } catch (err) {
+                console.error(
+                    "[useOrderAction] 주문 취소 실패:",
+                    err,
+                );
+
+                setError(
+                    err instanceof Error
+                        ? err.message
+                        : "주문 취소에 실패했습니다.",
+                );
+
+                return null;
+            } finally {
+                setLoading(false);
+            }
+        },
+        [],
+    );
 
     const clearError = useCallback(() => {
         setError(null);
@@ -177,7 +250,7 @@ export function useOrderAction() {
         requestRefund,
         requestExchange,
         updateOrder,
-
+        requestCancel,
         clearError,
     };
 }

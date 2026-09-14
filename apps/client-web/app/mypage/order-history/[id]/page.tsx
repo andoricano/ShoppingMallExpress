@@ -23,6 +23,7 @@ export default function HistoryOrderPage() {
 
     const {
         loading: actionLoading,
+        requestCancel,
         error: actionError,
     } = useOrderAction();
 
@@ -79,11 +80,11 @@ export default function HistoryOrderPage() {
                             <HistoryOrderHeader
                                 order={order}
                             />
-
                             <OrderDetailContent
                                 order={order}
-                                deliveryStatus={
-                                    deliveryStatus
+                                deliveryStatus={deliveryStatus}
+                                onCancel={() =>
+                                    requestCancel(order.id)
                                 }
                             />
                         </div>

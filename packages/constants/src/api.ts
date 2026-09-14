@@ -17,20 +17,37 @@ export const API_ENDPOINTS = {
     },
 
     // ==========================================
-    // 회원 관리의 일환 
+    // 회원 관리의 일환
     // ==========================================
     CLIENT_HISTORY: {
         BASE: "/api/client/history",
     },
+
+    // ==========================================
+    // 주문 관리 - Client
+    // ==========================================
+    CLIENT_ORDERS: {
+        BASE: "/api/client/orders",
+
+        BY_ID: (id: string) =>
+            `/api/client/orders/${id}`,
+
+        CANCEL: (id: string) =>
+            `/api/client/orders/${id}/cancel`,
+    },
+
     // ==========================================
     // 재고 관리 - Admin
     // ==========================================
     INVENTORY: {
         BASE: "/api/inventory-items",
+
         BY_ID: (id: string) =>
             `/api/inventory-items/${id}`,
+
         STOCK: (id: string) =>
             `/api/inventory-items/${id}/stock`,
+
         STATUS: (id: string) =>
             `/api/inventory-items/${id}/status`,
     },
@@ -70,10 +87,14 @@ export const API_ENDPOINTS = {
     // ==========================================
     CATEGORIES: {
         BASE: "/api/admin/categories",
+
         TREE: "/api/admin/categories/tree",
+
         BY_ID: (id: string) =>
             `/api/admin/categories/${id}`,
-        REORDER: "/api/admin/categories/reorder",
+
+        REORDER:
+            "/api/admin/categories/reorder",
     },
 
     // ==========================================
@@ -81,9 +102,9 @@ export const API_ENDPOINTS = {
     // ==========================================
     ORDERS: {
         BASE: "/api/orders",
+
         BY_ID: (id: string) =>
             `/api/orders/${id}`,
     },
-
 
 } as const;

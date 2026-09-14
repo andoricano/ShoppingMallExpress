@@ -3,7 +3,6 @@
 import type { Order } from "@mall/types";
 
 import OrderStatusCard from "./content/OrderStatusCard";
-import OrderDeliveryCard from "./content/OrderDeliveryCard";
 import OrderShippingCard from "./content/OrderShippingCard";
 import OrderProductCard from "./content/OrderProductCard";
 
@@ -16,11 +15,20 @@ interface OrderDeliveryStatus {
 interface OrderDetailContentProps {
     order: Order;
     deliveryStatus: OrderDeliveryStatus | null;
+
+    onCancel?: () => void;
+    onEdit?: () => void;
+    onExchange?: () => void;
+    onRefund?: () => void;
 }
 
 export default function OrderDetailContent({
     order,
     deliveryStatus,
+    onCancel,
+    onEdit,
+    onExchange,
+    onRefund,
 }: OrderDetailContentProps) {
     return (
         <div className="space-y-5">
@@ -31,6 +39,10 @@ export default function OrderDetailContent({
                 deliveryStatus={
                     deliveryStatus
                 }
+                onCancel={onCancel}
+                onEdit={onEdit}
+                onExchange={onExchange}
+                onRefund={onRefund}
             />
 
             {/* 주문 상품 */}
