@@ -1,6 +1,7 @@
 "use client";
 
-import type { HeaderMenuItem } from "../../types/mainPage";
+import { HeaderMenuItem } from "@mall/mall-page-viewer/src/types/mainPage";
+
 
 interface MainMenuItemProps {
     menu: HeaderMenuItem;

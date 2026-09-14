@@ -2,13 +2,10 @@
 
 import { useState } from "react";
 
-import type {
-    HeaderMenuItem,
-    HeaderMenuMode,
-} from "../../types/mainPage";
 
 import MainMenuItem from "./MainMenuItem";
 import MainMenuDropdown from "./MainMenuDropdown";
+import { HeaderMenuItem, HeaderMenuMode } from "@mall/mall-page-viewer/src/types/mainPage";
 
 interface MainMenuProps {
     menus: HeaderMenuItem[];

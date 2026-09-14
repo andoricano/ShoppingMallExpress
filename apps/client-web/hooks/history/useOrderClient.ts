@@ -152,49 +152,6 @@ export function useOrderClient() {
         },
         [],
     );
-
-    // ==========================================
-    // 4. 관련 추천 상품 조회
-    // ==========================================
-
-    const fetchRecommendedProducts =
-        useCallback(
-            async (
-                orderId: string,
-            ) => {
-                setLoading(true);
-                setError(null);
-
-                console.log(
-                    "[useOrderClient] 관련 추천 상품 조회:",
-                    orderId,
-                );
-
-                try {
-                    // TODO:
-                    // 기존 상품 추천 API 연결
-
-                    return [];
-                } catch (err) {
-                    console.error(
-                        "[useOrderClient] 추천 상품 조회 실패:",
-                        err,
-                    );
-
-                    setError(
-                        err instanceof Error
-                            ? err.message
-                            : "추천 상품 조회에 실패했습니다.",
-                    );
-
-                    return [];
-                } finally {
-                    setLoading(false);
-                }
-            },
-            [],
-        );
-
     // ==========================================
     // 5. Error 초기화
     // ==========================================
@@ -211,7 +168,6 @@ export function useOrderClient() {
         createRating,
         createReview,
         createInquiry,
-        fetchRecommendedProducts,
 
         clearError,
     };

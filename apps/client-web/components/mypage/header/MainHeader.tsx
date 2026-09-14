@@ -2,8 +2,8 @@
 
 "use client";
 
-import type { PageHeaderConfig } from "../../types/mainPage";
 
+import { PageHeaderConfig } from "@mall/mall-page-viewer";
 import MainMenu from "./MainMenu";
 import UserAuthAction from "./UserAuthAction";
 

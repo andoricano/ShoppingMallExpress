@@ -1,15 +1,16 @@
-// app/mypage/order-history/[id]/page.tsx
-
 "use client";
 
 import { useEffect } from "react";
 import { useParams } from "next/navigation";
 
+
 import { useOrderHistory } from "@/hooks/history/useOrderHistory";
 import { useOrderAction } from "@/hooks/history/useOrderAction";
 import { useOrderClient } from "@/hooks/history/useOrderClient";
+import HistoryOrderHeader from "@/components/mypage/history/HistoryOrderHeader";
+import OrderDetailContent from "@/components/mypage/history/order/OrderDetailContent";
 
-export default function OrderHistoryPage() {
+export default function HistoryOrderPage() {
     const params = useParams();
 
     const {
@@ -58,38 +59,35 @@ export default function OrderHistoryPage() {
 
     return (
         <div className="min-h-screen bg-slate-50">
-            <div className="mx-auto max-w-6xl px-6 py-10">
-                <header>
-                    <h1 className="text-3xl font-bold text-slate-900">
-                        주문 상세
-                    </h1>
-
-                    <p className="mt-2 text-sm text-slate-500">
-                        주문 및 배송 정보를 확인할 수 있습니다.
-                    </p>
-                </header>
-
-                <div className="mt-8 rounded-xl border border-slate-200 bg-white p-6">
-                    <div className="mb-5">
-                        <p className="text-sm font-semibold text-slate-900">
-                            Hook 상태
-                        </p>
+            <div className="mx-auto w-full max-w-6xl px-6 py-10">
+                {loading && (
+                    <div className="flex min-h-[500px] items-center justify-center">
+                        주문 정보를 불러오는 중...
                     </div>
+                )}
 
-                    <pre className="max-h-[600px] overflow-auto rounded-lg bg-slate-950 p-5 text-xs leading-6 text-slate-100">
-{JSON.stringify(
-    {
-        orderId,
-        loading,
-        error,
-        order,
-        deliveryStatus,
-    },
-    null,
-    2,
-)}
-                    </pre>
-                </div>
+                {error && (
+                    <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-sm text-red-600">
+                        {error}
+                    </div>
+                )}
+
+                {!loading &&
+                    !error &&
+                    order && (
+                        <div className="space-y-10">
+                            <HistoryOrderHeader
+                                order={order}
+                            />
+
+                            <OrderDetailContent
+                                order={order}
+                                deliveryStatus={
+                                    deliveryStatus
+                                }
+                            />
+                        </div>
+                    )}
             </div>
         </div>
     );

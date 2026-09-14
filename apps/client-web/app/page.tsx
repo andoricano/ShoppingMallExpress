@@ -12,6 +12,7 @@ import {
 import MainPage from "@/components/home/MainPage";
 import { useProductPost } from "@/hooks/useProductPost";
 import { useClientAuthStore } from "@/store/useClientAuthStore";
+import MainHeader from "@/components/mypage/header/MainHeader";
 
 export default function HomePage() {
   const {
@@ -47,7 +48,7 @@ export default function HomePage() {
   return (
     <main className="min-h-screen">
       {mainPageMock.header.isActive && (
-        <Header
+        <MainHeader
           config={mainPageMock.header}
           isLoggedIn={isLoggedIn}
           onNavigate={handleNavigate}
