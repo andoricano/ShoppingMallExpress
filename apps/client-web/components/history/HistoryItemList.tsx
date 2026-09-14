@@ -1,14 +1,14 @@
 "use client";
 
-import type { History } from "@mall/types";
+import type { ClientHistoryItem } from "@mall/types";
 
 import HistoryItem from "./HistoryItem";
 
 interface HistoryItemListProps {
-    historyList: History[];
+    historyList: ClientHistoryItem[];
 
     onSelect?: (
-        history: History,
+        history: ClientHistoryItem,
     ) => void;
 
     emptyMessage?: string;

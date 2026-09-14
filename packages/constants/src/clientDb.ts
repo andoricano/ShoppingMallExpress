@@ -29,11 +29,12 @@ export const CLIENT_ORDER_COLUMNS = {
     },
 } as const;
 
-
 // ==========================================
 // Client Order API
 // ==========================================
 
 export const CLIENT_ORDER_API = {
     BASE: "/api/client/orders",
+    DETAIL: (id: string) =>
+        `/api/client/orders/${id}`,
 } as const;

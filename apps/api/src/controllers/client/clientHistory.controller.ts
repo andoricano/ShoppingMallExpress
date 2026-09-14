@@ -1,7 +1,6 @@
 import type { Request, Response } from "express";
 import { createClient } from "@supabase/supabase-js";
 
-import { supabase } from "../../config/supabase.js";
 import { toCamelCase } from "../../utils/caseConverter.js";
 
 export const getMyHistory = async (
@@ -18,7 +17,8 @@ export const getMyHistory = async (
         ) {
             return res.status(401).json({
                 success: false,
-                message: "로그인이 필요합니다.",
+                message:
+                    "로그인이 필요합니다.",
             });
         }
 

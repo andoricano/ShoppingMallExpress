@@ -8,7 +8,7 @@ import {
 } from "react";
 
 import { API_ENDPOINTS } from "@mall/constants";
-import type { History } from "@mall/types";
+import type { ClientHistoryItem } from "@mall/types";
 import { authProfile } from "@/lib/authClient";
 
 const API_BASE_URL =
@@ -16,8 +16,10 @@ const API_BASE_URL =
     "http://localhost:8080";
 
 export function useHistory() {
-    const [historyList, setHistoryList] =
-        useState<History[]>([]);
+    const [
+        historyList,
+        setHistoryList,
+    ] = useState<ClientHistoryItem[]>([]);
 
     const [loading, setLoading] =
         useState(false);
@@ -68,7 +70,7 @@ export function useHistory() {
                 if (!response.ok) {
                     throw new Error(
                         result?.message ||
-                        "History를 불러오지 못했습니다.",
+                            "History를 불러오지 못했습니다.",
                     );
                 }
 
@@ -76,12 +78,12 @@ export function useHistory() {
                     Array.isArray(
                         result?.data,
                     )
-                        ? result.data
+                        ? (result.data as ClientHistoryItem[])
                         : [];
 
                 setHistoryList(history);
 
-                return history as History[];
+                return history;
             } catch (err) {
                 console.error(
                     "[useHistory] History 조회 실패:",

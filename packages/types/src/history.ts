@@ -1,5 +1,7 @@
 // @/types/history.ts
 
+import { OrderStatus } from "./order";
+
 export type HistoryActorType =
     | "CLIENT"
     | "ADMIN"
@@ -39,4 +41,31 @@ export interface History {
     metadata: HistoryMetadata | null;
 
     createdAt: string;
+}
+
+export interface ClientHistoryItem {
+    id: string;
+    action: HistoryAction;
+    createdAt: string;
+
+    order: {
+        id: string;
+        status: OrderStatus;
+        totalPrice: number;
+        createdAt: string;
+
+        items: {
+            id: string;
+            productId: string;
+            productName: string;
+            price: number;
+            quantity: number;
+
+            product: {
+                id: string;
+                name: string;
+                mainImageUrl: string;
+            };
+        }[];
+    };
 }
