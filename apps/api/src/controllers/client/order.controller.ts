@@ -9,7 +9,6 @@ import { toCamelCase } from "../../utils/caseConverter.js";
 // ==========================================
 // Types
 // ==========================================
-
 interface CreateOrderPayload {
     clientId: string;
     paymentId: string;
@@ -26,6 +25,8 @@ interface CreateOrderPayload {
         address: string;
         detailAddress?: string;
     };
+
+    pointAmount: number;
 }
 
 // ==========================================
@@ -50,13 +51,21 @@ function validateCreateOrder(
         return "주문 상품이 없습니다.";
     }
 
+    if (
+        !Number.isInteger(
+            payload.pointAmount,
+        ) ||
+        payload.pointAmount < 0
+    ) {
+        return "사용할 Point가 올바르지 않습니다.";
+    }
+
     return null;
 }
 
 // ==========================================
 // Client 주문 생성
 // ==========================================
-
 export const createOrder = async (
     req: Request<
         {},
@@ -98,6 +107,9 @@ export const createOrder = async (
 
                 p_items:
                     payload.items,
+
+                p_point_amount:
+                    payload.pointAmount,
             },
         );
 
@@ -336,7 +348,7 @@ export const cancelOrder = async (
             createClient(
                 process.env["SUPABASE_URL"]!,
                 process.env[
-                    "SUPABASE_SECRET_KEY"
+                "SUPABASE_SECRET_KEY"
                 ]!,
                 {
                     global: {
@@ -472,7 +484,7 @@ export const updateOrder = async (
             createClient(
                 process.env["SUPABASE_URL"]!,
                 process.env[
-                    "SUPABASE_SECRET_KEY"
+                "SUPABASE_SECRET_KEY"
                 ]!,
                 {
                     global: {

@@ -42,7 +42,6 @@ export function useClientOrderApi() {
         useClientAuthStore(
             (state) => state.authUserId,
         );
-
     const createOrder = useCallback(
         async (
             paymentId: string,
@@ -51,6 +50,7 @@ export function useClientOrderApi() {
                 quantity: number;
             }[],
             shippingAddress: OrderShippingAddress,
+            pointAmount: number,
         ) => {
             if (!authUserId) {
                 setError(
@@ -69,13 +69,16 @@ export function useClientOrderApi() {
                     {
                         method: "POST",
                         headers: {
-                            "Content-Type": "application/json",
+                            "Content-Type":
+                                "application/json",
                         },
                         body: JSON.stringify({
-                            clientId: authUserId,
+                            clientId:
+                                authUserId,
                             paymentId,
                             items,
                             shippingAddress,
+                            pointAmount,
                         }),
                     },
                 );
@@ -85,7 +88,8 @@ export function useClientOrderApi() {
                     response.status,
                 );
 
-                const text = await response.text();
+                const text =
+                    await response.text();
 
                 console.log(
                     "[useClientOrderApi] response:",

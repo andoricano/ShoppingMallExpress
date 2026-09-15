@@ -28,7 +28,6 @@ export interface Point {
     clientId: string;
 
     balance: number;
-    reservedBalance: number;
 
     createdAt: string;
     updatedAt: string;

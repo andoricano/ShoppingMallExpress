@@ -47,6 +47,14 @@ export const API_ENDPOINTS = {
     CLIENT_REFUNDS: {
         BASE: "/api/client/refunds",
     },
+
+    CLIENT_PAYMENT: {
+        POINT_RESERVE:
+            "/api/client/payment/point/reserve",
+    },
+    CLIENT_WISHLIST: {
+        BASE: "/api/client/wishlist",
+    },
     // ==========================================
     // 재고 관리 - Admin
     // ==========================================

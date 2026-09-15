@@ -47,15 +47,9 @@ export function usePayment({
         ],
     );
 
-    const usablePoint = useMemo(
-        () =>
-            Math.max(
-                0,
-                (point?.balance ?? 0) -
-                (point?.reservedBalance ??
-                    0),
-            ),
-        [point],
+    const usablePoint = Math.max(
+        0,
+        point?.balance ?? 0,
     );
 
     const paymentPrice = useMemo(
@@ -95,7 +89,7 @@ export function usePayment({
                 totalPrice,
             ],
         );
-        
+
     // ==========================================
     // Point 초기화
     // ==========================================

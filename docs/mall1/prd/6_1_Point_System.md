@@ -20,7 +20,8 @@ Client가 주문 결제에 사용할 수 있는 내부 포인트 시스템을 �
 
 * Client별 현재 보유 포인트
 * 충전 및 사용에 따라 변경
-* 결제 진행 중 사용 예정 포인트는 Reservation으로 별도 관리
+* 주문 결제 진행 중에는 포인트를 별도로 예약하지 않음
+* 실제 Point 차감은 최종 Order 생성 시점에 처리
 
 ### 2.2 Point Transaction
 
@@ -31,24 +32,25 @@ Client가 주문 결제에 사용할 수 있는 내부 포인트 시스템을 �
 * 관리자 조정
 * 실제 포인트 변동이 발생한 경우에만 기록
 
-### 2.3 Point Reservation
-
-* 외부 결제 진행 중 사용할 Point를 임시 확보
-* 예약된 Point는 다른 주문에서 사용할 수 없음
-* 외부 결제 성공 시 사용 확정
-* 결제 실패, 취소 또는 만료 시 예약 해제
-* Reservation 자체는 Point Transaction으로 기록하지 않음
-
 ---
 
 ## 3. Order 결제 수단
 
 * Point를 주문의 결제 수단으로 사용할 수 있음
 * 주문 금액의 일부 또는 전부를 Point로 결제할 수 있음
-* 결제에 사용할 Point는 외부 결제 진행 전에 Reservation 처리
-* 외부 결제 성공 및 주문 생성 완료 후 Point 사용 확정
-* 확정된 Point는 `USE` Transaction으로 기록
+* Client는 주문 결제 시 사용할 Point 금액을 선택할 수 있음
+* 외부 결제가 필요한 경우 주문 금액에서 Point 사용 금액을 제외한 금액으로 결제를 진행
+* 외부 결제가 성공한 후 최종 Order 생성 시 Point 잔액을 다시 확인
+* 사용 가능한 Point가 충분한 경우에만 Point 차감 및 Order 생성을 진행
+* 확정된 Point 사용 내역은 `USE` Transaction으로 기록
+* Point 잔액 부족 또는 주문 생성 실패 시 Point를 차감하지 않음
 * 주문 취소 및 환불 시 정책에 따라 Point 복구
+
+### Point 전액 결제
+
+* Point 사용 금액이 최종 주문 금액과 동일한 경우 외부 결제를 진행하지 않을 수 있음
+* 최종 Order 생성 시 Point 잔액을 확인한 후 전액 차감
+* `USE` Transaction을 기록
 
 ---
 
@@ -63,7 +65,7 @@ Client가 주문 결제에 사용할 수 있는 내부 포인트 시스템을 �
 
 ## 5. Point 적립
 
-* 주문 완료 등 지정된 조건에서 Point 적립
+* 주문 완료 등 지정된 조건에 따라 Point 적립
 * 적립된 Point는 Balance에 반영
 * 적립 내역 Transaction 기록
 * 적립 기준은 서비스 정책에 따라 변경 가능
@@ -74,7 +76,8 @@ Client가 주문 결제에 사용할 수 있는 내부 포인트 시스템을 �
 
 * Point Balance와 Transaction의 정합성 유지
 * 모든 실제 Point 변동 내역 기록
-* 예약된 Point와 실제 사용 Point를 구분
 * 임의의 Point 잔액 직접 수정 금지
-* Point 변동 및 Reservation 처리는 DB 트랜잭션으로 처리
-* 결제 실패 시 예약된 Point가 잔액으로 정상 복구되도록 보장
+* Point 변동은 DB 트랜잭션으로 처리
+* 최종 Order 생성 시 Point 잔액을 서버에서 다시 검증
+* Point 차감과 Order 생성은 동일한 DB 트랜잭션에서 처리
+* 주문 생성 실패 시 Point가 차감되지 않도록 보장

@@ -69,7 +69,7 @@ export function OrderSection({
             paymentPrice,
         );
     };
-    
+
     return (
         <main className="min-h-screen bg-slate-50">
             <div className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 2xl:max-w-6xl">

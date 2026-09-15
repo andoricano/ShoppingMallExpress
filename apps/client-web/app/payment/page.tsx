@@ -3,6 +3,7 @@
 import DevPaymentSection from "@/components/dev/DevPaymentSection";
 
 import { useDevPayment } from "@/hooks/dev/useDevPayment";
+import { useClientOrderApi } from "@/hooks/useClientOrderApi";
 import { usePaymentStore } from "@/store/paymentStore";
 
 export default function DevPaymentPage() {
@@ -20,13 +21,28 @@ export default function DevPaymentPage() {
         simulatePayment,
     } = useDevPayment();
 
-    const handlePayment = () => {
+    const {
+        createOrder,
+        loading: orderLoading,
+        error: orderError,
+    } = useClientOrderApi();
+
+    const handlePayment = async () => {
         if (!payment) {
             return;
         }
 
+        // Dev 결제 성공 시뮬레이션
         simulatePayment(
             payment.paymentPrice,
+            payment.pointAmount,
+        );
+
+        // 결제 성공을 가정하고 Order 생성
+        await createOrder(
+            "DEV_PAYMENT_TOKEN",
+            payment.items,
+            payment.shippingAddress,
             payment.pointAmount,
         );
     };
@@ -73,14 +89,25 @@ export default function DevPaymentPage() {
                             }}
                         />
 
+                        {orderError && (
+                            <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-600">
+                                {orderError}
+                            </div>
+                        )}
+
                         <button
                             type="button"
                             onClick={
                                 handlePayment
                             }
-                            className="w-full rounded-lg bg-slate-900 px-4 py-3 text-sm font-semibold text-white"
+                            disabled={
+                                orderLoading
+                            }
+                            className="w-full rounded-lg bg-slate-900 px-4 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
                         >
-                            결제 시뮬레이션
+                            {orderLoading
+                                ? "주문 생성 중..."
+                                : "결제 시뮬레이션"}
                         </button>
                     </>
                 )}

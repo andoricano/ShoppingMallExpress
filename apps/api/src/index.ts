@@ -20,6 +20,9 @@ import clientHistoryRoutes from "./routes/client/history.routes.js";
 import clientRefundRoutes from "./routes/client/refund.routes.js";
 import adminRefundRoutes from "./routes/refund.routes.js";
 import clientPointRoutes from "./routes/client/point.routes.js";
+import clientPaymentRoutes from "./routes/client/payment.routes.js";
+import clientWishlistRoutes from "./routes/client/wishlist.router.js";
+
 
 const app = express();
 const PORT: number =
@@ -101,6 +104,16 @@ app.use(
 app.use(
     "/api/client/points",
     clientPointRoutes,
+);
+
+app.use(
+    "/api/client/payment",
+    clientPaymentRoutes,
+);
+
+app.use(
+    "/api/client/wishlist",
+    clientWishlistRoutes,
 );
 
 // Admin Refund
