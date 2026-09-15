@@ -116,7 +116,9 @@ export function useCart() {
         }, []);
 
     // ==========================================
-    // 2. Cart 추가 / 수량 변경
+    // 2. Cart 추가
+    //
+    // 상품 상세에서 사용
     // ==========================================
 
     const addCart =
@@ -173,8 +175,6 @@ export function useCart() {
                         );
                     }
 
-                    await fetchCart();
-
                     return true;
                 } catch (err) {
                     const message =
@@ -194,7 +194,7 @@ export function useCart() {
                     setLoading(false);
                 }
             },
-            [fetchCart],
+            [],
         );
 
     // ==========================================
@@ -247,15 +247,6 @@ export function useCart() {
                         );
                     }
 
-                    setCart(
-                        (current) =>
-                            current.filter(
-                                (item) =>
-                                    item.product.id !==
-                                    productId,
-                            ),
-                    );
-
                     return true;
                 } catch (err) {
                     const message =
@@ -280,7 +271,6 @@ export function useCart() {
 
     return {
         cart,
-
         loading,
         error,
 
