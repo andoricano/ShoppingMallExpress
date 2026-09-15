@@ -40,71 +40,21 @@ export const authProfile = {
             createClient();
 
         const {
-            data: {
-                session,
-            },
-            error: sessionError,
-        } =
-            await supabase.auth.getSession();
+            data,
+            error,
+        } = await supabase.rpc(
+            "get_my_profile",
+        );
 
-        if (sessionError) {
-            throw sessionError;
+        if (error) {
+            throw error;
         }
 
-        if (!session?.user) {
+        if (!data) {
             return null;
         }
 
-        const {
-            data: profile,
-            error: profileError,
-        } =
-            await supabase
-                .from("users")
-                .select("*")
-                .eq("id", session.user.id)
-                .single();
-
-        if (profileError) {
-            throw profileError;
-        }
-
-        return {
-            id: profile.id,
-            email: profile.email,
-            name: profile.name,
-            role: "CLIENT",
-
-            recipientName:
-                profile.recipient_name,
-
-            phone:
-                profile.phone,
-
-            address:
-                profile.zonecode &&
-                    profile.address
-                    ? {
-                        zonecode:
-                            profile.zonecode,
-                        address:
-                            profile.address,
-                        detail:
-                            profile.address_detail ??
-                            "",
-                    }
-                    : undefined,
-
-            isOnboarded:
-                profile.is_onboarded ??
-                false,
-
-            createdAt:
-                profile.created_at,
-
-            updatedAt:
-                profile.updated_at,
-        };
+        return data as ClientProfile;
     },
 
     // ==========================================

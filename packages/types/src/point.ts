@@ -11,6 +11,15 @@ export type PointTransactionType =
     | "ADJUST";
 
 /**
+ * Point Reservation Status
+ */
+export type PointReservationStatus =
+    | "RESERVED"
+    | "COMPLETED"
+    | "CANCELLED"
+    | "EXPIRED";
+
+/**
  * Client Point
  */
 export interface Point {
@@ -19,6 +28,7 @@ export interface Point {
     clientId: string;
 
     balance: number;
+    reservedBalance: number;
 
     createdAt: string;
     updatedAt: string;
@@ -51,4 +61,27 @@ export interface PointTransaction {
     adminId?: string;
 
     createdAt: string;
+}
+
+/**
+ * Point Reservation
+ *
+ * 외부 결제 진행 중 사용할 Point를 임시 확보합니다.
+ */
+export interface PointReservation {
+    id: string;
+
+    pointId: string;
+    clientId: string;
+
+    amount: number;
+
+    status: PointReservationStatus;
+
+    orderId?: string;
+
+    expiresAt: string;
+
+    createdAt: string;
+    updatedAt: string;
 }
