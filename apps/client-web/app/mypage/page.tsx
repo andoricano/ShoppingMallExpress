@@ -13,17 +13,31 @@ export default function MyPage() {
                 마이페이지
             </h1>
 
-            <button
-                type="button"
-                onClick={() =>
-                    router.push(
-                        "/mypage/history",
-                    )
-                }
-                className="mt-6 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-            >
-                주문 이력
-            </button>
+            <div className="mt-6 flex gap-3">
+                <button
+                    type="button"
+                    onClick={() =>
+                        router.push(
+                            "/mypage/history",
+                        )
+                    }
+                    className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                >
+                    주문 이력
+                </button>
+
+                <button
+                    type="button"
+                    onClick={() =>
+                        router.push(
+                            "/mypage/point",
+                        )
+                    }
+                    className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                >
+                    Point 테스트
+                </button>
+            </div>
         </div>
     );
 }

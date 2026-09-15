@@ -10,3 +10,4 @@ export * from './productPost.js';
 export * from './cart.js';
 export * from './history.js';
 export * from './refund.js';
+export * from './point.js';

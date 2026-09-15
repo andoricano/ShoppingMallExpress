@@ -1,0 +1,223 @@
+// hooks/usePoint.ts
+
+"use client";
+
+import {
+    useCallback,
+    useState,
+} from "react";
+
+import {
+    API_ENDPOINTS,
+} from "@mall/constants";
+
+
+import { authProfile } from "@/lib/authClient";
+import { Point } from "@mall/types";
+
+const API_BASE_URL =
+    process.env.NEXT_PUBLIC_API_URL ||
+    "http://localhost:8080";
+
+export function usePoint() {
+    const [
+        point,
+        setPoint,
+    ] = useState<Point | null>(
+        null,
+    );
+
+    const [
+        loading,
+        setLoading,
+    ] = useState(false);
+
+    const [
+        error,
+        setError,
+    ] = useState<string | null>(
+        null,
+    );
+
+    // ==========================================
+    // 1. Client Point 조회
+    // ==========================================
+
+    const fetchPoint =
+        useCallback(
+            async () => {
+                setLoading(true);
+                setError(null);
+
+                try {
+                    const session =
+                        await authProfile.getSession();
+
+                    if (
+                        !session?.access_token
+                    ) {
+                        throw new Error(
+                            "로그인이 필요합니다.",
+                        );
+                    }
+
+                    const url =
+                        `${API_BASE_URL}${API_ENDPOINTS.CLIENT_POINTS.BASE}`;
+
+                    const response =
+                        await fetch(url, {
+                            headers: {
+                                Authorization:
+                                    `Bearer ${session.access_token}`,
+                            },
+                        });
+
+                    const result =
+                        await response
+                            .json()
+                            .catch(
+                                () => null,
+                            );
+
+                    console.log(
+                        "[usePoint] Point 조회 API result:",
+                        result,
+                    );
+
+                    if (!response.ok) {
+                        throw new Error(
+                            result?.message ||
+                                "포인트를 불러오지 못했습니다.",
+                        );
+                    }
+
+                    const data =
+                        result?.data
+                            ? (result.data as Point)
+                            : null;
+
+                    setPoint(data);
+
+                    return data;
+                } catch (err) {
+                    console.error(
+                        "[usePoint] Point 조회 실패:",
+                        err,
+                    );
+
+                    setError(
+                        err instanceof Error
+                            ? err.message
+                            : "포인트 조회에 실패했습니다.",
+                    );
+
+                    setPoint(
+                        null,
+                    );
+
+                    return null;
+                } finally {
+                    setLoading(false);
+                }
+            },
+            [],
+        );
+
+    // ==========================================
+    // 2. Client Point 충전
+    // ==========================================
+
+    const chargePoint =
+        useCallback(
+            async (
+                amount: number,
+            ) => {
+                setLoading(true);
+                setError(null);
+
+                try {
+                    const session =
+                        await authProfile.getSession();
+
+                    if (
+                        !session?.access_token
+                    ) {
+                        throw new Error(
+                            "로그인이 필요합니다.",
+                        );
+                    }
+
+                    const url =
+                        `${API_BASE_URL}${API_ENDPOINTS.CLIENT_POINTS.CHARGE}`;
+
+                    const response =
+                        await fetch(url, {
+                            method: "POST",
+                            headers: {
+                                "Content-Type":
+                                    "application/json",
+                                Authorization:
+                                    `Bearer ${session.access_token}`,
+                            },
+                            body:
+                                JSON.stringify({
+                                    amount,
+                                }),
+                        });
+
+                    const result =
+                        await response
+                            .json()
+                            .catch(
+                                () => null,
+                            );
+
+                    console.log(
+                        "[usePoint] Point 충전 API result:",
+                        result,
+                    );
+
+                    if (!response.ok) {
+                        throw new Error(
+                            result?.message ||
+                                "포인트 충전에 실패했습니다.",
+                        );
+                    }
+
+                    const data =
+                        result?.data
+                            ? (result.data as Point)
+                            : null;
+
+                    setPoint(data);
+
+                    return data;
+                } catch (err) {
+                    console.error(
+                        "[usePoint] Point 충전 실패:",
+                        err,
+                    );
+
+                    setError(
+                        err instanceof Error
+                            ? err.message
+                            : "포인트 충전에 실패했습니다.",
+                    );
+
+                    return null;
+                } finally {
+                    setLoading(false);
+                }
+            },
+            [],
+        );
+
+    return {
+        point,
+        loading,
+        error,
+
+        fetchPoint,
+        chargePoint,
+    };
+}

@@ -19,6 +19,7 @@ import clientHistoryRoutes from "./routes/client/history.routes.js";
 
 import clientRefundRoutes from "./routes/client/refund.routes.js";
 import adminRefundRoutes from "./routes/refund.routes.js";
+import clientPointRoutes from "./routes/client/point.routes.js";
 
 const app = express();
 const PORT: number =
@@ -95,6 +96,11 @@ app.use(
 app.use(
     "/api/client/refunds",
     clientRefundRoutes,
+);
+
+app.use(
+    "/api/client/points",
+    clientPointRoutes,
 );
 
 // Admin Refund

@@ -85,7 +85,12 @@ export const API_ENDPOINTS = {
         BY_ID: (id: string) =>
             `/api/product-posts/${id}`,
     },
+    CLIENT_POINTS: {
+        BASE: "/api/client/points",
 
+        CHARGE:
+            "/api/client/points/charge",
+    },
     // ==========================================
     // 상품 이미지 / 에셋
     // ==========================================
