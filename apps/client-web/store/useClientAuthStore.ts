@@ -4,7 +4,7 @@
 
 import { create } from "zustand";
 
-import type { ClientProfile } from "@mall/types";
+import type { ClientProfile, Point } from "@mall/types";
 import { authProfile } from "@/lib/authClient";
 
 
@@ -18,6 +18,11 @@ interface ClientAuthState {
     signInWithGoogle: () => Promise<void>;
     getSession: () => Promise<void>;
     getProfile: () => Promise<void>;
+
+    updatePoint: (
+        point: Point,
+    ) => void;
+
     signOut: () => Promise<void>;
     clearAuth: () => void;
 }
@@ -173,7 +178,22 @@ export const useClientAuthStore =
                 });
             }
         },
+        // ==========================================
+        // Point 갱신
+        // ==========================================
 
+        updatePoint: (
+            point,
+        ) => {
+            set((state) => ({
+                user: state.user
+                    ? {
+                        ...state.user,
+                        point,
+                    }
+                    : null,
+            }));
+        },
         // ==========================================
         // Logout
         // ==========================================

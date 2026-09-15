@@ -78,3 +78,27 @@ export function getOrderStatusLabel(
             return status;
     }
 }
+
+export function getMaxPointAmount(
+    balance: number,
+    purchasePrice: number,
+): number {
+    return Math.min(
+        Math.max(0, balance),
+        Math.max(0, purchasePrice),
+    );
+}
+
+export function normalizePointAmount(
+    amount: number,
+    balance: number,
+    purchasePrice: number,
+): number {
+    return Math.min(
+        Math.max(0, amount),
+        getMaxPointAmount(
+            balance,
+            purchasePrice,
+        ),
+    );
+}

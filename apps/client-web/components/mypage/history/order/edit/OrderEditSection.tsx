@@ -7,7 +7,7 @@ import type {
 } from "@mall/types";
 import OrderProductViewer from "./OrderProductViewer";
 import OrderShippingAddressEditor from "./OrderShippingAddressEditor";
-import { OrderShippingAddressCheckBox } from "@/components/order/OrderShippingAddressCheckBox";
+import { OrderShippingAddressCheckBox } from "@/components/order/order/OrderShippingAddressCheckBox";
 
 
 interface OrderEditSectionProps {

@@ -1,19 +1,17 @@
-// components/order/OrderSection.tsx
-
 "use client";
 
 import type {
     OrderShippingAddress,
 } from "@mall/types";
 
-import { OrderSummary } from "./OrderSummary";
-import { OrderList } from "./OrderList";
-import { OrderShippingAddress as OrderShippingAddressComponent } from "./OrderShippingAddress";
-import { OrderShippingAddressCheckBox } from "./OrderShippingAddressCheckBox";
-import { OrderPaymentSummary } from "./OrderPaymentSummary";
-import { OrderSubmit } from "./OrderSubmit";
 
-import { useOrderSection } from "@/hooks/useOrderSection";
+import {
+    useOrderSection,
+} from "@/hooks/order/useOrderSection";
+import { usePayment } from "@/hooks/order/usePayment";
+import OrderPanel from "./order/OrderPanel";
+import PaymentPanel from "./payment/PaymentPanel";
+
 
 interface OrderSectionProps {
     onOrderSubmit: (
@@ -43,8 +41,22 @@ export function OrderSection({
         handleAddressChange,
     } = useOrderSection();
 
+    const {
+        usablePoint,
+        pointAmount,
+        paymentPrice,
+        pointLoading,
+        fetchPoint,
+
+        handlePointConfirm,
+    } = usePayment({
+        productPrice,
+    });
+
     const handleSubmit = () => {
-        if (selectedItems.length === 0) {
+        if (
+            selectedItems.length === 0
+        ) {
             return;
         }
 
@@ -67,66 +79,59 @@ export function OrderSection({
         <main className="min-h-screen bg-slate-50">
             <div className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 2xl:max-w-6xl">
                 <div className="space-y-5">
-                    <OrderSummary
-                        items={selectedItems}
-                    />
-
-                    <OrderList
+                    <OrderPanel
                         items={items}
+                        selectedItems={
+                            selectedItems
+                        }
                         selectedItemIds={
                             selectedItemIds
                         }
-                        onSelect={selectItem}
+                        shippingAddress={
+                            shippingAddress
+                        }
+                        onSelect={
+                            selectItem
+                        }
                         onQuantityChange={
                             handleQuantityChange
                         }
                         onRemove={
                             handleRemove
                         }
-                    />
-
-                    <OrderShippingAddressComponent
-                        address={
-                            shippingAddress.address
-                        }
-                        onAddressChange={(
-                            address,
-                        ) =>
-                            handleAddressChange({
-                                ...shippingAddress,
-                                address,
-                            })
+                        onAddressChange={
+                            handleAddressChange
                         }
                     />
 
-                    <OrderShippingAddressCheckBox
-                        value={
-                            shippingAddress.address
-                        }
-                        onChange={(address) =>
-                            handleAddressChange({
-                                ...shippingAddress,
-                                address,
-                            })
-                        }
-                    />
-
-                    <OrderPaymentSummary
+                    <PaymentPanel
                         productPrice={
                             productPrice
                         }
-                    />
-
-                    <OrderSubmit
-                        totalPrice={
-                            productPrice
+                        pointBalance={
+                            usablePoint
+                        }
+                        pointAmount={
+                            pointAmount
+                        }
+                        paymentPrice={
+                            paymentPrice
+                        }
+                        loading={
+                            pointLoading
+                        }
+                        onRefreshPoint={
+                            fetchPoint
+                        }
+                        onConfirmPoint={
+                            handlePointConfirm
+                        }
+                        onSubmit={
+                            handleSubmit
                         }
                         disabled={
                             selectedItems.length ===
                             0
-                        }
-                        onSubmit={
-                            handleSubmit
                         }
                     />
                 </div>

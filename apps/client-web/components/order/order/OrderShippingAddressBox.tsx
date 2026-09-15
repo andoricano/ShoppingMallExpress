@@ -7,7 +7,7 @@ interface OrderShippingAddressProps {
     onAddressChange?: (address: string) => void;
 }
 
-export function OrderShippingAddress({
+export function OrderShippingAddressBox({
     address = "",
     onAddressChange,
 }: OrderShippingAddressProps) {

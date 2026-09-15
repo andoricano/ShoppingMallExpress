@@ -1,5 +1,3 @@
-// hooks/usePoint.ts
-
 "use client";
 
 import {
@@ -11,21 +9,22 @@ import {
     API_ENDPOINTS,
 } from "@mall/constants";
 
+import type {
+    Point,
+} from "@mall/types";
 
 import { authProfile } from "@/lib/authClient";
-import { Point } from "@mall/types";
+import { useClientAuthStore } from "@/store/useClientAuthStore";
 
 const API_BASE_URL =
     process.env.NEXT_PUBLIC_API_URL ||
     "http://localhost:8080";
 
 export function usePoint() {
-    const [
-        point,
-        setPoint,
-    ] = useState<Point | null>(
-        null,
-    );
+    const updatePoint =
+        useClientAuthStore(
+            (state) => state.updatePoint,
+        );
 
     const [
         loading,
@@ -96,7 +95,11 @@ export function usePoint() {
                             ? (result.data as Point)
                             : null;
 
-                    setPoint(data);
+                    if (data) {
+                        updatePoint(
+                            data,
+                        );
+                    }
 
                     return data;
                 } catch (err) {
@@ -111,16 +114,12 @@ export function usePoint() {
                             : "포인트 조회에 실패했습니다.",
                     );
 
-                    setPoint(
-                        null,
-                    );
-
                     return null;
                 } finally {
                     setLoading(false);
                 }
             },
-            [],
+            [updatePoint],
         );
 
     // ==========================================
@@ -189,7 +188,11 @@ export function usePoint() {
                             ? (result.data as Point)
                             : null;
 
-                    setPoint(data);
+                    if (data) {
+                        updatePoint(
+                            data,
+                        );
+                    }
 
                     return data;
                 } catch (err) {
@@ -209,11 +212,10 @@ export function usePoint() {
                     setLoading(false);
                 }
             },
-            [],
+            [updatePoint],
         );
 
     return {
-        point,
         loading,
         error,
 

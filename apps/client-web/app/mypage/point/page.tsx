@@ -1,12 +1,17 @@
 "use client";
 
-import { usePoint } from "@/hooks/point/usePoint";
 import { useEffect } from "react";
 
+import { usePoint } from "@/hooks/point/usePoint";
+import { useClientAuthStore } from "@/store/useClientAuthStore";
 
 export default function PointPage() {
+    const user =
+        useClientAuthStore(
+            (state) => state.user,
+        );
+
     const {
-        point,
         loading,
         error,
         fetchPoint,
@@ -35,7 +40,7 @@ export default function PointPage() {
                         </p>
 
                         <p className="mt-2 text-3xl font-bold text-slate-900">
-                            {point?.balance?.toLocaleString(
+                            {user?.point?.balance?.toLocaleString(
                                 "ko-KR",
                             ) ?? 0}
                             P

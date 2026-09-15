@@ -35,6 +35,7 @@ export const authProfile = {
     // ==========================================
     // Client Profile
     // ==========================================
+
     async getProfile(): Promise<ClientProfile | null> {
         const supabase =
             createClient();
