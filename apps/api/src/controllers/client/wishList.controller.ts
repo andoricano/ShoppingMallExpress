@@ -10,17 +10,8 @@ import { toCamelCase } from "../../utils/caseConverter.js";
 // ==========================================
 
 interface AddWishlistPayload {
-    productId: string;
+    productPostId: string;
 }
-
-// ==========================================
-// Supabase Client
-// ==========================================
-
-const supabase = createClient(
-    process.env.SUPABASE_URL!,
-    process.env.SUPABASE_SECRET_KEY!,
-);
 
 // ==========================================
 // 1. Client Wishlist 조회
@@ -94,13 +85,12 @@ export const getWishlist = async (
                     `
                         id,
                         client_id,
-                        product_id,
+                        product_post_id,
                         created_at,
-                        product:products (
+                        product_post:product_posts (
                             id,
-                            name,
-                            main_image_url,
-                            price
+                            title,
+                            thumbnail
                         )
                     `,
                 )
@@ -210,39 +200,39 @@ export const addWishlist = async (
         }
 
         const {
-            productId,
+            productPostId,
         } = req.body;
 
-        if (!productId) {
+        if (!productPostId) {
             return res.status(400).json({
                 success: false,
                 message:
-                    "상품 ID가 필요합니다.",
+                    "상품 게시물 ID가 필요합니다.",
             });
         }
 
         const {
-            data: product,
-            error: productError,
+            data: productPost,
+            error: productPostError,
         } =
             await userSupabase
-                .from("products")
+                .from("product_posts")
                 .select("id")
                 .eq(
                     "id",
-                    productId,
+                    productPostId,
                 )
                 .maybeSingle();
 
-        if (productError) {
-            throw productError;
+        if (productPostError) {
+            throw productPostError;
         }
 
-        if (!product) {
+        if (!productPost) {
             return res.status(404).json({
                 success: false,
                 message:
-                    "상품을 찾을 수 없습니다.",
+                    "상품 게시물을 찾을 수 없습니다.",
             });
         }
 
@@ -254,20 +244,19 @@ export const addWishlist = async (
                 .from("wishlists")
                 .insert({
                     client_id: user.id,
-                    product_id:
-                        productId,
+                    product_post_id:
+                        productPostId,
                 })
                 .select(
                     `
                         id,
                         client_id,
-                        product_id,
+                        product_post_id,
                         created_at,
-                        product:products (
+                        product_post:product_posts (
                             id,
-                            name,
-                            main_image_url,
-                            price
+                            title,
+                            thumbnail
                         )
                     `,
                 )
@@ -275,12 +264,13 @@ export const addWishlist = async (
 
         if (error) {
             if (
-                error.code === "23505"
+                error.code ===
+                "23505"
             ) {
                 return res.status(409).json({
                     success: false,
                     message:
-                        "이미 관심상품에 등록된 상품입니다.",
+                        "이미 관심상품에 등록된 상품 게시물입니다.",
                 });
             }
 
@@ -374,14 +364,14 @@ export const removeWishlist = async (
         }
 
         const {
-            productId,
+            productPostId,
         } = req.params;
 
-        if (!productId) {
+        if (!productPostId) {
             return res.status(400).json({
                 success: false,
                 message:
-                    "상품 ID가 필요합니다.",
+                    "상품 게시물 ID가 필요합니다.",
             });
         }
 
@@ -396,8 +386,8 @@ export const removeWishlist = async (
                     user.id,
                 )
                 .eq(
-                    "product_id",
-                    productId,
+                    "product_post_id",
+                    productPostId,
                 );
 
         if (error) {

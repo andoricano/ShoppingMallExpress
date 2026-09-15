@@ -1,5 +1,3 @@
-// packages/mall-page-viewer/src/components/product/ProductCard.tsx
-
 "use client";
 
 import type { ProductCardData } from "../../types/mainPage";
@@ -7,16 +5,31 @@ import type { ProductCardData } from "../../types/mainPage";
 interface ProductCardProps {
     product: ProductCardData;
     cardType: "NO_DISCOUNT" | "DISCOUNT";
+
     onClick?: (id: string) => void;
+
+    isWishlisted?: boolean;
+    onWishlistClick?: () => void;
 }
 
 export function ProductCard({
     product,
     cardType,
     onClick,
+    isWishlisted = false,
+    onWishlistClick,
 }: ProductCardProps) {
     const handleClick = () => {
         onClick?.(product.id);
+    };
+
+    const handleWishlistClick = (
+        event: React.MouseEvent<
+            HTMLButtonElement
+        >,
+    ) => {
+        event.stopPropagation();
+        onWishlistClick?.();
     };
 
     const hasDiscount =
@@ -39,7 +52,7 @@ export function ProductCard({
             ].join(" ")}
         >
             {/* Image */}
-            <div className="aspect-square overflow-hidden bg-neutral-100">
+            <div className="relative aspect-square overflow-hidden bg-neutral-100">
                 {product.imageUrl ? (
                     <img
                         src={product.imageUrl}
@@ -50,6 +63,21 @@ export function ProductCard({
                     <div className="flex h-full items-center justify-center text-sm text-neutral-400">
                         대표 이미지 없음
                     </div>
+                )}
+
+                {onWishlistClick && (
+                    <button
+                        type="button"
+                        onClick={
+                            handleWishlistClick
+                        }
+                        className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-lg shadow-sm"
+                        aria-label="관심상품"
+                    >
+                        {isWishlisted
+                            ? "♥"
+                            : "♡"}
+                    </button>
                 )}
             </div>
 

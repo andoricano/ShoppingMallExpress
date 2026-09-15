@@ -13,7 +13,7 @@ import {
 } from "@mall/constants";
 
 import { authProfile } from "@/lib/authClient";
-import { WishlistItem } from "@mall/types";
+import { Wishlist } from "@mall/types";
 
 const API_BASE_URL =
     process.env.NEXT_PUBLIC_API_URL ||
@@ -23,7 +23,7 @@ export function useWishlist() {
     const [
         wishlist,
         setWishlist,
-    ] = useState<WishlistItem[]>([]);
+    ] = useState<Wishlist[]>([]);
 
     const [
         loading,
@@ -72,9 +72,7 @@ export function useWishlist() {
                 const result =
                     await response
                         .json()
-                        .catch(
-                            () => null,
-                        );
+                        .catch(() => null);
 
                 if (!response.ok) {
                     throw new Error(
@@ -87,7 +85,7 @@ export function useWishlist() {
                     Array.isArray(
                         result?.data,
                     )
-                        ? (result.data as WishlistItem[])
+                        ? (result.data as Wishlist[])
                         : [];
 
                 setWishlist(data);
@@ -112,7 +110,6 @@ export function useWishlist() {
                 setLoading(false);
             }
         }, []);
-
     // ==========================================
     // 2. Wishlist 추가
     // ==========================================
@@ -120,7 +117,7 @@ export function useWishlist() {
     const addWishlist =
         useCallback(
             async (
-                productId: string,
+                productPostId: string,
             ) => {
                 setLoading(true);
                 setError(null);
@@ -148,10 +145,9 @@ export function useWishlist() {
                                     Authorization:
                                         `Bearer ${session.access_token}`,
                                 },
-                                body:
-                                    JSON.stringify({
-                                        productId,
-                                    }),
+                                body: JSON.stringify({
+                                    productPostId,
+                                }),
                             },
                         );
 
@@ -171,7 +167,7 @@ export function useWishlist() {
 
                     const item =
                         result?.data as
-                        | WishlistItem
+                        | Wishlist
                         | undefined;
 
                     if (item) {
@@ -195,15 +191,11 @@ export function useWishlist() {
                         err,
                     );
 
-                    setError(
-                        message,
-                    );
+                    setError(message);
 
                     return null;
                 } finally {
-                    setLoading(
-                        false,
-                    );
+                    setLoading(false);
                 }
             },
             [],
@@ -216,7 +208,7 @@ export function useWishlist() {
     const removeWishlist =
         useCallback(
             async (
-                productId: string,
+                productPostId: string,
             ) => {
                 setLoading(true);
                 setError(null);
@@ -235,7 +227,7 @@ export function useWishlist() {
 
                     const response =
                         await fetch(
-                            `${API_BASE_URL}${API_ENDPOINTS.CLIENT_WISHLIST.BASE}/${productId}`,
+                            `${API_BASE_URL}${API_ENDPOINTS.CLIENT_WISHLIST.BASE}/${productPostId}`,
                             {
                                 method: "DELETE",
                                 headers: {
@@ -262,11 +254,9 @@ export function useWishlist() {
                     setWishlist(
                         (current) =>
                             current.filter(
-                                (
-                                    item,
-                                ) =>
-                                    item.productId !==
-                                    productId,
+                                (item) =>
+                                    item.productPostId !==
+                                    productPostId,
                             ),
                     );
 
@@ -282,20 +272,15 @@ export function useWishlist() {
                         err,
                     );
 
-                    setError(
-                        message,
-                    );
+                    setError(message);
 
                     return false;
                 } finally {
-                    setLoading(
-                        false,
-                    );
+                    setLoading(false);
                 }
             },
             [],
         );
-
     // ==========================================
     // 4. Wishlist 여부
     // ==========================================
@@ -303,12 +288,12 @@ export function useWishlist() {
     const isWishlisted =
         useCallback(
             (
-                productId: string,
+                productPostId: string,
             ) =>
                 wishlist.some(
                     (item) =>
-                        item.productId ===
-                        productId,
+                        item.productPostId ===
+                        productPostId,
                 ),
             [wishlist],
         );

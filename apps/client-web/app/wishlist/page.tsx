@@ -1,8 +1,9 @@
 "use client";
 
-import { useWishlist } from "@/hooks/user/useWishlist";
 import { useEffect } from "react";
 
+import WishlistBox from "@/components/wishlist/WishlistBox";
+import { useWishlist } from "@/hooks/user/useWishlist";
 
 export default function WishlistPage() {
     const {
@@ -16,6 +17,21 @@ export default function WishlistPage() {
     useEffect(() => {
         fetchWishlist();
     }, [fetchWishlist]);
+
+    const handleItemClick = (
+        productPostId: string,
+    ) => {
+        window.location.href =
+            `/products/${productPostId}`;
+    };
+
+    const handleRemove = async (
+        productPostId: string,
+    ) => {
+        await removeWishlist(
+            productPostId,
+        );
+    };
 
     if (loading) {
         return (
@@ -34,50 +50,18 @@ export default function WishlistPage() {
     }
 
     return (
-        <div className="p-6">
-            <h1 className="mb-6 text-2xl font-bold">
-                관심상품
-            </h1>
-
-            {wishlist.length === 0 ? (
-                <p className="text-sm text-slate-500">
-                    관심상품이 없습니다.
-                </p>
-            ) : (
-                <div className="space-y-3">
-                    {wishlist.map((item) => (
-                        <div
-                            key={item.id}
-                            className="flex items-center justify-between rounded-lg border border-slate-200 bg-white p-4"
-                        >
-                            <div>
-                                <p className="font-medium text-slate-900">
-                                    {item.product.name}
-                                </p>
-
-                                <p className="mt-1 text-sm text-slate-500">
-                                    {item.product.price.toLocaleString(
-                                        "ko-KR",
-                                    )}
-                                    원
-                                </p>
-                            </div>
-
-                            <button
-                                type="button"
-                                onClick={() =>
-                                    removeWishlist(
-                                        item.productId,
-                                    )
-                                }
-                                className="rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50"
-                            >
-                                삭제
-                            </button>
-                        </div>
-                    ))}
-                </div>
-            )}
-        </div>
+        <main className="min-h-screen px-6 py-10">
+            <div className="mx-auto w-full max-w-7xl">
+                <WishlistBox
+                    items={wishlist}
+                    onItemClick={
+                        handleItemClick
+                    }
+                    onRemove={
+                        handleRemove
+                    }
+                />
+            </div>
+        </main>
     );
 }

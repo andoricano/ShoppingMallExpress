@@ -1,10 +1,11 @@
-// apps/client-web/components/home/MainPage.tsx
-
 "use client";
 
 import {
+    useEffect,
+} from "react";
+
+import {
     BusinessInfoFooter,
-    Header,
     HeroBanner,
     ProductSection,
     PromotionSection,
@@ -14,6 +15,7 @@ import type { PageConfig } from "@mall/mall-page-viewer";
 import type { ProductPost } from "@mall/types";
 
 import { useMainPage } from "@/hooks/useMainPage";
+import { useWishlist } from "@/hooks/user/useWishlist";
 
 interface MainPageProps {
     config: PageConfig;
@@ -39,11 +41,45 @@ export default function MainPage({
         postList,
     });
 
+    const {
+        wishlist,
+        fetchWishlist,
+        addWishlist,
+        removeWishlist,
+    } = useWishlist();
+
     const handleNavigate = (
         path: string,
     ) => {
         window.location.href = path;
     };
+
+    const handleWishlistClick = async (
+        productPostId: string,
+    ) => {
+        const isWishlisted =
+            wishlist.some(
+                (item) =>
+                    item.productPostId ===
+                    productPostId,
+            );
+
+        if (isWishlisted) {
+            await removeWishlist(
+                productPostId,
+            );
+
+            return;
+        }
+
+        await addWishlist(
+            productPostId,
+        );
+    };
+
+    useEffect(() => {
+        fetchWishlist();
+    }, [fetchWishlist]);
 
     if (loading) {
         return (
@@ -79,6 +115,20 @@ export default function MainPage({
                                     }
                                     onNavigate={
                                         handleNavigate
+                                    }
+                                    isWishlisted={(
+                                        productPostId,
+                                    ) =>
+                                        wishlist.some(
+                                            (
+                                                item,
+                                            ) =>
+                                                item.productPostId ===
+                                                productPostId,
+                                        )
+                                    }
+                                    onWishlistClick={
+                                        handleWishlistClick
                                     }
                                 />
                             );

@@ -1,21 +1,33 @@
-// packages/mall-page-viewer/src/components/product/ProductSection.tsx
-
 "use client";
 
-
-
-import { ProductDetailedThumbnailCard } from "./ProductDetailedThumbnailCard";
-import { ProductCard } from "./ProductCard";
 import { ProductCardData, ProductSectionConfig } from "../../types/mainPage";
+import { ProductCard } from "./ProductCard";
+import { ProductDetailedThumbnailCard } from "./ProductDetailedThumbnailCard";
+
+
+
 
 interface ProductSectionProps {
     section: ProductSectionConfig;
-    onNavigate?: (path: string) => void;
+
+    onNavigate?: (
+        path: string,
+    ) => void;
+
+    isWishlisted?: (
+        productPostId: string,
+    ) => boolean;
+
+    onWishlistClick?: (
+        productPostId: string,
+    ) => void;
 }
 
 export default function ProductSection({
     section,
     onNavigate,
+    isWishlisted,
+    onWishlistClick,
 }: ProductSectionProps) {
     const products: ProductCardData[] =
         Array.isArray(section.products)
@@ -37,7 +49,10 @@ export default function ProductSection({
     const renderProductCard = (
         product: ProductCardData,
     ) => {
-        if (section.cardType === "DETAILED") {
+        if (
+            section.cardType ===
+            "DETAILED"
+        ) {
             return (
                 <ProductDetailedThumbnailCard
                     key={product.id}
@@ -63,13 +78,25 @@ export default function ProductSection({
                         `/products/${product.id}`,
                     )
                 }
+                isWishlisted={
+                    isWishlisted?.(
+                        product.id,
+                    )
+                }
+                onWishlistClick={
+                    onWishlistClick
+                        ? () =>
+                            onWishlistClick(
+                                product.id,
+                            )
+                        : undefined
+                }
             />
         );
     };
 
     return (
         <section className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
-            {/* Section Header */}
             <div className="mb-10 flex items-end justify-between">
                 <h2 className="text-2xl font-bold tracking-tight text-neutral-900">
                     {section.title}
@@ -88,16 +115,15 @@ export default function ProductSection({
                 </button>
             </div>
 
-            {/* GRID */}
-            {section.layout === "GRID" && (
-                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-                    {products.map(
-                        renderProductCard,
-                    )}
-                </div>
-            )}
+            {section.layout ===
+                "GRID" && (
+                    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                        {products.map(
+                            renderProductCard,
+                        )}
+                    </div>
+                )}
 
-            {/* HORIZONTAL SCROLL */}
             {section.layout ===
                 "HORIZONTAL_SCROLL" && (
                     <div className="flex gap-6 overflow-x-auto pb-2">
@@ -118,14 +144,14 @@ export default function ProductSection({
                     </div>
                 )}
 
-            {/* LARGE */}
-            {section.layout === "LARGE" && (
-                <div className="grid grid-cols-1 gap-6">
-                    {products.map(
-                        renderProductCard,
-                    )}
-                </div>
-            )}
+            {section.layout ===
+                "LARGE" && (
+                    <div className="grid grid-cols-1 gap-6">
+                        {products.map(
+                            renderProductCard,
+                        )}
+                    </div>
+                )}
         </section>
     );
 }
