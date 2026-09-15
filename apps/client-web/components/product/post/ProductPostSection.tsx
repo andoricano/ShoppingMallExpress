@@ -24,18 +24,35 @@ interface ProductPostSectionProps {
     post: ProductPostType;
     products: Product[];
     reviews: ProductReviewData[];
+
+    isWishlisted?: boolean;
+
+    onWishlistClick?: () => void;
+    onCartClick?: () => void;
 }
 
 export function ProductPostSection({
     post,
     products,
     reviews,
+    isWishlisted = false,
+    onWishlistClick,
+    onCartClick,
 }: ProductPostSectionProps) {
     return (
         <main className="min-h-screen bg-white">
             <ProductPostHeader
                 post={post}
                 products={products}
+                isWishlisted={
+                    isWishlisted
+                }
+                onWishlistClick={
+                    onWishlistClick
+                }
+                onCartClick={
+                    onCartClick
+                }
             />
 
             <ProductPostDescription

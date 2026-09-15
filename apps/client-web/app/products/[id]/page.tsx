@@ -1,5 +1,3 @@
-// app/products/[id]/page.tsx
-
 "use client";
 
 import {
@@ -9,10 +7,16 @@ import {
 import { useParams } from "next/navigation";
 
 import { useProductPost } from "@/hooks/useProductPost";
+import { useWishlist } from "@/hooks/user/useWishlist";
+import { useCart } from "@/hooks/user/useCart";
+
 import { ProductPostSection } from "@/components/product/post/ProductPostSection";
 
 export default function ProductDetailPage() {
-    const params = useParams<{ id: string }>();
+    const params =
+        useParams<{ id: string }>();
+    const productPostId =
+        params.id;
 
     const {
         post,
@@ -22,6 +26,16 @@ export default function ProductDetailPage() {
         fetchPost,
     } = useProductPost();
 
+    const {
+        wishlist,
+        fetchWishlist,
+        addWishlist,
+        removeWishlist,
+    } = useWishlist();
+
+    const {
+        addCart,
+    } = useCart();
 
     const [
         showPurchaseButton,
@@ -29,10 +43,14 @@ export default function ProductDetailPage() {
     ] = useState(false);
 
     useEffect(() => {
-        if (params.id) {
-            fetchPost(params.id);
+        if (productPostId) {
+            fetchPost(productPostId);
         }
-    }, [params.id, fetchPost]);
+    }, [productPostId, fetchPost]);
+
+    useEffect(() => {
+        fetchWishlist();
+    }, [fetchWishlist]);
 
     useEffect(() => {
         const handleScroll = () => {
@@ -55,10 +73,51 @@ export default function ProductDetailPage() {
             );
         };
     }, []);
+    const handleWishlistClick =
+        async () => {
+            if (!productPostId) {
+                return;
+            }
+
+            const isWishlisted =
+                wishlist.some(
+                    (item) =>
+                        item.productPostId ===
+                        productPostId,
+                );
+
+            if (isWishlisted) {
+                await removeWishlist(
+                    productPostId,
+                );
+
+                return;
+            }
+
+            await addWishlist(
+                productPostId,
+            );
+        };
+
+    const handleCartClick = async () => {
+        const product =
+            products[0];
+
+        if (!product) {
+            return;
+        }
+
+        await addCart(
+            product.id,
+            1,
+        );
+    };
 
     const handlePurchase = () => {
         document
-            .getElementById("product-purchase")
+            .getElementById(
+                "product-purchase",
+            )
             ?.scrollIntoView({
                 behavior: "smooth",
                 block: "start",
@@ -96,7 +155,19 @@ export default function ProductDetailPage() {
                 post={post}
                 products={products}
                 reviews={[]}
+                isWishlisted={wishlist.some(
+                    (item) =>
+                        item.productPostId ===
+                        post.id,
+                )}
+                onWishlistClick={
+                    handleWishlistClick
+                }
+                onCartClick={
+                    handleCartClick
+                }
             />
+
             {showPurchaseButton && (
                 <button
                     type="button"

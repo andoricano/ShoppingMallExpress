@@ -1,83 +1,173 @@
+// app/cart/page.tsx
+
 "use client";
 
-import { useWishlist } from "@/hooks/user/useWishlist";
 import { useEffect } from "react";
 
+import { useCart } from "@/hooks/user/useCart";
 
-export default function WishlistPage() {
+export default function CartPage() {
     const {
-        wishlist,
+        cart,
         loading,
         error,
-        fetchWishlist,
-        removeWishlist,
-    } = useWishlist();
+        fetchCart,
+        removeCart,
+    } = useCart();
 
     useEffect(() => {
-        fetchWishlist();
-    }, [fetchWishlist]);
+        fetchCart();
+    }, [fetchCart]);
+
+    const totalPrice = cart.reduce(
+        (total, item) =>
+            total +
+            item.product.price *
+            item.quantity,
+        0,
+    );
 
     if (loading) {
         return (
-            <div className="p-6">
-                Wishlist 불러오는 중...
-            </div>
+            <main className="min-h-screen p-6">
+                장바구니 불러오는 중...
+            </main>
         );
     }
 
     if (error) {
         return (
-            <div className="p-6 text-red-600">
+            <main className="min-h-screen p-6 text-red-600">
                 {error}
-            </div>
+            </main>
         );
     }
 
     return (
-        <div className="p-6">
-            <h1 className="mb-6 text-2xl font-bold">
-                관심상품
-            </h1>
+        <main className="min-h-screen bg-slate-50/50 px-6 py-10">
+            <div className="mx-auto w-full max-w-5xl">
+                <h1 className="mb-8 text-2xl font-bold text-slate-900">
+                    장바구니
+                </h1>
 
-            {wishlist.length === 0 ? (
-                <p className="text-sm text-slate-500">
-                    관심상품이 없습니다.
-                </p>
-            ) : (
-                <div className="space-y-3">
-                    {wishlist.map((item) => (
-                        <div
-                            key={item.id}
-                            className="flex items-center justify-between rounded-lg border border-slate-200 bg-white p-4"
-                        >
-                            <div>
-                                <p className="font-medium text-slate-900">
-                                    {item.product.name}
-                                </p>
+                {cart.length === 0 ? (
+                    <div className="flex min-h-60 items-center justify-center rounded-xl border border-dashed border-slate-300 bg-white">
+                        <p className="text-sm text-slate-500">
+                            장바구니가 비어 있습니다.
+                        </p>
+                    </div>
+                ) : (
+                    <div className="space-y-4">
+                        {cart.map((item) => (
+                            <div
+                                key={
+                                    item.product.id
+                                }
+                                className="flex items-center gap-5 rounded-xl border border-slate-200 bg-white p-5"
+                            >
+                                <div className="h-24 w-24 shrink-0 overflow-hidden rounded-lg bg-slate-100">
+                                    {item.product
+                                        .mainImageUrl ? (
+                                        <img
+                                            src={
+                                                item
+                                                    .product
+                                                    .mainImageUrl
+                                            }
+                                            alt={
+                                                item
+                                                    .product
+                                                    .name
+                                            }
+                                            className="h-full w-full object-cover"
+                                        />
+                                    ) : (
+                                        <div className="flex h-full items-center justify-center text-xs text-slate-400">
+                                            이미지 없음
+                                        </div>
+                                    )}
+                                </div>
 
-                                <p className="mt-1 text-sm text-slate-500">
-                                    {item.product.price.toLocaleString(
+                                <div className="min-w-0 flex-1">
+                                    <h2 className="truncate font-semibold text-slate-900">
+                                        {
+                                            item
+                                                .product
+                                                .name
+                                        }
+                                    </h2>
+
+                                    <p className="mt-1 text-sm text-slate-500">
+                                        {item.product.price.toLocaleString(
+                                            "ko-KR",
+                                        )}
+                                        원
+                                    </p>
+                                </div>
+
+                                <div className="flex items-center gap-3">
+                                    <button
+                                        type="button"
+                                        className="h-8 w-8 rounded-md border border-slate-200"
+                                    >
+                                        -
+                                    </button>
+
+                                    <span className="w-8 text-center text-sm">
+                                        {
+                                            item.quantity
+                                        }
+                                    </span>
+
+                                    <button
+                                        type="button"
+                                        className="h-8 w-8 rounded-md border border-slate-200"
+                                    >
+                                        +
+                                    </button>
+                                </div>
+
+                                <p className="w-28 text-right font-semibold text-slate-900">
+                                    {(
+                                        item
+                                            .product
+                                            .price *
+                                        item.quantity
+                                    ).toLocaleString(
                                         "ko-KR",
                                     )}
                                     원
                                 </p>
-                            </div>
 
-                            <button
-                                type="button"
-                                onClick={() =>
-                                    removeWishlist(
-                                        item.productId,
-                                    )
-                                }
-                                className="rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50"
-                            >
-                                삭제
-                            </button>
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        removeCart(
+                                            item.product.id,
+                                        )
+                                    }
+                                    className="text-sm text-slate-400 hover:text-slate-900"
+                                >
+                                    삭제
+                                </button>
+                            </div>
+                        ))}
+
+                        <div className="flex items-center justify-between border-t border-slate-200 pt-6">
+                            <span className="text-sm text-slate-500">
+                                총 상품 금액
+                            </span>
+
+                            <span className="text-2xl font-bold text-slate-900">
+                                {totalPrice.toLocaleString(
+                                    "ko-KR",
+                                )}
+                                원
+                            </span>
                         </div>
-                    ))}
-                </div>
-            )}
-        </div>
+                    </div>
+                )}
+            </div>
+        </main>
     );
 }

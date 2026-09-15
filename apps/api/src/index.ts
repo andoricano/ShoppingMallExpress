@@ -22,7 +22,7 @@ import adminRefundRoutes from "./routes/refund.routes.js";
 import clientPointRoutes from "./routes/client/point.routes.js";
 import clientPaymentRoutes from "./routes/client/payment.routes.js";
 import clientWishlistRoutes from "./routes/client/wishlist.router.js";
-
+import clientCartRoutes from "./routes/client/cart.routes.js";
 
 const app = express();
 const PORT: number =
@@ -114,6 +114,10 @@ app.use(
 app.use(
     "/api/client/wishlist",
     clientWishlistRoutes,
+);
+app.use(
+    "/api/client/cart",
+    clientCartRoutes,
 );
 
 // Admin Refund

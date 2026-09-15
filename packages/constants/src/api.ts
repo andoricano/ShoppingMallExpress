@@ -55,6 +55,9 @@ export const API_ENDPOINTS = {
     CLIENT_WISHLIST: {
         BASE: "/api/client/wishlist",
     },
+    CLIENT_CART: {
+        BASE: "/api/client/cart",
+    },
     // ==========================================
     // 재고 관리 - Admin
     // ==========================================
