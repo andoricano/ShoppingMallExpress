@@ -15,13 +15,14 @@ import PaymentPanel from "./payment/PaymentPanel";
 
 interface OrderSectionProps {
     onOrderSubmit: (
-        clientId: string,
-        paymentId: string,
         items: {
             productId: string;
             quantity: number;
         }[],
         shippingAddress: OrderShippingAddress,
+        productPrice: number,
+        pointAmount: number,
+        paymentPrice: number,
     ) => void;
 }
 
@@ -52,29 +53,23 @@ export function OrderSection({
     } = usePayment({
         productPrice,
     });
-
     const handleSubmit = () => {
-        if (
-            selectedItems.length === 0
-        ) {
+        if (selectedItems.length === 0) {
             return;
         }
 
         onOrderSubmit(
-            "",
-            "",
-            selectedItems.map(
-                (item) => ({
-                    productId:
-                        item.product.id,
-                    quantity:
-                        item.quantity,
-                }),
-            ),
+            selectedItems.map((item) => ({
+                productId: item.product.id,
+                quantity: item.quantity,
+            })),
             shippingAddress,
+            productPrice,
+            pointAmount,
+            paymentPrice,
         );
     };
-
+    
     return (
         <main className="min-h-screen bg-slate-50">
             <div className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 2xl:max-w-6xl">

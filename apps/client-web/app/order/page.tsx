@@ -1,29 +1,48 @@
-// app/order/page.tsx
-
 "use client";
 
+import { useRouter } from "next/navigation";
+
 import { OrderSection } from "@/components/order/OrderSection";
-import { useClientOrderApi } from "@/hooks/useClientOrderApi";
+import { usePaymentStore } from "@/store/paymentStore";
 
 export default function OrderPage() {
-  const {
-    createOrder,
-  } = useClientOrderApi();
+    const router = useRouter();
 
-  return (
-    <OrderSection
-      onOrderSubmit={(
-        clientId,
-        _paymentId,
-        items,
-        shippingAddress,
-      ) =>
-        createOrder(
-          "TEMP-PAYMENT-ID",
-          items,
-          shippingAddress,
-        )
-      }
-    />
-  );
+    const setPayment =
+        usePaymentStore(
+            (state) => state.setPayment,
+        );
+
+    const handleOrderSubmit = (
+        items: {
+            productId: string;
+            quantity: number;
+        }[],
+        shippingAddress: Parameters<
+            typeof setPayment
+        >[0]["shippingAddress"],
+        productPrice: number,
+        pointAmount: number,
+        paymentPrice: number,
+    ) => {
+        setPayment({
+            items,
+            shippingAddress,
+            productPrice,
+            pointAmount,
+            paymentPrice,
+        });
+
+        router.push(
+            "/payment",
+        );
+    };
+
+    return (
+        <OrderSection
+            onOrderSubmit={
+                handleOrderSubmit
+            }
+        />
+    );
 }
