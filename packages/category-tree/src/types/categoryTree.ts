@@ -9,5 +9,7 @@ export interface CategoryTree {
 
     depth: number;
 
+    isNew?: boolean;
+    isDeleted?: boolean;
     children: CategoryTree[];
 }

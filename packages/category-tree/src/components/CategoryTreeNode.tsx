@@ -22,6 +22,10 @@ export default function CategoryTreeNode({
     selectedId = null,
     onSelect,
 }: CategoryTreeNodeProps) {
+    if (node.isDeleted) {
+        return null;
+    }
+
     const isSelected =
         selectedId === node.id;
 
@@ -67,7 +71,8 @@ export default function CategoryTreeNode({
                                     child
                                 }
                                 depth={
-                                    depth + 1
+                                    depth +
+                                    1
                                 }
                                 selectedId={
                                     selectedId

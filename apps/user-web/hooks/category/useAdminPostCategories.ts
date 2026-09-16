@@ -11,9 +11,17 @@ import type {
     ProductPostCategory,
 } from "@mall/types";
 
+import type {
+    CategoryTree,
+} from "@mall/category-tree";
+
 import {
     API_ENDPOINTS,
 } from "@mall/constants";
+
+import {
+    flattenCategoryTree,
+} from "@/utils/postCategory";
 
 interface CreateCategoryPayload {
     parentId?: string | null;
@@ -70,22 +78,17 @@ export function useAdminPostCategories() {
                             .BASE,
                     );
 
-                if (!res.ok) {
-                    const result =
-                        await res
-                            .json()
-                            .catch(
-                                () => null,
-                            );
+                const result =
+                    await res
+                        .json()
+                        .catch(() => null);
 
+                if (!res.ok) {
                     throw new Error(
                         result?.message ||
-                            "카테고리 목록 조회에 실패했습니다.",
+                        "카테고리 목록 조회에 실패했습니다.",
                     );
                 }
-
-                const result =
-                    await res.json();
 
                 const categories =
                     Array.isArray(
@@ -122,9 +125,6 @@ export function useAdminPostCategories() {
             async (
                 data: CreateCategoryPayload,
             ) => {
-                setLoading(true);
-                setError(null);
-
                 try {
                     const res =
                         await fetch(
@@ -147,33 +147,28 @@ export function useAdminPostCategories() {
                     const result =
                         await res
                             .json()
-                            .catch(
-                                () => null,
-                            );
+                            .catch(() => null);
 
                     if (!res.ok) {
                         throw new Error(
                             result?.message ||
-                                "카테고리 생성에 실패했습니다.",
+                            "카테고리 생성에 실패했습니다.",
                         );
                     }
 
                     return (
                         result?.data as
-                            | ProductPostCategory
-                            | undefined
+                        | ProductPostCategory
+                        | undefined
                     ) ?? null;
                 } catch (err) {
-                    const message =
+                    setError(
                         err instanceof Error
                             ? err.message
-                            : "카테고리 생성에 실패했습니다.";
-
-                    setError(message);
+                            : "카테고리 생성에 실패했습니다.",
+                    );
 
                     throw err;
-                } finally {
-                    setLoading(false);
                 }
             },
             [],
@@ -189,9 +184,6 @@ export function useAdminPostCategories() {
                 categoryId: string,
                 data: UpdateCategoryPayload,
             ) => {
-                setLoading(true);
-                setError(null);
-
                 try {
                     const res =
                         await fetch(
@@ -216,33 +208,28 @@ export function useAdminPostCategories() {
                     const result =
                         await res
                             .json()
-                            .catch(
-                                () => null,
-                            );
+                            .catch(() => null);
 
                     if (!res.ok) {
                         throw new Error(
                             result?.message ||
-                                "카테고리 수정에 실패했습니다.",
+                            "카테고리 수정에 실패했습니다.",
                         );
                     }
 
                     return (
                         result?.data as
-                            | ProductPostCategory
-                            | undefined
+                        | ProductPostCategory
+                        | undefined
                     ) ?? null;
                 } catch (err) {
-                    const message =
+                    setError(
                         err instanceof Error
                             ? err.message
-                            : "카테고리 수정에 실패했습니다.";
-
-                    setError(message);
+                            : "카테고리 수정에 실패했습니다.",
+                    );
 
                     throw err;
-                } finally {
-                    setLoading(false);
                 }
             },
             [],
@@ -257,9 +244,6 @@ export function useAdminPostCategories() {
             async (
                 categoryId: string,
             ) => {
-                setLoading(true);
-                setError(null);
-
                 try {
                     const res =
                         await fetch(
@@ -276,41 +260,228 @@ export function useAdminPostCategories() {
                     const result =
                         await res
                             .json()
-                            .catch(
-                                () => null,
-                            );
+                            .catch(() => null);
 
                     if (!res.ok) {
                         throw new Error(
                             result?.message ||
-                                "카테고리 삭제에 실패했습니다.",
+                            "카테고리 삭제에 실패했습니다.",
                         );
                     }
 
                     return (
                         result?.data as
-                            | ProductPostCategory
-                            | undefined
+                        | ProductPostCategory
+                        | undefined
                     ) ?? null;
                 } catch (err) {
-                    const message =
+                    setError(
                         err instanceof Error
                             ? err.message
-                            : "카테고리 삭제에 실패했습니다.";
+                            : "카테고리 삭제에 실패했습니다.",
+                    );
 
-                    setError(message);
+                    throw err;
+                }
+            },
+            [],
+        );
+
+    // ==========================================
+    // 5. Category 전체 저장
+    //
+    // CategoryTreeEditor에서 전달받은
+    // 수정 Tree를 기준으로
+    // CREATE / UPDATE / DELETE 처리
+    // ==========================================
+
+    const saveCategories =
+        useCallback(
+            async (
+                tree: CategoryTree[],
+            ) => {
+                setLoading(true);
+                setError(null);
+
+                try {
+                    const editedCategories =
+                        flattenCategoryTree(
+                            tree,
+                        );
+
+                    const originalMap =
+                        new Map(
+                            categoryList.map(
+                                (category) => [
+                                    category.id,
+                                    category,
+                                ],
+                            ),
+                        );
+
+                    // ------------------------------------------
+                    // CREATE
+                    // ------------------------------------------
+
+                    const newCategories =
+                        editedCategories
+                            .filter(
+                                (category) =>
+                                    category.isNew &&
+                                    !category.isDeleted,
+                            )
+                            .sort(
+                                (a, b) =>
+                                    a.depth -
+                                    b.depth,
+                            );
+
+                    const newIdMap =
+                        new Map<
+                            string,
+                            string
+                        >();
+
+                    for (const category of newCategories) {
+                        const parentId =
+                            category.parentId
+                                ? newIdMap.get(
+                                    category.parentId,
+                                ) ??
+                                category.parentId
+                                : null;
+
+                        const randomValue =
+                            Math.floor(
+                                Math.random() *
+                                100000,
+                            );
+
+                        const created =
+                            await createCategory(
+                                {
+                                    name:
+                                        category.name,
+                                    slug:
+                                        `category-${randomValue}`,
+                                    parentId,
+                                    depth:
+                                        category.depth,
+                                    displayOrder:
+                                        0,
+                                    isActive:
+                                        true,
+                                },
+                            );
+
+                        if (!created) {
+                            throw new Error(
+                                "카테고리 생성에 실패했습니다.",
+                            );
+                        }
+
+                        newIdMap.set(
+                            category.id,
+                            created.id,
+                        );
+                    }
+
+                    // ------------------------------------------
+                    // UPDATE
+                    // ------------------------------------------
+
+                    for (const category of editedCategories) {
+                        if (
+                            category.isNew ||
+                            category.isDeleted
+                        ) {
+                            continue;
+                        }
+
+                        const original =
+                            originalMap.get(
+                                category.id,
+                            );
+
+                        if (!original) {
+                            continue;
+                        }
+
+                        const changed =
+                            original.name !==
+                            category.name ||
+                            original.parentId !==
+                            category.parentId ||
+                            original.depth !==
+                            category.depth;
+
+                        if (!changed) {
+                            continue;
+                        }
+
+                        await updateCategory(
+                            category.id,
+                            {
+                                name:
+                                    category.name,
+                                parentId:
+                                    category.parentId,
+                                depth:
+                                    category.depth,
+                            },
+                        );
+                    }
+
+                    // ------------------------------------------
+                    // DELETE
+                    // ------------------------------------------
+
+                    const deletedIds =
+                        editedCategories
+                            .filter(
+                                (category) =>
+                                    category.isDeleted &&
+                                    !category.isNew,
+                            )
+                            .map(
+                                (category) =>
+                                    category.id,
+                            );
+
+                    for (const id of deletedIds) {
+                        await deleteCategory(
+                            id,
+                        );
+                    }
+
+                    // ------------------------------------------
+                    // 서버 상태 갱신
+                    // ------------------------------------------
+
+                    await fetchCategories();
+                } catch (err) {
+                    setError(
+                        err instanceof Error
+                            ? err.message
+                            : "카테고리 저장에 실패했습니다.",
+                    );
 
                     throw err;
                 } finally {
                     setLoading(false);
                 }
             },
-            [],
+            [
+                categoryList,
+                createCategory,
+                updateCategory,
+                deleteCategory,
+                fetchCategories,
+            ],
         );
 
     return {
         categoryList,
-
         loading,
         error,
 
@@ -318,5 +489,6 @@ export function useAdminPostCategories() {
         createCategory,
         updateCategory,
         deleteCategory,
+        saveCategories,
     };
 }

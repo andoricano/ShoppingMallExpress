@@ -11,54 +11,11 @@ import {
 
 import type { CategoryTree } from "../types/categoryTree";
 
-function findCategory(
-    nodes: CategoryTree[],
-    id: string,
-): CategoryTree | null {
-    for (const node of nodes) {
-        if (node.id === id) {
-            return node;
-        }
-
-        const found = findCategory(
-            node.children,
-            id,
-        );
-
-        if (found) {
-            return found;
-        }
-    }
-
-    return null;
-}
-
-function updateCategory(
-    nodes: CategoryTree[],
-    id: string,
-    updater: (
-        node: CategoryTree,
-    ) => CategoryTree,
-): CategoryTree[] {
-    return nodes.map((node) => {
-        if (node.id === id) {
-            return updater(node);
-        }
-
-        if (node.children.length === 0) {
-            return node;
-        }
-
-        return {
-            ...node,
-            children: updateCategory(
-                node.children,
-                id,
-                updater,
-            ),
-        };
-    });
-}
+import {
+    addCategoryChild,
+    findCategory,
+    updateCategory,
+} from "../utils/categoryUtil";
 
 export function useCategoryTreeEditor(
     initialTree: CategoryTree[] = [],
@@ -77,10 +34,30 @@ export function useCategoryTreeEditor(
         null,
     );
 
+    const [
+        undoStack,
+        setUndoStack,
+    ] = useState<CategoryTree[][]>(
+        [],
+    );
+
+    const [
+        redoStack,
+        setRedoStack,
+    ] = useState<CategoryTree[][]>(
+        [],
+    );
+
     useEffect(() => {
         setTree(initialTree);
         setSelectedId(null);
+        setUndoStack([]);
+        setRedoStack([]);
     }, [initialTree]);
+
+    // ==========================================
+    // Selected Category
+    // ==========================================
 
     const selectedNode = useMemo(
         () => {
@@ -96,6 +73,10 @@ export function useCategoryTreeEditor(
         [tree, selectedId],
     );
 
+    // ==========================================
+    // Category 선택
+    // ==========================================
+
     const selectCategory =
         useCallback(
             (id: string) => {
@@ -103,6 +84,12 @@ export function useCategoryTreeEditor(
             },
             [],
         );
+
+    // ==========================================
+    // 이름 수정
+    //
+    // Undo / Redo 기록하지 않음
+    // ==========================================
 
     const updateSelectedName =
         useCallback(
@@ -127,56 +114,184 @@ export function useCategoryTreeEditor(
 
     // ==========================================
     // 하위 Category 추가
+    //
+    // Undo 기록
     // ==========================================
+
     const addChildCategory =
         useCallback(() => {
-            if (!selectedId) {
+            if (!selectedNode) {
                 return;
             }
 
-            const parent =
-                findCategory(
-                    tree,
-                    selectedId,
-                );
-
-            if (!parent) {
-                return;
-            }
-
-            if (parent.depth >= 3) {
+            if (selectedNode.depth >= 3) {
                 return;
             }
 
             const child: CategoryTree = {
                 id: crypto.randomUUID(),
-                parentId: parent.id,
+                parentId: selectedNode.id,
                 name: "새 카테고리",
-                depth: parent.depth + 1,
+                depth:
+                    selectedNode.depth + 1,
+                isNew: true,
                 children: [],
             };
+
+            setUndoStack((current) => [
+                ...current,
+                tree,
+            ]);
+
+            setRedoStack([]);
+
+            const nextTree =
+                addCategoryChild(
+                    tree,
+                    selectedNode.id,
+                    child,
+                );
+
+            setTree(nextTree);
+            setSelectedId(child.id);
+        }, [selectedNode, tree]);
+
+    // ==========================================
+    // Category 삭제
+    //
+    // 기존 Category:
+    //   isDeleted = true
+    //
+    // 새 Category:
+    //   Tree에서 제거
+    //
+    // Undo 기록
+    // ==========================================
+
+    const deleteSelectedCategory =
+        useCallback(() => {
+            if (!selectedNode) {
+                return;
+            }
+
+            setUndoStack((current) => [
+                ...current,
+                tree,
+            ]);
+
+            setRedoStack([]);
+
+            if (selectedNode.isNew) {
+                const parent =
+                    findCategory(
+                        tree,
+                        selectedNode.parentId ??
+                        "",
+                    );
+
+                if (!parent) {
+                    return;
+                }
+
+                setTree((current) =>
+                    updateCategory(
+                        current,
+                        parent.id,
+                        (node) => ({
+                            ...node,
+                            children:
+                                node.children.filter(
+                                    (child) =>
+                                        child.id !==
+                                        selectedNode.id,
+                                ),
+                        }),
+                    ),
+                );
+
+                setSelectedId(null);
+
+                return;
+            }
 
             setTree((current) =>
                 updateCategory(
                     current,
-                    selectedId,
+                    selectedNode.id,
                     (node) => ({
                         ...node,
-                        children: [
-                            ...node.children,
-                            child,
-                        ],
+                        isDeleted: true,
                     }),
                 ),
             );
 
-            setSelectedId(child.id);
-        }, [selectedId, tree]);
+            setSelectedId(null);
+        }, [selectedNode, tree]);
+
+    // ==========================================
+    // Undo
+    // ==========================================
+
+    const undo = useCallback(() => {
+        const previous =
+            undoStack.at(-1);
+
+        if (!previous) {
+            return;
+        }
+
+        setUndoStack((current) =>
+            current.slice(0, -1),
+        );
+
+        setRedoStack((current) => [
+            tree,
+            ...current,
+        ]);
+
+        setTree(previous);
+        setSelectedId(null);
+    }, [undoStack, tree]);
+
+    // ==========================================
+    // Redo
+    // ==========================================
+
+    const redo = useCallback(() => {
+        const next =
+            redoStack[0];
+
+        if (!next) {
+            return;
+        }
+
+        setRedoStack((current) =>
+            current.slice(1),
+        );
+
+        setUndoStack((current) => [
+            ...current,
+            tree,
+        ]);
+
+        setTree(next);
+        setSelectedId(null);
+    }, [redoStack, tree]);
+
+    // ==========================================
+    // 초기화
+    // ==========================================
 
     const reset = useCallback(() => {
         setTree(initialTree);
         setSelectedId(null);
+        setUndoStack([]);
+        setRedoStack([]);
     }, [initialTree]);
+
+    // ==========================================
+    // 변경 여부
+    // ==========================================
 
     const hasChanges = useMemo(
         () =>
@@ -194,19 +309,19 @@ export function useCategoryTreeEditor(
 
         hasChanges,
 
+        canUndo:
+            undoStack.length > 0,
+
+        canRedo:
+            redoStack.length > 0,
+
         selectCategory,
         updateSelectedName,
         addChildCategory,
+        deleteSelectedCategory,
 
+        undo,
+        redo,
         reset,
     };
-}
-
-function getDepth(
-    node: CategoryTree,
-): number {
-    let depth = 1;
-    let current = node;
-
-    return depth;
 }

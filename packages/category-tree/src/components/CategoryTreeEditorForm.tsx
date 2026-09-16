@@ -1,4 +1,4 @@
-// packages/category-tree/src/components/CategoryTreePanel.tsx
+// packages/category-tree/src/components/CategoryTreeEditorForm.tsx
 
 "use client";
 
@@ -9,7 +9,7 @@ import {
 
 import type { CategoryTree } from "../types/categoryTree";
 
-interface CategoryTreePanelProps {
+interface CategoryTreeEditorFormProps {
     node: CategoryTree | null;
 
     onSaveName?: (
@@ -21,12 +21,12 @@ interface CategoryTreePanelProps {
     onDelete?: () => void;
 }
 
-export default function CategoryTreePanel({
+export default function CategoryTreeEditorForm({
     node,
     onSaveName,
     onAddChild,
     onDelete,
-}: CategoryTreePanelProps) {
+}: CategoryTreeEditorFormProps) {
     const [
         name,
         setName,
@@ -60,7 +60,7 @@ export default function CategoryTreePanel({
             </header>
 
             <div className="space-y-5">
-                {/* Category Name */}
+                {/* Name */}
                 <div>
                     <label
                         htmlFor="category-name"
@@ -75,11 +75,10 @@ export default function CategoryTreePanel({
                         value={name}
                         onChange={(event) =>
                             setName(
-                                event.target
-                                    .value,
+                                event.target.value,
                             )
                         }
-                        className="mt-2 w-full rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none transition-colors focus:border-slate-400"
+                        className="mt-2 w-full rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none focus:border-slate-400"
                     />
                 </div>
 
@@ -106,6 +105,17 @@ export default function CategoryTreePanel({
                     </p>
                 </div>
 
+                {/* Depth */}
+                <div>
+                    <p className="text-xs font-medium text-slate-400">
+                        Depth
+                    </p>
+
+                    <p className="mt-1 text-xs text-slate-600">
+                        {node.depth}
+                    </p>
+                </div>
+
                 {/* Actions */}
                 <div className="space-y-2 pt-2">
                     <button
@@ -118,17 +128,20 @@ export default function CategoryTreePanel({
                                 name,
                             )
                         }
-                        className="w-full rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40"
+                        className="w-full rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40"
                     >
                         이름 저장
                     </button>
 
                     <button
                         type="button"
+                        disabled={
+                            node.depth >= 3
+                        }
                         onClick={
                             onAddChild
                         }
-                        className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+                        className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
                     >
                         하위 카테고리 추가
                     </button>
@@ -138,7 +151,7 @@ export default function CategoryTreePanel({
                         onClick={
                             onDelete
                         }
-                        className="w-full rounded-md border border-red-200 px-3 py-2 text-sm font-medium text-red-500 transition-colors hover:bg-red-50"
+                        className="w-full rounded-md border border-red-200 px-3 py-2 text-sm font-medium text-red-500 hover:bg-red-50"
                     >
                         카테고리 삭제
                     </button>

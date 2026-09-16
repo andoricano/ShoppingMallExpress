@@ -3,76 +3,21 @@
 "use client";
 
 import {
-    useCallback,
     useEffect,
     useMemo,
 } from "react";
-
-
-import CategoryTab from "@/component/post/category/CategoryTab";
-import {
-    useAdminPostCategories,
-} from "@/hooks/category/useAdminPostCategories";
-
-import type {
-    ProductPostCategory,
-} from "@mall/types";
 
 import {
     CategoryTreeEditor,
 } from "@mall/category-tree";
 
-import type {
-    CategoryTree,
-} from "@mall/category-tree";
-function toCategoryTree(
-    categories: ProductPostCategory[],
-): CategoryTree[] {
-    const nodeMap = new Map<
-        string,
-        CategoryTree
-    >();
+import {
+    useAdminPostCategories,
+} from "@/hooks/category/useAdminPostCategories";
 
-    for (const category of categories) {
-        nodeMap.set(category.id, {
-            id: category.id,
-            parentId: category.parentId,
-            name: category.name,
-            depth: category.depth,
-            children: [],
-        });
-    }
-
-    const roots: CategoryTree[] = [];
-
-    for (const category of categories) {
-        const node =
-            nodeMap.get(category.id);
-
-        if (!node) {
-            continue;
-        }
-
-        if (!category.parentId) {
-            roots.push(node);
-            continue;
-        }
-
-        const parent =
-            nodeMap.get(
-                category.parentId,
-            );
-
-        if (!parent) {
-            roots.push(node);
-            continue;
-        }
-
-        parent.children.push(node);
-    }
-
-    return roots;
-}
+import {
+    toCategoryTree,
+} from "@/utils/postCategory";
 
 export default function PostsPage() {
     const {
@@ -80,9 +25,7 @@ export default function PostsPage() {
         loading,
         error,
         fetchCategories,
-        createCategory,
-        updateCategory,
-        deleteCategory,
+        saveCategories,
     } =
         useAdminPostCategories();
 
@@ -99,30 +42,6 @@ export default function PostsPage() {
             [categoryList],
         );
 
-    const handleCreateCategory =
-        useCallback(async () => {
-            const randomValue =
-                Math.floor(
-                    Math.random() *
-                    100000,
-                );
-
-            await createCategory({
-                name: `카테고리 ${randomValue}`,
-                slug: `category-${randomValue}`,
-                depth: 1,
-                displayOrder:
-                    categoryList.length,
-                isActive: true,
-            });
-
-            await fetchCategories();
-        }, [
-            categoryList.length,
-            createCategory,
-            fetchCategories,
-        ]);
-
     return (
         <div className="w-full">
             <header className="mb-8">
@@ -137,7 +56,7 @@ export default function PostsPage() {
 
             {loading && (
                 <p className="text-sm text-slate-500">
-                    카테고리 불러오는 중...
+                    카테고리 처리 중...
                 </p>
             )}
 
@@ -149,8 +68,9 @@ export default function PostsPage() {
 
             {!loading && !error && (
                 <CategoryTreeEditor
-                    nodes={
-                        categoryTree
+                    nodes={categoryTree}
+                    onSave={
+                        saveCategories
                     }
                 />
             )}
