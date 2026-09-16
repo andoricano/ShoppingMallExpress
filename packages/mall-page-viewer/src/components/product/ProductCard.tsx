@@ -1,5 +1,7 @@
 "use client";
 
+import { Heart } from "lucide-react";
+
 import type { ProductCardData } from "../../types/mainPage";
 
 interface ProductCardProps {
@@ -34,7 +36,8 @@ export function ProductCard({
 
     const hasDiscount =
         cardType === "DISCOUNT" &&
-        typeof product.discount === "number" &&
+        typeof product.discount ===
+            "number" &&
         product.discount > 0;
 
     return (
@@ -71,12 +74,18 @@ export function ProductCard({
                         onClick={
                             handleWishlistClick
                         }
-                        className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-lg shadow-sm"
+                        className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 shadow-sm transition-transform hover:scale-105"
                         aria-label="관심상품"
                     >
-                        {isWishlisted
-                            ? "♥"
-                            : "♡"}
+                        <Heart
+                            className={[
+                                "h-5 w-5 transition-colors",
+                                isWishlisted
+                                    ? "fill-rose-500 text-rose-500"
+                                    : "text-slate-400",
+                            ].join(" ")}
+                            strokeWidth={2}
+                        />
                     </button>
                 )}
             </div>
@@ -117,7 +126,8 @@ export function ProductCard({
 
                 {/* Tags */}
                 {product.tags &&
-                    product.tags.length > 0 && (
+                    product.tags.length >
+                        0 && (
                         <div className="mt-3 flex flex-wrap gap-1.5">
                             {product.tags.map(
                                 (tag) => (

@@ -2,14 +2,11 @@
 
 import { useEffect } from "react";
 
-import { useCartStore } from "@/store/cartStore";
 import { useClientAuthStore } from "@/store/useClientAuthStore";
+import { useCart } from "@/hooks/user/useCart";
+import { useWishlist } from "@/hooks/user/useWishlist";
 
 export function Initializer() {
-    const items = useCartStore(
-        (state) => state.items,
-    );
-
     const getSession =
         useClientAuthStore(
             (state) => state.getSession,
@@ -24,6 +21,14 @@ export function Initializer() {
         useClientAuthStore(
             (state) => state.authUserId,
         );
+
+    const {
+        fetchCart,
+    } = useCart();
+
+    const {
+        fetchWishlist,
+    } = useWishlist();
 
     useEffect(() => {
         const initializeAuth =
@@ -43,18 +48,20 @@ export function Initializer() {
             return;
         }
 
-        getProfile();
+        const initializeClient =
+            async () => {
+                await getProfile();
+                await fetchCart();
+                await fetchWishlist();
+            };
+
+        initializeClient();
     }, [
         authUserId,
         getProfile,
+        fetchCart,
+        fetchWishlist,
     ]);
-
-    useEffect(() => {
-        console.log(
-            "[Initializer] Cart initialized:",
-            items,
-        );
-    }, [items]);
 
     return null;
 }

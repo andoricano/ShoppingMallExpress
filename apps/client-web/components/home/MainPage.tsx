@@ -1,10 +1,6 @@
 "use client";
 
 import {
-    useEffect,
-} from "react";
-
-import {
     BusinessInfoFooter,
     HeroBanner,
     ProductSection,
@@ -16,12 +12,11 @@ import type { ProductPost } from "@mall/types";
 
 import { useMainPage } from "@/hooks/useMainPage";
 import { useWishlist } from "@/hooks/user/useWishlist";
+import { useClientAuthStore } from "@/store/useClientAuthStore";
 
 interface MainPageProps {
     config: PageConfig;
-
     postList: ProductPost[];
-
     loading: boolean;
     error: string | null;
 }
@@ -41,9 +36,13 @@ export default function MainPage({
         postList,
     });
 
+    const authUserId =
+        useClientAuthStore(
+            (state) => state.authUserId,
+        );
+
     const {
         wishlist,
-        fetchWishlist,
         addWishlist,
         removeWishlist,
     } = useWishlist();
@@ -76,10 +75,6 @@ export default function MainPage({
             productPostId,
         );
     };
-
-    useEffect(() => {
-        fetchWishlist();
-    }, [fetchWishlist]);
 
     if (loading) {
         return (
@@ -116,19 +111,24 @@ export default function MainPage({
                                     onNavigate={
                                         handleNavigate
                                     }
-                                    isWishlisted={(
-                                        productPostId,
-                                    ) =>
-                                        wishlist.some(
-                                            (
-                                                item,
-                                            ) =>
-                                                item.productPostId ===
-                                                productPostId,
-                                        )
+                                    isWishlisted={
+                                        authUserId
+                                            ? (
+                                                  productPostId,
+                                              ) =>
+                                                  wishlist.some(
+                                                      (
+                                                          item,
+                                                      ) =>
+                                                          item.productPostId ===
+                                                          productPostId,
+                                                  )
+                                            : undefined
                                     }
                                     onWishlistClick={
-                                        handleWishlistClick
+                                        authUserId
+                                            ? handleWishlistClick
+                                            : undefined
                                     }
                                 />
                             );

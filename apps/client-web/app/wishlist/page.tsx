@@ -1,7 +1,5 @@
 "use client";
 
-import { useEffect } from "react";
-
 import WishlistBox from "@/components/wishlist/WishlistBox";
 import { useWishlist } from "@/hooks/user/useWishlist";
 
@@ -10,13 +8,8 @@ export default function WishlistPage() {
         wishlist,
         loading,
         error,
-        fetchWishlist,
         removeWishlist,
     } = useWishlist();
-
-    useEffect(() => {
-        fetchWishlist();
-    }, [fetchWishlist]);
 
     const handleItemClick = (
         productPostId: string,

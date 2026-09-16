@@ -7,23 +7,39 @@ import {
     useState,
 } from "react";
 
-
 import {
     API_ENDPOINTS,
 } from "@mall/constants";
 
+import type { Wishlist } from "@mall/types";
+
 import { authProfile } from "@/lib/authClient";
-import { Wishlist } from "@mall/types";
+import { useWishlistStore } from "@/store/wishlistStore";
 
 const API_BASE_URL =
     process.env.NEXT_PUBLIC_API_URL ||
     "http://localhost:8080";
 
 export function useWishlist() {
-    const [
-        wishlist,
-        setWishlist,
-    ] = useState<Wishlist[]>([]);
+    const wishlist =
+        useWishlistStore(
+            (state) => state.items,
+        );
+
+    const setItems =
+        useWishlistStore(
+            (state) => state.setItems,
+        );
+
+    const addItem =
+        useWishlistStore(
+            (state) => state.addItem,
+        );
+
+    const removeItem =
+        useWishlistStore(
+            (state) => state.removeItem,
+        );
 
     const [
         loading,
@@ -72,12 +88,14 @@ export function useWishlist() {
                 const result =
                     await response
                         .json()
-                        .catch(() => null);
+                        .catch(
+                            () => null,
+                        );
 
                 if (!response.ok) {
                     throw new Error(
                         result?.message ||
-                        "관심상품을 불러오지 못했습니다.",
+                            "관심상품을 불러오지 못했습니다.",
                     );
                 }
 
@@ -88,7 +106,7 @@ export function useWishlist() {
                         ? (result.data as Wishlist[])
                         : [];
 
-                setWishlist(data);
+                setItems(data);
 
                 return data;
             } catch (err) {
@@ -103,13 +121,13 @@ export function useWishlist() {
                 );
 
                 setError(message);
-                setWishlist([]);
 
                 return [];
             } finally {
                 setLoading(false);
             }
-        }, []);
+        }, [setItems]);
+
     // ==========================================
     // 2. Wishlist 추가
     // ==========================================
@@ -145,9 +163,10 @@ export function useWishlist() {
                                     Authorization:
                                         `Bearer ${session.access_token}`,
                                 },
-                                body: JSON.stringify({
-                                    productPostId,
-                                }),
+                                body:
+                                    JSON.stringify({
+                                        productPostId,
+                                    }),
                             },
                         );
 
@@ -161,22 +180,17 @@ export function useWishlist() {
                     if (!response.ok) {
                         throw new Error(
                             result?.message ||
-                            "관심상품 등록에 실패했습니다.",
+                                "관심상품 등록에 실패했습니다.",
                         );
                     }
 
                     const item =
                         result?.data as
-                        | Wishlist
-                        | undefined;
+                            | Wishlist
+                            | undefined;
 
                     if (item) {
-                        setWishlist(
-                            (current) => [
-                                item,
-                                ...current,
-                            ],
-                        );
+                        addItem(item);
                     }
 
                     return item ?? null;
@@ -198,7 +212,7 @@ export function useWishlist() {
                     setLoading(false);
                 }
             },
-            [],
+            [addItem],
         );
 
     // ==========================================
@@ -247,17 +261,12 @@ export function useWishlist() {
                     if (!response.ok) {
                         throw new Error(
                             result?.message ||
-                            "관심상품 삭제에 실패했습니다.",
+                                "관심상품 삭제에 실패했습니다.",
                         );
                     }
 
-                    setWishlist(
-                        (current) =>
-                            current.filter(
-                                (item) =>
-                                    item.productPostId !==
-                                    productPostId,
-                            ),
+                    removeItem(
+                        productPostId,
                     );
 
                     return true;
@@ -279,8 +288,9 @@ export function useWishlist() {
                     setLoading(false);
                 }
             },
-            [],
+            [removeItem],
         );
+
     // ==========================================
     // 4. Wishlist 여부
     // ==========================================

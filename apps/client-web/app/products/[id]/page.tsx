@@ -15,6 +15,7 @@ import { ProductPostSection } from "@/components/product/post/ProductPostSection
 export default function ProductDetailPage() {
     const params =
         useParams<{ id: string }>();
+
     const productPostId =
         params.id;
 
@@ -28,7 +29,6 @@ export default function ProductDetailPage() {
 
     const {
         wishlist,
-        fetchWishlist,
         addWishlist,
         removeWishlist,
     } = useWishlist();
@@ -46,11 +46,10 @@ export default function ProductDetailPage() {
         if (productPostId) {
             fetchPost(productPostId);
         }
-    }, [productPostId, fetchPost]);
-
-    useEffect(() => {
-        fetchWishlist();
-    }, [fetchWishlist]);
+    }, [
+        productPostId,
+        fetchPost,
+    ]);
 
     useEffect(() => {
         const handleScroll = () => {
@@ -73,6 +72,7 @@ export default function ProductDetailPage() {
             );
         };
     }, []);
+
     const handleWishlistClick =
         async () => {
             if (!productPostId) {
@@ -99,19 +99,20 @@ export default function ProductDetailPage() {
             );
         };
 
-    const handleCartClick = async () => {
-        const product =
-            products[0];
+    const handleCartClick =
+        async () => {
+            const product =
+                products[0];
 
-        if (!product) {
-            return;
-        }
+            if (!product) {
+                return;
+            }
 
-        await addCart(
-            product.id,
-            1,
-        );
-    };
+            await addCart(
+                product.id,
+                1,
+            );
+        };
 
     const handlePurchase = () => {
         document
