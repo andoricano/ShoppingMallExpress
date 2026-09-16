@@ -7,20 +7,37 @@ import {
     useState,
 } from "react";
 
+import {
+    useRouter,
+} from "next/navigation";
+
 import CartListSection from "@/components/cart/CartListSection";
 import CartProductsResult from "@/components/cart/CartProductsResult";
 
 import { useCart } from "@/hooks/user/useCart";
+import { useCartStore } from "@/store/cartStore";
 
 import type { CartItem } from "@mall/types";
 
 export default function CartPage() {
+    const router = useRouter();
+
     const {
         cart,
         loading,
         error,
         fetchCart,
     } = useCart();
+
+    const clearCart =
+        useCartStore(
+            (state) => state.clearCart,
+        );
+
+    const addItems =
+        useCartStore(
+            (state) => state.addItems,
+        );
 
     const [
         editedCart,
@@ -43,6 +60,13 @@ export default function CartPage() {
                 item.quantity,
             0,
         );
+
+    const handleOrder = () => {
+        clearCart();
+        addItems(editedCart);
+
+        router.push("/order");
+    };
 
     if (loading) {
         return (
@@ -72,9 +96,8 @@ export default function CartPage() {
 
                 {editedCart.length > 0 && (
                     <CartProductsResult
-                        totalPrice={
-                            totalPrice
-                        }
+                        totalPrice={totalPrice}
+                        onOrder={handleOrder}
                     />
                 )}
             </div>
