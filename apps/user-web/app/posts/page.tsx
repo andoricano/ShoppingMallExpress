@@ -5,13 +5,74 @@
 import {
     useCallback,
     useEffect,
-    useState,
+    useMemo,
 } from "react";
 
-import CategoryTab from "@/component/post/category/CategoryTab";
-import { useAdminPostCategories } from "@/hooks/category/useAdminPostCategories";
 
-import type { ProductPostCategory } from "@mall/types";
+import CategoryTab from "@/component/post/category/CategoryTab";
+import {
+    useAdminPostCategories,
+} from "@/hooks/category/useAdminPostCategories";
+
+import type {
+    ProductPostCategory,
+} from "@mall/types";
+
+import {
+    CategoryTreeEditor,
+} from "@mall/category-tree";
+
+import type {
+    CategoryTree,
+} from "@mall/category-tree";
+function toCategoryTree(
+    categories: ProductPostCategory[],
+): CategoryTree[] {
+    const nodeMap = new Map<
+        string,
+        CategoryTree
+    >();
+
+    for (const category of categories) {
+        nodeMap.set(category.id, {
+            id: category.id,
+            parentId: category.parentId,
+            name: category.name,
+            depth: category.depth,
+            children: [],
+        });
+    }
+
+    const roots: CategoryTree[] = [];
+
+    for (const category of categories) {
+        const node =
+            nodeMap.get(category.id);
+
+        if (!node) {
+            continue;
+        }
+
+        if (!category.parentId) {
+            roots.push(node);
+            continue;
+        }
+
+        const parent =
+            nodeMap.get(
+                category.parentId,
+            );
+
+        if (!parent) {
+            roots.push(node);
+            continue;
+        }
+
+        parent.children.push(node);
+    }
+
+    return roots;
+}
 
 export default function PostsPage() {
     const {
@@ -22,31 +83,28 @@ export default function PostsPage() {
         createCategory,
         updateCategory,
         deleteCategory,
-    } = useAdminPostCategories();
-
-    const [
-        editedCategories,
-        setEditedCategories,
-    ] = useState<ProductPostCategory[]>(
-        [],
-    );
+    } =
+        useAdminPostCategories();
 
     useEffect(() => {
         fetchCategories();
     }, [fetchCategories]);
 
-    useEffect(() => {
-        setEditedCategories(
-            categoryList,
+    const categoryTree =
+        useMemo(
+            () =>
+                toCategoryTree(
+                    categoryList,
+                ),
+            [categoryList],
         );
-    }, [categoryList]);
 
     const handleCreateCategory =
         useCallback(async () => {
             const randomValue =
                 Math.floor(
                     Math.random() *
-                        100000,
+                    100000,
                 );
 
             await createCategory({
@@ -89,16 +147,10 @@ export default function PostsPage() {
                 </p>
             )}
 
-            {!loading && (
-                <CategoryTab
-                    categories={
-                        categoryList
-                    }
-                    onChange={
-                        setEditedCategories
-                    }
-                    onCreate={
-                        handleCreateCategory
+            {!loading && !error && (
+                <CategoryTreeEditor
+                    nodes={
+                        categoryTree
                     }
                 />
             )}

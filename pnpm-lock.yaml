@@ -241,6 +241,9 @@ importers:
 
   apps/user-web:
     dependencies:
+      '@mall/category-tree':
+        specifier: workspace:*
+        version: link:../../packages/category-tree
       '@mall/constants':
         specifier: workspace:*
         version: link:../../packages/constants
@@ -314,6 +317,19 @@ importers:
       typescript:
         specifier: ^5
         version: 5.9.2
+
+  packages/category-tree:
+    dependencies:
+      react:
+        specifier: ^19.0.0
+        version: 19.2.8
+    devDependencies:
+      '@types/react':
+        specifier: ^19.0.0
+        version: 19.2.18
+      '@types/react-dom':
+        specifier: ^19.0.0
+        version: 19.2.4(@types/react@19.2.18)
 
   packages/constants: {}
 
