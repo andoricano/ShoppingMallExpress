@@ -20,7 +20,7 @@ export interface ProductPostCategory {
 
     isActive: boolean;
 
-    productPosts: ProductPostCategoryItem[];
+    productPosts?: ProductPostCategoryItem[];
 
     createdAt: string;
     updatedAt: string;

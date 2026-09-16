@@ -7,3 +7,7 @@ export type {
 export {
     default as CategoryTreeEditor,
 } from "./components/CategoryTreeEditor";
+
+export {
+    default as CategoryTreeView,
+} from "./components/CategoryTreeView";

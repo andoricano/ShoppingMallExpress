@@ -1,46 +1,43 @@
-// app/posts/page.tsx
-
 "use client";
 
-import {
-    useEffect,
-    useMemo,
-} from "react";
+import { useEffect, useMemo } from "react";
 
-import {
-    CategoryTreeEditor,
-} from "@mall/category-tree";
+import { useAdminPostCategories } from "@/hooks/category/useAdminPostCategories";
 
-import {
-    useAdminPostCategories,
-} from "@/hooks/category/useAdminPostCategories";
-
-import {
-    toCategoryTree,
-} from "@/utils/postCategory";
+import { toCategoryTree } from "@/utils/postCategory";
+import PostCategoryView from "@/component/post/category/PostCategoryView";
+import { useAdminPostProducts } from "@/hooks/products/useAdminPostProducts";
 
 export default function PostsPage() {
     const {
+        postList,
+        loading: postLoading,
+        error: postError,
+        fetchPosts,
+    } = useAdminPostProducts();
+
+    const {
         categoryList,
-        loading,
-        error,
+        loading: categoryLoading,
+        error: categoryError,
         fetchCategories,
-        saveCategories,
-    } =
-        useAdminPostCategories();
+    } = useAdminPostCategories();
 
     useEffect(() => {
+        fetchPosts();
         fetchCategories();
-    }, [fetchCategories]);
+    }, [fetchPosts, fetchCategories]);
 
-    const categoryTree =
-        useMemo(
-            () =>
-                toCategoryTree(
-                    categoryList,
-                ),
-            [categoryList],
-        );
+    const categoryTree = useMemo(
+        () => toCategoryTree(categoryList),
+        [categoryList],
+    );
+
+    const loading =
+        postLoading || categoryLoading;
+
+    const error =
+        postError || categoryError;
 
     return (
         <div className="w-full">
@@ -50,13 +47,13 @@ export default function PostsPage() {
                 </h1>
 
                 <p className="mt-1 text-sm text-slate-500">
-                    상품 게시물과 카테고리를 관리합니다.
+                    상품 게시물의 카테고리를 관리합니다.
                 </p>
             </header>
 
             {loading && (
                 <p className="text-sm text-slate-500">
-                    카테고리 처리 중...
+                    게시물과 카테고리를 불러오는 중...
                 </p>
             )}
 
@@ -67,11 +64,8 @@ export default function PostsPage() {
             )}
 
             {!loading && !error && (
-                <CategoryTreeEditor
-                    nodes={categoryTree}
-                    onSave={
-                        saveCategories
-                    }
+                <PostCategoryView
+                    categories={categoryTree}
                 />
             )}
         </div>
