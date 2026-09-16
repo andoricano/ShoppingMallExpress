@@ -12,3 +12,4 @@ export * from './history.js';
 export * from './refund.js';
 export * from './point.js';
 export * from './wishlist.js';
+export * from './category.js';

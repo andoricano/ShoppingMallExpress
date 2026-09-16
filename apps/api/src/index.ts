@@ -9,7 +9,7 @@ import cors from "cors";
 
 import inventoryRoutes from "./routes/inventory.routes.js";
 import productPostRoutes from "./routes/productPost.routes.js";
-import categoryRoutes from "./routes/category.routes.js";
+import categoryRoutes from "./routes/productPostCategory.routes.js";
 import orderRoutes from "./routes/order.routes.js";
 import displayRoutes from "./routes/client/display.routes.js";
 import clientOrderRoutes from "./routes/client/order.routes.js";
@@ -23,6 +23,8 @@ import clientPointRoutes from "./routes/client/point.routes.js";
 import clientPaymentRoutes from "./routes/client/payment.routes.js";
 import clientWishlistRoutes from "./routes/client/wishlist.router.js";
 import clientCartRoutes from "./routes/client/cart.routes.js";
+import productPostCategoryRoutes from "./routes/productPostCategory.routes.js";
+
 
 const app = express();
 const PORT: number =
@@ -78,6 +80,11 @@ app.use(
 app.use(
     "/api",
     productPostRoutes,
+);
+
+app.use(
+    "/api/admin/product-post-categories",
+    productPostCategoryRoutes,
 );
 
 // Client ProductPost

@@ -112,16 +112,10 @@ export const API_ENDPOINTS = {
     // ==========================================
     // 카테고리 관리
     // ==========================================
-    CATEGORIES: {
-        BASE: "/api/admin/categories",
-
-        TREE: "/api/admin/categories/tree",
-
+    PRODUCT_POST_CATEGORIES: {
+        BASE: "/api/admin/product-post-categories",
         BY_ID: (id: string) =>
-            `/api/admin/categories/${id}`,
-
-        REORDER:
-            "/api/admin/categories/reorder",
+            `/api/admin/product-post-categories/${id}`,
     },
 
     // ==========================================

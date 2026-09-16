@@ -167,6 +167,14 @@ export default function MainPage() {
           subText={`오늘 신규 가입 +${data.user.todayNewUserCount}명`}
           href="/users"
         />
+
+
+        <DashboardCard
+          title="게시물 관리"
+          mainText={`게시물 관리`}
+          subText={`게시물을 관리하세요`}
+          href="/posts"
+        />
       </div>
     </div>
   );

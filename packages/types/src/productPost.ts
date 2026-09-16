@@ -1,7 +1,5 @@
 // @/types/productPost.ts
 
-// @/types/productPost.ts
-
 export interface ThumbnailInfo {
     imageUrl: string;
     title: string;
