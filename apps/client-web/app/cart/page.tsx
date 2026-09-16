@@ -23,11 +23,14 @@ export default function CartPage() {
     const router = useRouter();
 
     const {
-        cart,
         loading,
         error,
-        fetchCart,
     } = useCart();
+
+    const cart =
+        useCartStore(
+            (state) => state.items,
+        );
 
     const clearCart =
         useCartStore(
@@ -42,11 +45,9 @@ export default function CartPage() {
     const [
         editedCart,
         setEditedCart,
-    ] = useState<CartItem[]>([]);
-
-    useEffect(() => {
-        fetchCart();
-    }, [fetchCart]);
+    ] = useState<CartItem[]>(
+        cart,
+    );
 
     useEffect(() => {
         setEditedCart(cart);
@@ -57,7 +58,7 @@ export default function CartPage() {
             (total, item) =>
                 total +
                 item.product.price *
-                item.quantity,
+                    item.quantity,
             0,
         );
 
@@ -96,8 +97,12 @@ export default function CartPage() {
 
                 {editedCart.length > 0 && (
                     <CartProductsResult
-                        totalPrice={totalPrice}
-                        onOrder={handleOrder}
+                        totalPrice={
+                            totalPrice
+                        }
+                        onOrder={
+                            handleOrder
+                        }
                     />
                 )}
             </div>

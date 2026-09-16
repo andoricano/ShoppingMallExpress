@@ -17,16 +17,13 @@ import {
 
 import { authProfile } from "@/lib/authClient";
 
+import { useCartStore } from "@/store/cartStore";
+
 const API_BASE_URL =
     process.env.NEXT_PUBLIC_API_URL ||
     "http://localhost:8080";
 
 export function useCart() {
-    const [
-        cart,
-        setCart,
-    ] = useState<CartItem[]>([]);
-
     const [
         loading,
         setLoading,
@@ -38,6 +35,21 @@ export function useCart() {
     ] = useState<string | null>(
         null,
     );
+
+    const setItems =
+        useCartStore(
+            (state) => state.setItems,
+        );
+
+    const addItem =
+        useCartStore(
+            (state) => state.addItem,
+        );
+
+    const removeItem =
+        useCartStore(
+            (state) => state.removeItem,
+        );
 
     // ==========================================
     // 1. Cart 조회
@@ -81,7 +93,7 @@ export function useCart() {
                 if (!response.ok) {
                     throw new Error(
                         result?.message ||
-                        "장바구니를 불러오지 못했습니다.",
+                            "장바구니를 불러오지 못했습니다.",
                     );
                 }
 
@@ -92,7 +104,7 @@ export function useCart() {
                         ? (result.data as CartItem[])
                         : [];
 
-                setCart(data);
+                setItems(data);
 
                 return data;
             } catch (err) {
@@ -107,18 +119,15 @@ export function useCart() {
                 );
 
                 setError(message);
-                setCart([]);
 
                 return [];
             } finally {
                 setLoading(false);
             }
-        }, []);
+        }, [setItems]);
 
     // ==========================================
     // 2. Cart 추가
-    //
-    // 상품 상세에서 사용
     // ==========================================
 
     const addCart =
@@ -171,7 +180,7 @@ export function useCart() {
                     if (!response.ok) {
                         throw new Error(
                             result?.message ||
-                            "장바구니에 상품을 담지 못했습니다.",
+                                "장바구니에 상품을 담지 못했습니다.",
                         );
                     }
 
@@ -243,9 +252,13 @@ export function useCart() {
                     if (!response.ok) {
                         throw new Error(
                             result?.message ||
-                            "장바구니 상품 삭제에 실패했습니다.",
+                                "장바구니 상품 삭제에 실패했습니다.",
                         );
                     }
+
+                    removeItem(
+                        productId,
+                    );
 
                     return true;
                 } catch (err) {
@@ -266,11 +279,10 @@ export function useCart() {
                     setLoading(false);
                 }
             },
-            [],
+            [removeItem],
         );
 
     return {
-        cart,
         loading,
         error,
 

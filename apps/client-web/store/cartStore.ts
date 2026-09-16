@@ -1,12 +1,17 @@
 // stores/cartStore.ts
 
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 
 import type { CartItem } from "@mall/types";
 
-
 interface CartStore {
     items: CartItem[];
+
+    // 서버 Cart로 전체 교체
+    setItems: (
+        items: CartItem[],
+    ) => void;
 
     // 장바구니 상품 추가
     addItem: (
@@ -27,125 +32,135 @@ interface CartStore {
     // 장바구니 비우기
     clearCart: () => void;
 
-    // 선택한 상품들을 장바구니에 추가
+    // 여러 상품 추가
     addItems: (
         items: CartItem[],
     ) => void;
 }
 
 export const useCartStore =
-    create<CartStore>((set) => ({
-        items: [],
+    create<CartStore>()(
+        persist(
+            (set) => ({
+                items: [],
 
-        addItem: (item) =>
-            set((state) => {
-                const existingItem =
-                    state.items.find(
-                        (value) =>
-                            value.product.id ===
-                            item.product.id,
-                    );
+                setItems: (items) =>
+                    set({
+                        items,
+                    }),
 
-                if (existingItem) {
-                    return {
-                        items: state.items.map(
-                            (value) =>
-                                value.product.id ===
-                                    item.product.id
-                                    ? {
-                                        ...value,
-                                        quantity:
-                                            value.quantity +
-                                            item.quantity,
-                                    }
-                                    : value,
-                        ),
-                    };
-                }
+                addItem: (item) =>
+                    set((state) => {
+                        const existingItem =
+                            state.items.find(
+                                (value) =>
+                                    value.product.id ===
+                                    item.product.id,
+                            );
 
-                return {
-                    items: [
-                        ...state.items,
-                        item,
-                    ],
-                };
-            }),
+                        if (existingItem) {
+                            return {
+                                items: state.items.map(
+                                    (value) =>
+                                        value.product.id ===
+                                            item.product.id
+                                            ? {
+                                                  ...value,
+                                                  quantity:
+                                                      value.quantity +
+                                                      item.quantity,
+                                              }
+                                            : value,
+                                ),
+                            };
+                        }
 
-        addItems: (items) =>
-            set((state) => {
-                const nextItems = [
-                    ...state.items,
-                ];
+                        return {
+                            items: [
+                                ...state.items,
+                                item,
+                            ],
+                        };
+                    }),
 
-                for (const item of items) {
-                    const existingIndex =
-                        nextItems.findIndex(
-                            (value) =>
-                                value.product.id ===
-                                item.product.id,
-                        );
+                addItems: (items) =>
+                    set((state) => {
+                        const nextItems = [
+                            ...state.items,
+                        ];
 
-                    if (
-                        existingIndex === -1
-                    ) {
-                        nextItems.push(item);
-                        continue;
-                    }
+                        for (const item of items) {
+                            const existingIndex =
+                                nextItems.findIndex(
+                                    (value) =>
+                                        value.product.id ===
+                                        item.product.id,
+                                );
 
-                    nextItems[
-                        existingIndex
-                    ] = {
-                        ...nextItems[
-                        existingIndex
-                        ],
-                        quantity:
+                            if (
+                                existingIndex ===
+                                -1
+                            ) {
+                                nextItems.push(item);
+                                continue;
+                            }
+
                             nextItems[
                                 existingIndex
-                            ].quantity +
-                            item.quantity,
-                    };
-                }
-
-                return {
-                    items: nextItems,
-                };
-            }),
-
-        removeItem: (productId) =>
-            set((state) => ({
-                items: state.items.filter(
-                    (item) =>
-                        item.product.id !==
-                        productId,
-                ),
-            })),
-
-        updateQuantity: (
-            productId,
-            quantity,
-        ) =>
-            set((state) => ({
-                items: state.items.map(
-                    (item) =>
-                        item.product.id ===
-                            productId
-                            ? {
-                                ...item,
+                            ] = {
+                                ...nextItems[
+                                    existingIndex
+                                ],
                                 quantity:
-                                    Math.max(
-                                        1,
-                                        quantity,
-                                    ),
-                            }
-                            : item,
-                ),
-            })),
+                                    nextItems[
+                                        existingIndex
+                                    ].quantity +
+                                    item.quantity,
+                            };
+                        }
 
-        clearCart: () =>
-            set({
-                items: [],
+                        return {
+                            items: nextItems,
+                        };
+                    }),
+
+                removeItem: (productId) =>
+                    set((state) => ({
+                        items: state.items.filter(
+                            (item) =>
+                                item.product.id !==
+                                productId,
+                        ),
+                    })),
+
+                updateQuantity: (
+                    productId,
+                    quantity,
+                ) =>
+                    set((state) => ({
+                        items: state.items.map(
+                            (item) =>
+                                item.product.id ===
+                                    productId
+                                    ? {
+                                          ...item,
+                                          quantity:
+                                              Math.max(
+                                                  1,
+                                                  quantity,
+                                              ),
+                                      }
+                                    : item,
+                        ),
+                    })),
+
+                clearCart: () =>
+                    set({
+                        items: [],
+                    }),
             }),
-
-        // TODO: 추후 Cart API 연결
-        // 원격 User Cart와 동기화하는 로직 추가
-    }));
+            {
+                name: "client-cart",
+            },
+        ),
+    );

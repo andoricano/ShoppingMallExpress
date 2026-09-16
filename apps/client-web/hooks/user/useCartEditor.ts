@@ -1,9 +1,8 @@
-// hooks/user/useCartEditor.ts
-
 "use client";
 
 import {
     useCallback,
+    useEffect,
     useMemo,
     useState,
 } from "react";
@@ -11,7 +10,7 @@ import {
 import type { CartItem } from "@mall/types";
 
 export function useCartEditor(
-    initialItems: CartItem[],
+    initialItems: CartItem[] = [],
 ) {
     const [
         items,
@@ -19,6 +18,14 @@ export function useCartEditor(
     ] = useState<CartItem[]>(
         initialItems,
     );
+
+    // ==========================================
+    // 초기 Cart 동기화
+    // ==========================================
+
+    useEffect(() => {
+        setItems(initialItems);
+    }, [initialItems]);
 
     // ==========================================
     // 수량 증가
@@ -29,13 +36,13 @@ export function useCartEditor(
             setItems((current) =>
                 current.map((item) =>
                     item.product.id ===
-                        productId
+                    productId
                         ? {
-                            ...item,
-                            quantity:
-                                item.quantity +
-                                1,
-                        }
+                              ...item,
+                              quantity:
+                                  item.quantity +
+                                  1,
+                          }
                         : item,
                 ),
             );
@@ -50,22 +57,20 @@ export function useCartEditor(
     const decrease = useCallback(
         (productId: string) => {
             setItems((current) =>
-                current
-                    .map((item) =>
-                        item.product
-                            .id ===
-                            productId
-                            ? {
-                                ...item,
-                                quantity:
-                                    Math.max(
-                                        1,
-                                        item.quantity -
-                                        1,
-                                    ),
-                            }
-                            : item,
-                    ),
+                current.map((item) =>
+                    item.product.id ===
+                    productId
+                        ? {
+                              ...item,
+                              quantity:
+                                  Math.max(
+                                      1,
+                                      item.quantity -
+                                          1,
+                                  ),
+                          }
+                        : item,
+                ),
             );
         },
         [],
@@ -89,11 +94,11 @@ export function useCartEditor(
     );
 
     // ==========================================
-    // 초기 Cart 동기화
+    // Cart 초기화
     // ==========================================
 
     const reset = useCallback(
-        (nextItems: CartItem[]) => {
+        (nextItems: CartItem[] = []) => {
             setItems(nextItems);
         },
         [],
@@ -122,9 +127,9 @@ export function useCartEditor(
 
                 return (
                     item.product.id !==
-                    initialItem.product.id ||
+                        initialItem.product.id ||
                     item.quantity !==
-                    initialItem.quantity
+                        initialItem.quantity
                 );
             },
         );
