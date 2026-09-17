@@ -1,12 +1,10 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect } from "react";
 
 import { useAdminPostCategories } from "@/hooks/category/useAdminPostCategories";
-
-import { toCategoryTree } from "@/utils/postCategory";
-import PostCategoryView from "@/component/post/category/PostCategoryView";
 import { useAdminPostProducts } from "@/hooks/products/useAdminPostProducts";
+import PostCategoryEditor from "@/component/post/product/PostCategoryEditor";
 
 export default function PostsPage() {
     const {
@@ -28,29 +26,16 @@ export default function PostsPage() {
         fetchCategories();
     }, [fetchPosts, fetchCategories]);
 
-    const categoryTree = useMemo(
-        () => toCategoryTree(categoryList),
-        [categoryList],
-    );
+    const loading = postLoading || categoryLoading;
 
-    const loading =
-        postLoading || categoryLoading;
+    const error = postError || categoryError;
 
-    const error =
-        postError || categoryError;
+    const handleSave = async () => {
+        // TODO: Category API 연결
+    };
 
     return (
         <div className="w-full">
-            <header className="mb-8">
-                <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-                    상품 게시물 관리
-                </h1>
-
-                <p className="mt-1 text-sm text-slate-500">
-                    상품 게시물의 카테고리를 관리합니다.
-                </p>
-            </header>
-
             {loading && (
                 <p className="text-sm text-slate-500">
                     게시물과 카테고리를 불러오는 중...
@@ -64,8 +49,10 @@ export default function PostsPage() {
             )}
 
             {!loading && !error && (
-                <PostCategoryView
-                    categories={categoryTree}
+                <PostCategoryEditor
+                    categories={categoryList}
+                    posts={postList}
+                    onSave={handleSave}
                 />
             )}
         </div>
