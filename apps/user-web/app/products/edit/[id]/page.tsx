@@ -33,6 +33,9 @@ export default function ProductPostEditPage() {
         draftPost,
         draftProducts,
 
+        thumbnailFile,
+        setThumbnailFile,
+
         loading,
         saving,
         error,
@@ -218,14 +221,18 @@ export default function ProductPostEditPage() {
                         }
                     />
 
+
                     <ProductInfoSection
                         post={draftPost}
                         products={draftProducts}
                         onChange={updatePost}
+                        onThumbnailSelect={setThumbnailFile}
                         onEditProduct={updateProduct}
                         onRemoveProduct={removeProduct}
                         onMoveProduct={moveProduct}
                     />
+
+
 
                     <ProductPostEditor
                         post={draftPost}

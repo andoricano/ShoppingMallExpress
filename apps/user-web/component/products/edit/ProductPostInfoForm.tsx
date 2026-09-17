@@ -1,5 +1,3 @@
-// component/products/post/ProductPostInfoForm.tsx
-
 "use client";
 
 import { useState } from "react";
@@ -11,11 +9,13 @@ import ImageUploadField from "@/component/common/field/ImageUploadField";
 export type ProductPostInfoFormProps = {
     post: ProductPost;
     onChange: (post: ProductPost) => void;
+    onThumbnailSelect: (file: File) => void;
 };
 
 export function ProductPostInfoForm({
     post,
     onChange,
+    onThumbnailSelect,
 }: ProductPostInfoFormProps) {
     const [error, setError] = useState<string | null>(null);
 
@@ -43,7 +43,6 @@ export function ProductPostInfoForm({
             );
             return;
         }
-
     };
 
     return (
@@ -72,7 +71,13 @@ export function ProductPostInfoForm({
                 label="썸네일 이미지"
                 imageUrl={post.thumbnail.imageUrl}
                 onUpload={(files) => {
-                    console.log("썸네일 이미지:", files);
+                    const file = files[0];
+
+                    if (!file) {
+                        return;
+                    }
+
+                    onThumbnailSelect(file);
                 }}
             />
 

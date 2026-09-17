@@ -15,6 +15,7 @@ import displayRoutes from "./routes/client/display.routes.js";
 import clientOrderRoutes from "./routes/client/order.routes.js";
 import pageConfig from "./routes/pageConfig.routes.js";
 import usersRoutes from "./routes/users.routes.js";
+import imagesRoutes from "./routes/images.routes.js";
 import clientHistoryRoutes from "./routes/client/history.routes.js";
 
 import clientRefundRoutes from "./routes/client/refund.routes.js";
@@ -85,6 +86,11 @@ app.use(
 app.use(
     "/api/admin/product-post-categories",
     productPostCategoryRoutes,
+);
+
+app.use(
+    "/api",
+    imagesRoutes,
 );
 
 // Client ProductPost

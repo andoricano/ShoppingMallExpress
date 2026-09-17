@@ -1,5 +1,3 @@
-// component/products/post/ProductInfoSection.tsx
-
 "use client";
 
 import type { Product, ProductPost } from "@mall/types";
@@ -13,6 +11,8 @@ interface ProductInfoSectionProps {
 
     onChange: (post: ProductPost) => void;
 
+    onThumbnailSelect: (file: File) => void;
+
     onEditProduct: (product: Product) => void;
     onRemoveProduct: (productId: string) => void;
     onMoveProduct: (
@@ -25,6 +25,7 @@ export function ProductInfoSection({
     post,
     products,
     onChange,
+    onThumbnailSelect,
     onEditProduct,
     onRemoveProduct,
     onMoveProduct,
@@ -35,6 +36,9 @@ export function ProductInfoSection({
             <ProductPostInfoForm
                 post={post}
                 onChange={onChange}
+                onThumbnailSelect={
+                    onThumbnailSelect
+                }
             />
 
             {/* Product 목록 */}

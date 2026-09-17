@@ -14,6 +14,7 @@ import type {
 } from "@mall/types";
 
 import { API_ENDPOINTS } from "@mall/constants";
+import { useImageApi } from "../images/useImageApi";
 
 // ==========================================
 // Types
@@ -57,6 +58,13 @@ export function useProductPostEdit(
 
     const [error, setError] =
         useState<string | null>(null);
+
+    const { uploadImage } = useImageApi();
+
+    const [
+        thumbnailFile,
+        setThumbnailFileState,
+    ] = useState<File | null>(null);
 
     // ==========================================
     // 1. ProductPost 조회
@@ -155,6 +163,12 @@ export function useProductPostEdit(
         [],
     );
 
+    const setThumbnailFile = useCallback(
+        (file: File) => {
+            setThumbnailFileState(file);
+        },
+        [],
+    );
     // ==========================================
     // 3. Product 추가
     // ==========================================
@@ -294,7 +308,6 @@ export function useProductPostEdit(
     // ==========================================
     // 7. ProductPost 수정 API
     // ==========================================
-
     const saveProductPost =
         useCallback(async () => {
             if (!draftPost?.id) {
@@ -307,8 +320,25 @@ export function useProductPostEdit(
             setError(null);
 
             try {
-                const payload =
-                    buildPayload();
+                let thumbnail =
+                    draftPost.thumbnail;
+
+                if (thumbnailFile) {
+                    const { imageUrl } =
+                        await uploadImage(
+                            thumbnailFile,
+                        );
+
+                    thumbnail = {
+                        ...thumbnail,
+                        imageUrl,
+                    };
+                }
+
+                const payload = {
+                    ...buildPayload(),
+                    thumbnail,
+                };
 
                 const res = await fetch(
                     API_ENDPOINTS.PRODUCT_POSTS.BY_ID(
@@ -341,6 +371,7 @@ export function useProductPostEdit(
                     result.data as ProductPost;
 
                 setDraftPost(updatedPost);
+                setThumbnailFileState(null);
 
                 return updatedPost;
             } catch (err) {
@@ -355,7 +386,12 @@ export function useProductPostEdit(
             } finally {
                 setSaving(false);
             }
-        }, [draftPost?.id, buildPayload]);
+        }, [
+            draftPost,
+            buildPayload,
+            thumbnailFile,
+            uploadImage,
+        ]);
 
     // ==========================================
     // 8. ProductPost 삭제 API
@@ -410,10 +446,11 @@ export function useProductPostEdit(
                 setSaving(false);
             }
         }, [draftPost?.id]);
-
     return {
         draftPost,
         draftProducts,
+
+        thumbnailFile,
 
         loading,
         saving,
@@ -422,7 +459,7 @@ export function useProductPostEdit(
         fetchProductPost,
 
         updatePost,
-
+        setThumbnailFile,
 
         addProduct,
         updateProduct,

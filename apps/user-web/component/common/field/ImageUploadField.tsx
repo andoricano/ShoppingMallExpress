@@ -1,15 +1,12 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface ImageUploadFieldProps {
     label: string;
-
     imageUrl?: string;
     imageUrls?: string[];
-
     multiple?: boolean;
-
     onUpload: (files: File[]) => void;
 }
 
@@ -21,7 +18,17 @@ export default function ImageUploadField({
     onUpload,
 }: ImageUploadFieldProps) {
     const inputRef = useRef<HTMLInputElement>(null);
-    const [isDragging, setIsDragging] = useState(false);
+
+    const [
+        selectedFiles,
+        setSelectedFiles,
+    ] = useState<File[]>([]);
+
+    const [previewUrls, setPreviewUrls] =
+        useState<string[]>([]);
+
+    const [isDragging, setIsDragging] =
+        useState(false);
 
     const images = multiple
         ? imageUrls
@@ -29,12 +36,47 @@ export default function ImageUploadField({
             ? [imageUrl]
             : [];
 
-    const handleFiles = (files: FileList | null) => {
+    useEffect(() => {
+        if (selectedFiles.length === 0) {
+            setPreviewUrls([]);
+            return;
+        }
+
+        const urls = selectedFiles.map(
+            (file) =>
+                URL.createObjectURL(file),
+        );
+
+        setPreviewUrls(urls);
+
+        return () => {
+            urls.forEach((url) =>
+                URL.revokeObjectURL(url),
+            );
+        };
+    }, [selectedFiles]);
+
+    const displayImages =
+        previewUrls.length > 0
+            ? previewUrls
+            : images;
+
+    const handleFiles = (
+        files: FileList | null,
+    ) => {
         if (!files || files.length === 0) {
             return;
         }
 
-        onUpload(Array.from(files));
+        const nextFiles = Array.from(files);
+
+        const selected = multiple
+            ? nextFiles
+            : nextFiles.slice(0, 1);
+
+        setSelectedFiles(selected);
+
+        onUpload(selected);
     };
 
     const handleDrop = (
@@ -67,7 +109,9 @@ export default function ImageUploadField({
                 onDrop={handleDrop}
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
-                onClick={() => inputRef.current?.click()}
+                onClick={() =>
+                    inputRef.current?.click()
+                }
                 className={[
                     "cursor-pointer rounded-lg border-2 border-dashed p-4 transition-colors",
                     isDragging
@@ -75,20 +119,22 @@ export default function ImageUploadField({
                         : "border-slate-300 bg-slate-50 hover:border-slate-400",
                 ].join(" ")}
             >
-                {images.length > 0 ? (
+                {displayImages.length > 0 ? (
                     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                        {images.map((url, index) => (
-                            <div
-                                key={`${url}-${index}`}
-                                className="aspect-square overflow-hidden rounded-lg bg-white"
-                            >
-                                <img
-                                    src={url}
-                                    alt={`${label} ${index + 1}`}
-                                    className="h-full w-full object-cover"
-                                />
-                            </div>
-                        ))}
+                        {displayImages.map(
+                            (url, index) => (
+                                <div
+                                    key={`${url}-${index}`}
+                                    className="aspect-square overflow-hidden rounded-lg bg-white"
+                                >
+                                    <img
+                                        src={url}
+                                        alt={`${label} ${index + 1}`}
+                                        className="h-full w-full object-cover"
+                                    />
+                                </div>
+                            ),
+                        )}
                     </div>
                 ) : (
                     <div className="flex aspect-video items-center justify-center">
@@ -110,9 +156,13 @@ export default function ImageUploadField({
                     accept="image/*"
                     multiple={multiple}
                     className="hidden"
-                    onChange={(event) =>
-                        handleFiles(event.target.files)
-                    }
+                    onChange={(event) => {
+                        handleFiles(
+                            event.target.files,
+                        );
+
+                        event.target.value = "";
+                    }}
                 />
             </div>
         </div>

@@ -32,6 +32,8 @@ export default function ProductPostAddPage() {
 
         saving,
         error,
+        thumbnailFile,
+        setThumbnailFile,
     } = useProductPostAdd();
 
     const [selectedInventoryId, setSelectedInventoryId] =
@@ -133,6 +135,7 @@ export default function ProductPostAddPage() {
                         onEditProduct={updateProduct}
                         onRemoveProduct={removeProduct}
                         onMoveProduct={moveProduct}
+                        onThumbnailSelect={setThumbnailFile}
                     />
 
                     <ProductPostEditor

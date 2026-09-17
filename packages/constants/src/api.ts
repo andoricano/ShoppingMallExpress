@@ -22,7 +22,9 @@ export const API_ENDPOINTS = {
     CLIENT_HISTORY: {
         BASE: "/api/client/history",
     },
-
+    IMAGES: {
+        UPLOAD_URL: "/api/images/upload-url",
+    },
     // ==========================================
     // 환불
     // ==========================================

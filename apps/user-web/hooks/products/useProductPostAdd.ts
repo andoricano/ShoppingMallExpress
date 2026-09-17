@@ -5,6 +5,7 @@
 import { useCallback, useState } from "react";
 import type { Product, ProductPost } from "@mall/types";
 import { API_ENDPOINTS } from "@mall/constants";
+import { useImageApi } from "../images/useImageApi";
 
 // ==========================================
 // Types
@@ -33,6 +34,8 @@ export interface ProductPostSavePayload {
         displayOrder: number;
     }>;
 }
+
+
 
 // ==========================================
 // Empty Post
@@ -78,6 +81,13 @@ export function useProductPostAdd() {
 
     const [error, setError] =
         useState<string | null>(null);
+
+
+    const { uploadImage } = useImageApi();
+
+    const [thumbnailFile, setThumbnailFile] =
+        useState<File | null>(null);
+
 
     // ==========================================
     // ProductPost Draft
@@ -210,14 +220,31 @@ export function useProductPostAdd() {
     // ==========================================
     // ProductPost 생성
     // ==========================================
-
     const createProductPost =
         useCallback(async () => {
             setSaving(true);
             setError(null);
 
             try {
-                const payload = buildPayload();
+                let thumbnail =
+                    draftPost.thumbnail;
+
+                if (thumbnailFile) {
+                    const { imageUrl } =
+                        await uploadImage(
+                            thumbnailFile,
+                        );
+
+                    thumbnail = {
+                        ...thumbnail,
+                        imageUrl,
+                    };
+                }
+
+                const payload = {
+                    ...buildPayload(),
+                    thumbnail,
+                };
 
                 const res = await fetch(
                     API_ENDPOINTS.PRODUCT_POSTS.BASE,
@@ -255,27 +282,39 @@ export function useProductPostAdd() {
             } finally {
                 setSaving(false);
             }
-        }, [buildPayload]);
+        }, [
+            buildPayload,
+            draftPost.thumbnail,
+            thumbnailFile,
+            uploadImage,
+        ]);
 
     // ==========================================
     // Draft 초기화
     // ==========================================
-
     const clearDraft = useCallback(() => {
-        setDraftPost(createEmptyProductPost());
+        setDraftPost(
+            createEmptyProductPost(),
+        );
+
         setDraftProducts([]);
+
+        setThumbnailFile(null);
+
         setSaving(false);
         setError(null);
     }, []);
-
     return {
         draftPost,
         draftProducts,
+
+        thumbnailFile,
 
         saving,
         error,
 
         updatePost,
+        setThumbnailFile,
 
         addProduct,
         updateProduct,
