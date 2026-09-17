@@ -36,6 +36,11 @@ interface UpdateProductPostCategoryPayload {
     isActive?: boolean;
 }
 
+
+interface AddProductPostsToCategoryPayload {
+    postIds: string[];
+}
+
 // ==========================================
 // 1. Category 조회
 // ==========================================
@@ -717,8 +722,407 @@ export const deleteProductPostCategory =
                     error instanceof Error
                         ? error.message
                         : JSON.stringify(
-                              error,
-                          ),
+                            error,
+                        ),
+            });
+        }
+    };
+
+
+// ==========================================
+// 5. Category에 Product Post 등록
+//
+// 여러 Post를 한 Category에 일괄 등록
+// 이미 등록된 관계는 무시
+// ==========================================
+
+export const addProductPostsToCategory =
+    async (
+        req: Request<
+            { categoryId: string },
+            {},
+            AddProductPostsToCategoryPayload
+        >,
+        res: Response,
+    ) => {
+        try {
+            const {
+                categoryId,
+            } = req.params;
+
+            const {
+                postIds,
+            } = req.body;
+
+            // ------------------------------------------
+            // 1. 입력 검증
+            // ------------------------------------------
+
+            if (
+                !Array.isArray(postIds) ||
+                postIds.length === 0
+            ) {
+                return res.status(400).json({
+                    success: false,
+                    message:
+                        "postIds는 하나 이상의 게시물 ID를 포함해야 합니다.",
+                });
+            }
+
+            const uniquePostIds =
+                [
+                    ...new Set(postIds),
+                ];
+
+            // ------------------------------------------
+            // 2. Category 존재 여부 확인
+            // ------------------------------------------
+
+            const {
+                data: category,
+                error: categoryError,
+            } = await supabase
+                .from(
+                    "product_post_category",
+                )
+                .select("id")
+                .eq(
+                    "id",
+                    categoryId,
+                )
+                .maybeSingle();
+
+            if (categoryError) {
+                throw categoryError;
+            }
+
+            if (!category) {
+                return res.status(404).json({
+                    success: false,
+                    message:
+                        "카테고리를 찾을 수 없습니다.",
+                });
+            }
+
+            // ------------------------------------------
+            // 3. Post 존재 여부 확인
+            // ------------------------------------------
+
+            const {
+                data: posts,
+                error: postsError,
+            } = await supabase
+                .from("product_posts")
+                .select("id")
+                .in(
+                    "id",
+                    uniquePostIds,
+                );
+
+            if (postsError) {
+                throw postsError;
+            }
+
+            const existingPostIds = new Set(
+                (posts ?? []).map(
+                    (post) => post.id,
+                ),
+            );
+
+            const invalidPostIds =
+                uniquePostIds.filter(
+                    (postId) =>
+                        !existingPostIds.has(
+                            postId,
+                        ),
+                );
+
+            if (
+                invalidPostIds.length > 0
+            ) {
+                return res.status(400).json({
+                    success: false,
+                    message:
+                        "존재하지 않는 게시물 ID가 포함되어 있습니다.",
+                    data: invalidPostIds,
+                });
+            }
+
+            // ------------------------------------------
+            // 4. 관계 등록
+            //
+            // UNIQUE
+            // (product_post_id, category_id)
+            // 이미 존재하면 무시
+            // ------------------------------------------
+
+            const rows =
+                uniquePostIds.map(
+                    (postId) => ({
+                        product_post_id:
+                            postId,
+                        category_id:
+                            categoryId,
+                    }),
+                );
+
+            const {
+                data,
+                error,
+            } = await supabase
+                .from(
+                    "product_post_categories",
+                )
+                .upsert(
+                    rows,
+                    {
+                        onConflict:
+                            "product_post_id,category_id",
+                        ignoreDuplicates:
+                            true,
+                    },
+                )
+                .select();
+
+            if (error) {
+                throw error;
+            }
+
+            return res.status(201).json({
+                success: true,
+                data: data ?? [],
+            });
+        } catch (error) {
+            console.error(
+                "Add product posts to category failed:",
+                error,
+            );
+
+            return res.status(500).json({
+                success: false,
+                message:
+                    "카테고리에 게시물을 등록하는데 실패했습니다.",
+                error:
+                    error instanceof Error
+                        ? error.message
+                        : JSON.stringify(
+                            error,
+                        ),
+            });
+        }
+    };
+
+// ==========================================
+// 6. Category의 Product Post Filtering
+//
+// Category에 등록된 Post의
+// id + thumbnail만 반환
+// ==========================================
+
+export const getProductPostsByCategory =
+    async (
+        req: Request<{
+            categoryId: string;
+        }>,
+        res: Response,
+    ) => {
+        try {
+            const {
+                categoryId,
+            } = req.params;
+
+            // ------------------------------------------
+            // 1. Category 존재 여부 확인
+            // ------------------------------------------
+
+            const {
+                data: category,
+                error: categoryError,
+            } = await supabase
+                .from(
+                    "product_post_category",
+                )
+                .select("id")
+                .eq(
+                    "id",
+                    categoryId,
+                )
+                .maybeSingle();
+
+            if (categoryError) {
+                throw categoryError;
+            }
+
+            if (!category) {
+                return res.status(404).json({
+                    success: false,
+                    message:
+                        "카테고리를 찾을 수 없습니다.",
+                });
+            }
+
+            // ------------------------------------------
+            // 2. Category ↔ Post 관계 조회
+            // ------------------------------------------
+
+            const {
+                data: relations,
+                error: relationsError,
+            } = await supabase
+                .from(
+                    "product_post_categories",
+                )
+                .select(
+                    "product_post_id",
+                )
+                .eq(
+                    "category_id",
+                    categoryId,
+                );
+
+            if (relationsError) {
+                throw relationsError;
+            }
+
+            const postIds =
+                (relations ?? []).map(
+                    (relation) =>
+                        relation.product_post_id,
+                );
+
+            if (postIds.length === 0) {
+                return res.json({
+                    success: true,
+                    data: [],
+                });
+            }
+
+            // ------------------------------------------
+            // 3. 실제 Post 조회
+            // ------------------------------------------
+
+            const {
+                data: posts,
+                error: postsError,
+            } = await supabase
+                .from("product_posts")
+                .select(
+                    "id, thumbnail",
+                )
+                .in(
+                    "id",
+                    postIds,
+                );
+
+            if (postsError) {
+                throw postsError;
+            }
+
+            // ------------------------------------------
+            // 4. Category Item 형태로 반환
+            // ------------------------------------------
+
+            const result =
+                (posts ?? []).map(
+                    (post) => ({
+                        id: post.id,
+                        thumbnail:
+                            post.thumbnail,
+                    }),
+                );
+
+            return res.json({
+                success: true,
+                data: result,
+            });
+        } catch (error) {
+            console.error(
+                "Get product posts by category failed:",
+                error,
+            );
+
+            return res.status(500).json({
+                success: false,
+                message:
+                    "카테고리 게시물 조회에 실패했습니다.",
+                error:
+                    error instanceof Error
+                        ? error.message
+                        : JSON.stringify(
+                            error,
+                        ),
+            });
+        }
+    };
+
+
+// ==========================================
+// Category에서 Product Post 연결 해제
+// ==========================================
+
+export const removePostFromCategory =
+    async (
+        req: Request<{
+            categoryId: string;
+            postId: string;
+        }>,
+        res: Response,
+    ) => {
+        try {
+            const {
+                categoryId,
+                postId,
+            } = req.params;
+
+            const {
+                data,
+                error,
+            } = await supabase
+                .from(
+                    "product_post_categories",
+                )
+                .delete()
+                .eq(
+                    "category_id",
+                    categoryId,
+                )
+                .eq(
+                    "product_post_id",
+                    postId,
+                )
+                .select()
+                .maybeSingle();
+
+            if (error) {
+                throw error;
+            }
+
+            if (!data) {
+                return res.status(404).json({
+                    success: false,
+                    message:
+                        "카테고리와 게시물의 연결을 찾을 수 없습니다.",
+                });
+            }
+
+            return res.json({
+                success: true,
+                data,
+            });
+        } catch (error) {
+            console.error(
+                "Remove product post from category failed:",
+                error,
+            );
+
+            return res.status(500).json({
+                success: false,
+                message:
+                    "카테고리에서 게시물 연결 해제에 실패했습니다.",
+                error:
+                    error instanceof Error
+                        ? error.message
+                        : JSON.stringify(error),
             });
         }
     };

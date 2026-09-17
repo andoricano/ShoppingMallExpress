@@ -1,4 +1,4 @@
-// @/types/productPostCategory.ts
+// @/types/category.ts
 
 import type { ThumbnailInfo } from "./productPost.js";
 

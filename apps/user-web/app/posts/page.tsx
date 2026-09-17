@@ -4,12 +4,19 @@
 
 import { useEffect, useState } from "react";
 
+import type {
+    ProductPostCategory,
+} from "@mall/types";
 
-import { useAdminPostProducts } from "@/hooks/products/useAdminPostProducts";
-import { usePostCategoryApi } from "@/hooks/category/usePostCategoryApi";
+import {
+    useAdminPostProducts,
+} from "@/hooks/products/useAdminPostProducts";
+
+import {
+    usePostCategoryApi,
+} from "@/hooks/category/usePostCategoryApi";
 
 import PostCategoryEditor from "@/component/post/product/PostCategoryEditor";
-import { ProductPostCategory } from "@mall/types";
 
 export default function PostsPage() {
     const {
@@ -21,7 +28,9 @@ export default function PostsPage() {
 
     const {
         fetchCategories,
-        updateCategory,
+        fetchPostsByCategory,
+        addPostsToCategory,
+        removePostFromCategory,
     } = usePostCategoryApi();
 
     const [
@@ -38,24 +47,23 @@ export default function PostsPage() {
         categoryError,
         setCategoryError,
     ] = useState<string | null>(null);
-
     useEffect(() => {
         const load = async () => {
             setCategoryLoading(true);
             setCategoryError(null);
 
             try {
-                await fetchPosts();
-
-                const categories =
-                    await fetchCategories();
-
-                setCategoryList(categories);
+                await Promise.all([
+                    fetchPosts(),
+                    fetchCategories().then(
+                        setCategoryList,
+                    ),
+                ]);
             } catch (err) {
                 setCategoryError(
                     err instanceof Error
                         ? err.message
-                        : "카테고리 조회에 실패했습니다.",
+                        : "게시물과 카테고리를 불러오는 중 오류가 발생했습니다.",
                 );
             } finally {
                 setCategoryLoading(false);
@@ -63,7 +71,10 @@ export default function PostsPage() {
         };
 
         load();
-    }, [fetchPosts, fetchCategories]);
+    }, [
+        fetchPosts,
+        fetchCategories,
+    ]);
 
     const loading =
         postLoading || categoryLoading;
@@ -74,16 +85,107 @@ export default function PostsPage() {
     const handleSave = async (
         categories: ProductPostCategory[],
     ) => {
-        // Category 자체에 대해서는 U만 사용
-        //
-        // TODO:
-        // categoryList와 categories를 비교해서
-        // 변경된 Category만 updateCategory() 호출
-        //
-        // 다만 현재 PostCategoryEditor에서 변경하는
-        // 핵심 데이터는 productPosts 관계이므로
-        // 별도의 Post-Category 관계 API가 필요함.
-        console.log(categories);
+        try {
+            for (const category of categories) {
+                const original =
+                    categoryList.find(
+                        (item) =>
+                            item.id === category.id,
+                    );
+
+                if (!original) {
+                    continue;
+                }
+
+                const originalPostIds =
+                    new Set(
+                        (
+                            original.productPosts ??
+                            []
+                        ).map(
+                            (post) => post.id,
+                        ),
+                    );
+
+                const currentPostIds =
+                    new Set(
+                        (
+                            category.productPosts ??
+                            []
+                        ).map(
+                            (post) => post.id,
+                        ),
+                    );
+
+                const addedPostIds =
+                    (
+                        category.productPosts ??
+                        []
+                    )
+                        .filter(
+                            (post) =>
+                                !originalPostIds.has(
+                                    post.id,
+                                ),
+                        )
+                        .map(
+                            (post) =>
+                                post.id,
+                        );
+
+                const removedPostIds =
+                    (
+                        original.productPosts ??
+                        []
+                    )
+                        .filter(
+                            (post) =>
+                                !currentPostIds.has(
+                                    post.id,
+                                ),
+                        )
+                        .map(
+                            (post) =>
+                                post.id,
+                        );
+
+                if (
+                    addedPostIds.length > 0
+                ) {
+                    await addPostsToCategory(
+                        category.id,
+                        addedPostIds,
+                    );
+                }
+
+                if (
+                    removedPostIds.length > 0
+                ) {
+                    await Promise.all(
+                        removedPostIds.map(
+                            (postId) =>
+                                removePostFromCategory(
+                                    category.id,
+                                    postId,
+                                ),
+                        ),
+                    );
+                }
+            }
+
+            // 저장 성공 후에는 재조회하지 않음.
+            // 현재 Editor의 데이터가 이미 저장된 상태이므로
+            // 로컬 기준만 최신 상태로 맞춰준다.
+            setCategoryList(categories);
+        } catch (err) {
+            setCategoryError(
+                err instanceof Error
+                    ? err.message
+                    : "카테고리 게시물 저장에 실패했습니다.",
+            );
+
+            throw err;
+        }
     };
 
     return (
@@ -100,13 +202,16 @@ export default function PostsPage() {
                 </p>
             )}
 
-            {!loading && !error && (
-                <PostCategoryEditor
-                    categories={categoryList}
-                    posts={postList}
-                    onSave={handleSave}
-                />
-            )}
+            {!loading &&
+                !error && (
+                    <PostCategoryEditor
+                        categories={
+                            categoryList
+                        }
+                        posts={postList}
+                        onSave={handleSave}
+                    />
+                )}
         </div>
     );
 }

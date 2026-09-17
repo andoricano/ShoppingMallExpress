@@ -6,6 +6,7 @@ import { useCallback } from "react";
 
 import type {
     ProductPostCategory,
+    ProductPostCategoryItem,
 } from "@mall/types";
 
 import {
@@ -43,7 +44,7 @@ export function usePostCategoryApi() {
             if (!res.ok) {
                 throw new Error(
                     result?.message ||
-                        "카테고리 목록 조회에 실패했습니다.",
+                    "카테고리 목록 조회에 실패했습니다.",
                 );
             }
 
@@ -76,7 +77,7 @@ export function usePostCategoryApi() {
             if (!res.ok) {
                 throw new Error(
                     result?.message ||
-                        "카테고리 생성에 실패했습니다.",
+                    "카테고리 생성에 실패했습니다.",
                 );
             }
 
@@ -110,7 +111,7 @@ export function usePostCategoryApi() {
             if (!res.ok) {
                 throw new Error(
                     result?.message ||
-                        "카테고리 수정에 실패했습니다.",
+                    "카테고리 수정에 실패했습니다.",
                 );
             }
 
@@ -138,11 +139,93 @@ export function usePostCategoryApi() {
             if (!res.ok) {
                 throw new Error(
                     result?.message ||
-                        "카테고리 삭제에 실패했습니다.",
+                    "카테고리 삭제에 실패했습니다.",
                 );
             }
 
             return result.data as ProductPostCategory;
+        },
+        [],
+    );
+
+    const fetchPostsByCategory = useCallback(
+        async (
+            categoryId: string,
+        ): Promise<ProductPostCategoryItem[]> => {
+            const res = await fetch(
+                `${API_ENDPOINTS.PRODUCT_POST_CATEGORIES.BY_ID(categoryId)}/posts`,
+            );
+
+            const result =
+                await res.json().catch(() => null);
+
+            if (!res.ok) {
+                throw new Error(
+                    result?.message ||
+                    "카테고리 게시물 조회에 실패했습니다.",
+                );
+            }
+
+            return Array.isArray(result?.data)
+                ? result.data
+                : [];
+        },
+        [],
+    );
+
+    const addPostsToCategory = useCallback(
+        async (
+            categoryId: string,
+            postIds: string[],
+        ): Promise<void> => {
+            const res = await fetch(
+                `${API_ENDPOINTS.PRODUCT_POST_CATEGORIES.BY_ID(categoryId)}/posts`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type":
+                            "application/json",
+                    },
+                    body: JSON.stringify({
+                        postIds,
+                    }),
+                },
+            );
+
+            const result =
+                await res.json().catch(() => null);
+
+            if (!res.ok) {
+                throw new Error(
+                    result?.message ||
+                    "카테고리에 게시물을 등록하는 데 실패했습니다.",
+                );
+            }
+        },
+        [],
+    );
+
+    const removePostFromCategory = useCallback(
+        async (
+            categoryId: string,
+            postId: string,
+        ): Promise<void> => {
+            const res = await fetch(
+                `${API_ENDPOINTS.PRODUCT_POST_CATEGORIES.BY_ID(categoryId)}/posts/${postId}`,
+                {
+                    method: "DELETE",
+                },
+            );
+
+            const result =
+                await res.json().catch(() => null);
+
+            if (!res.ok) {
+                throw new Error(
+                    result?.message ||
+                    "카테고리에서 게시물 연결을 해제하는 데 실패했습니다.",
+                );
+            }
         },
         [],
     );
@@ -152,5 +235,9 @@ export function usePostCategoryApi() {
         createCategory,
         updateCategory,
         deleteCategory,
+
+        fetchPostsByCategory,
+        addPostsToCategory,
+        removePostFromCategory,
     };
 }
