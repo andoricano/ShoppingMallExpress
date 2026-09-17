@@ -2,7 +2,12 @@
 
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import {
+    useCallback,
+    useEffect,
+    useMemo,
+    useState,
+} from "react";
 
 import type { CategoryTree } from "@mall/category-tree";
 
@@ -77,6 +82,8 @@ export default function CategoryPage() {
     useEffect(() => {
         loadCategories();
     }, [loadCategories]);
+
+
     const handleSave = async (
         tree: CategoryTree[],
     ) => {
@@ -99,9 +106,20 @@ export default function CategoryPage() {
             const createdIdMap =
                 new Map<string, string>();
 
+            const createdResultMap =
+                new Map<string, ProductPostCategory>();
+
+            const updatedResultMap =
+                new Map<string, ProductPostCategory>();
+
+            // ------------------------------------------
+            // CREATE
+            // ------------------------------------------
+
             const created =
                 [...changes.created].sort(
-                    (a, b) => a.depth - b.depth,
+                    (a, b) =>
+                        a.depth - b.depth,
                 );
 
             for (const category of created) {
@@ -129,7 +147,16 @@ export default function CategoryPage() {
                     category.id,
                     result.id,
                 );
+
+                createdResultMap.set(
+                    category.id,
+                    result,
+                );
             }
+
+            // ------------------------------------------
+            // UPDATE
+            // ------------------------------------------
 
             for (const category of changes.updated) {
                 const parentId =
@@ -140,32 +167,103 @@ export default function CategoryPage() {
                         category.parentId
                         : null;
 
-                await updateCategory(
+                const result =
+                    await updateCategory(
+                        category.id,
+                        {
+                            parentId,
+                            name: category.name,
+                            slug: category.slug,
+                            depth: category.depth,
+                            displayOrder:
+                                category.displayOrder,
+                            isActive:
+                                category.isActive,
+                        },
+                    );
+
+                updatedResultMap.set(
                     category.id,
-                    {
-                        parentId,
-                        name: category.name,
-                        slug: category.slug,
-                        depth: category.depth,
-                        displayOrder:
-                            category.displayOrder,
-                        isActive:
-                            category.isActive,
-                    },
+                    result,
                 );
             }
+
+            // ------------------------------------------
+            // DELETE
+            // ------------------------------------------
 
             const deleted =
                 [...changes.deleted].sort(
-                    (a, b) => b.depth - a.depth,
+                    (a, b) =>
+                        b.depth - a.depth,
                 );
 
+            const deletedIds = new Set(
+                changes.deleted.map(
+                    (category) => category.id,
+                ),
+            );
+
             for (const category of deleted) {
-                await deleteCategory(category.id);
+                await deleteCategory(
+                    category.id,
+                );
             }
 
-            // 성공했으므로 서버 재조회하지 않음
-            // 여기서 로컬 categoryList만 갱신해야 함
+            // ------------------------------------------
+            // 성공한 서버 상태를 로컬에 반영
+            // ------------------------------------------
+
+            const originalMap =
+                new Map(
+                    categoryList.map(
+                        (category) => [
+                            category.id,
+                            category,
+                        ],
+                    ),
+                );
+
+            const savedCategories =
+                currentCategories
+                    .filter(
+                        (category) =>
+                            !deletedIds.has(
+                                category.id,
+                            ),
+                    )
+                    .map((category) => {
+                        // 새 Category
+                        const created =
+                            createdResultMap.get(
+                                category.id,
+                            );
+
+                        if (created) {
+                            return created;
+                        }
+
+                        // 수정된 Category
+                        const updated =
+                            updatedResultMap.get(
+                                category.id,
+                            );
+
+                        if (updated) {
+                            return updated;
+                        }
+
+                        // 변경되지 않은 기존 Category
+                        return (
+                            originalMap.get(
+                                category.id,
+                            ) ?? category
+                        );
+                    });
+
+            setCategoryList(
+                savedCategories,
+            );
         } catch (err) {
             setError(
                 err instanceof Error
@@ -173,7 +271,7 @@ export default function CategoryPage() {
                     : "카테고리 저장에 실패했습니다.",
             );
 
-            // 실패한 경우 서버 상태로 복구
+            // 실패한 경우에만 서버 상태 복구
             try {
                 const categories =
                     await fetchCategories();
@@ -186,15 +284,20 @@ export default function CategoryPage() {
                         : "카테고리 상태 복구에 실패했습니다.",
                 );
             }
+
+            throw err;
         } finally {
             setSaving(false);
         }
     };
 
-    const categoryTree =
-        toCategoryTreeList(
-            categoryList,
-        );
+
+    
+
+    const categoryTree = useMemo(
+        () => toCategoryTreeList(categoryList),
+        [categoryList],
+    );
 
     return (
         <div className="w-full">

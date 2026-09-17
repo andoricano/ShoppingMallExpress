@@ -55,6 +55,16 @@ export function useCategoryTreeEditor(
         resetHistory,
     ]);
 
+
+    // ==========================================
+    // 저장 완료 처리
+    // 현재 Tree를 새로운 기준 상태로 지정
+    // ==========================================
+
+    const markSaved = useCallback(() => {
+        resetHistory(tree);
+    }, [tree, resetHistory]);
+
     // ==========================================
     // Selected Category
     // ==========================================
@@ -270,7 +280,6 @@ export function useCategoryTreeEditor(
             ),
         [tree, initialTree],
     );
-
     return {
         tree,
         selectedId,
@@ -291,5 +300,6 @@ export function useCategoryTreeEditor(
         undo,
         redo,
         reset,
+        markSaved,
     };
 }

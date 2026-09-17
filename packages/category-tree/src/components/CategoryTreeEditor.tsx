@@ -1,6 +1,6 @@
-// packages/category-tree/src/components/CategoryTreeEditor.tsx
-
 "use client";
+
+import { useEffect, useState } from "react";
 
 import { useCategoryTreeEditor } from "../hooks/useCategoryTreeEditor";
 
@@ -11,17 +11,23 @@ import CategoryTreeEditorForm from "./CategoryTreeEditorForm";
 import CategoryTreeEditorHeader from "./CategoryTreeEditorHeader";
 import CategoryTreeView from "./CategoryTreeView";
 
+type SaveStatus =
+    | "saving"
+    | "saved"
+    | "editing"
+    | null;
+
 interface CategoryTreeEditorProps {
     nodes: CategoryTree[];
 
     onSave?: (
         tree: CategoryTree[],
-    ) => void;
+    ) => void | Promise<void>;
 }
 
 export default function CategoryTreeEditor({
     nodes,
-    onSave
+    onSave,
 }: CategoryTreeEditorProps) {
     const {
         tree,
@@ -37,9 +43,56 @@ export default function CategoryTreeEditor({
         canRedo,
         undo,
         redo,
-    } = useCategoryTreeEditor(
-        nodes,
-    );
+    } = useCategoryTreeEditor(nodes);
+
+
+
+
+    const [
+        saveStatus,
+        setSaveStatus,
+    ] = useState<SaveStatus>(null);
+
+
+
+    useEffect(() => {
+        if (!hasChanges) {
+            return;
+        }
+
+        if (saveStatus === "saving") {
+            return;
+        }
+
+        if (saveStatus === "saved") {
+            return;
+        }
+
+        setSaveStatus("editing");
+    }, [tree, hasChanges]);
+
+
+
+
+    const handleSave = async () => {
+        if (!onSave || !hasChanges) {
+            return;
+        }
+
+        setSaveStatus("saving");
+
+        try {
+            await onSave(tree);
+            setSaveStatus("saved");
+        } catch (error) {
+            setSaveStatus("editing");
+            throw error;
+        }
+    };
+
+
+
+    
 
     if (tree.length === 0) {
         return (
@@ -57,15 +110,13 @@ export default function CategoryTreeEditor({
                 hasChanges={hasChanges}
                 canUndo={canUndo}
                 canRedo={canRedo}
+                saveStatus={saveStatus}
                 onUndo={undo}
                 onRedo={redo}
-                onSave={() =>
-                    onSave?.(tree)
-                }
+                onSave={handleSave}
             />
 
             <div className="grid w-full grid-cols-[minmax(0,1fr)_360px] gap-6">
-                {/* Category Tree */}
                 <div className="min-h-80 rounded-xl border border-slate-200 bg-white p-5">
                     <CategoryTreeView
                         nodes={tree}
@@ -81,7 +132,6 @@ export default function CategoryTreeEditor({
                     />
                 </div>
 
-                {/* Category Editor Form */}
                 <CategoryTreeEditorForm
                     node={selectedNode}
                     onSaveName={
