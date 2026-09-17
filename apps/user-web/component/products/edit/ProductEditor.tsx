@@ -6,16 +6,21 @@ import type { JSONContent } from "@tiptap/core";
 import type { ProductPost } from "@mall/types";
 
 import { ProductDescriptionEditor } from "../post/editor/PostEditor";
+import type { PendingImage } from "../post/editor/useEditSection";
 
 export interface ProductPostEditorProps {
     post: ProductPost;
     onChange: (post: ProductPost) => void;
+    onImagesChange: (
+        images: PendingImage[],
+    ) => void;
     saving?: boolean;
 }
 
 export function ProductPostEditor({
     post,
     onChange,
+    onImagesChange,
     saving = false,
 }: ProductPostEditorProps) {
     const handleDescriptionChange = (
@@ -40,6 +45,9 @@ export function ProductPostEditor({
                         : undefined
                 }
                 onChange={handleDescriptionChange}
+                onImagesChange={
+                    onImagesChange
+                }
             />
 
             {saving && (

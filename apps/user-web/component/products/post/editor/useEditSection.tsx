@@ -1,16 +1,36 @@
 // post/editor/useEditSection.ts
 
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import type { Editor } from '@tiptap/react';
+import {
+    useEffect,
+    useRef,
+    useState,
+} from "react";
+import type { Editor } from "@tiptap/react";
 
-export function useEditSection(editor: Editor | null) {
-    const [isImageModalOpen, setIsImageModalOpen] = useState(false);
-    const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
-    const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
+export interface PendingImage {
+    file: File;
+    previewUrl: string;
+}
 
-    const [imageFiles, setImageFiles] = useState<File[]>([]);
+export function useEditSection(
+    editor: Editor | null,
+) {
+    const [isImageModalOpen, setIsImageModalOpen] =
+        useState(false);
+
+    const [isVideoModalOpen, setIsVideoModalOpen] =
+        useState(false);
+
+    const [isLinkModalOpen, setIsLinkModalOpen] =
+        useState(false);
+
+    const [imageFiles, setImageFiles] =
+        useState<PendingImage[]>([]);
+
+    const previewUrlsRef =
+        useRef<string[]>([]);
 
     const openImageModal = () => {
         setIsImageModalOpen(true);
@@ -37,13 +57,23 @@ export function useEditSection(editor: Editor | null) {
     };
 
     const insertImage = (file: File) => {
-        if (!editor) return;
+        if (!editor) {
+            return;
+        }
 
-        const previewUrl = URL.createObjectURL(file);
+        const previewUrl =
+            URL.createObjectURL(file);
 
-        setImageFiles((prev) => [
-            ...prev,
-            file,
+        previewUrlsRef.current.push(
+            previewUrl,
+        );
+
+        setImageFiles((current) => [
+            ...current,
+            {
+                file,
+                previewUrl,
+            },
         ]);
 
         editor
@@ -58,7 +88,9 @@ export function useEditSection(editor: Editor | null) {
     };
 
     const insertHorizontalRule = () => {
-        if (!editor) return;
+        if (!editor) {
+            return;
+        }
 
         editor
             .chain()
@@ -68,7 +100,9 @@ export function useEditSection(editor: Editor | null) {
     };
 
     const insertLink = (href: string) => {
-        if (!editor) return;
+        if (!editor) {
+            return;
+        }
 
         editor
             .chain()
@@ -79,16 +113,17 @@ export function useEditSection(editor: Editor | null) {
         closeLinkModal();
     };
 
-    // 컴포넌트 종료 시 object URL 정리
     useEffect(() => {
         return () => {
-            imageFiles.forEach((file) => {
-                // 현재 구조에서는 File -> object URL 매핑을 별도로
-                // 관리하지 않으므로 실제 URL revoke는 다음 단계에서 처리
-                void file;
-            });
+            previewUrlsRef.current.forEach(
+                (url) => {
+                    URL.revokeObjectURL(url);
+                },
+            );
+
+            previewUrlsRef.current = [];
         };
-    }, [imageFiles]);
+    }, []);
 
     return {
         isImageModalOpen,

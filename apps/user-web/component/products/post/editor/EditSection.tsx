@@ -1,18 +1,26 @@
 // post/editor/EditSection.tsx
 
+import { useEffect } from "react";
 import type { Editor } from "@tiptap/react";
 
 import { EditorToolbar } from "./EditorToolbar";
 import { EditorContent } from "./tiptap/EditorContent";
 import { ImageUploaderModal } from "./modal/ImageUploaderModal";
-import { useEditSection } from "./useEditSection";
+import {
+  useEditSection,
+  type PendingImage,
+} from "./useEditSection";
 
 export type EditSectionProps = {
   editor: Editor | null;
+  onImagesChange?: (
+    images: PendingImage[],
+  ) => void;
 };
 
 export function EditSection({
   editor,
+  onImagesChange,
 }: EditSectionProps) {
   const {
     isImageModalOpen,
@@ -22,7 +30,12 @@ export function EditSection({
     openVideoModal,
     openLinkModal,
     insertHorizontalRule,
+    imageFiles,
   } = useEditSection(editor);
+
+  useEffect(() => {
+    onImagesChange?.(imageFiles);
+  }, [imageFiles, onImagesChange]);
 
   return (
     <div>
@@ -31,7 +44,9 @@ export function EditSection({
         onImage={openImageModal}
         onVideo={openVideoModal}
         onLink={openLinkModal}
-        onHorizontalRule={insertHorizontalRule}
+        onHorizontalRule={
+          insertHorizontalRule
+        }
       />
 
       <EditorContent editor={editor} />

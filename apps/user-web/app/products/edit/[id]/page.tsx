@@ -35,7 +35,7 @@ export default function ProductPostEditPage() {
 
         thumbnailFile,
         setThumbnailFile,
-
+        setPendingImages,
         loading,
         saving,
         error,
@@ -233,10 +233,10 @@ export default function ProductPostEditPage() {
                     />
 
 
-
                     <ProductPostEditor
                         post={draftPost}
                         onChange={updatePost}
+                        onImagesChange={setPendingImages}
                         saving={saving}
                     />
                 </div>

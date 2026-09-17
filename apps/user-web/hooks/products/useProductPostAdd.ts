@@ -6,6 +6,8 @@ import { useCallback, useState } from "react";
 import type { Product, ProductPost } from "@mall/types";
 import { API_ENDPOINTS } from "@mall/constants";
 import { useImageApi } from "../images/useImageApi";
+import type { PendingImage } from "@/component/products/post/editor/useEditSection";
+
 
 // ==========================================
 // Types
@@ -87,6 +89,11 @@ export function useProductPostAdd() {
 
     const [thumbnailFile, setThumbnailFile] =
         useState<File | null>(null);
+
+    const [
+        pendingImages,
+        setPendingImages,
+    ] = useState<PendingImage[]>([]);
 
 
     // ==========================================
@@ -226,6 +233,10 @@ export function useProductPostAdd() {
             setError(null);
 
             try {
+                // ==========================================
+                // Thumbnail
+                // ==========================================
+
                 let thumbnail =
                     draftPost.thumbnail;
 
@@ -241,10 +252,100 @@ export function useProductPostAdd() {
                     };
                 }
 
+                // ==========================================
+                // Tiptap Images
+                // ==========================================
+
+                let content =
+                    draftPost.content;
+
+                if (pendingImages.length > 0) {
+                    const uploadedImages =
+                        await Promise.all(
+                            pendingImages.map(
+                                async (image) => {
+                                    const {
+                                        imageUrl,
+                                    } =
+                                        await uploadImage(
+                                            image.file,
+                                        );
+
+                                    return {
+                                        previewUrl:
+                                            image.previewUrl,
+                                        imageUrl,
+                                    };
+                                },
+                            ),
+                        );
+
+                    const contentJson =
+                        JSON.parse(content);
+
+                    const replaceImageUrls = (
+                        node: any,
+                    ): any => {
+                        if (
+                            node.type ===
+                            "image" &&
+                            node.attrs?.src
+                        ) {
+                            const uploaded =
+                                uploadedImages.find(
+                                    (image) =>
+                                        image.previewUrl ===
+                                        node.attrs.src,
+                                );
+
+                            if (uploaded) {
+                                return {
+                                    ...node,
+                                    attrs: {
+                                        ...node.attrs,
+                                        src: uploaded.imageUrl,
+                                    },
+                                };
+                            }
+                        }
+
+                        if (
+                            Array.isArray(
+                                node.content,
+                            )
+                        ) {
+                            return {
+                                ...node,
+                                content:
+                                    node.content.map(
+                                        replaceImageUrls,
+                                    ),
+                            };
+                        }
+
+                        return node;
+                    };
+
+                    content = JSON.stringify(
+                        replaceImageUrls(
+                            contentJson,
+                        ),
+                    );
+                }
+
+                // ==========================================
+                // Payload
+                // ==========================================
+
                 const payload = {
                     ...buildPayload(),
                     thumbnail,
+                    content,
                 };
+
+                // ==========================================
+                // ProductPost 생성
+                // ==========================================
 
                 const res = await fetch(
                     API_ENDPOINTS.PRODUCT_POSTS.BASE,
@@ -254,7 +355,9 @@ export function useProductPostAdd() {
                             "Content-Type":
                                 "application/json",
                         },
-                        body: JSON.stringify(payload),
+                        body: JSON.stringify(
+                            payload,
+                        ),
                     },
                 );
 
@@ -269,7 +372,13 @@ export function useProductPostAdd() {
                     );
                 }
 
-                return result.data as ProductPost;
+                const createdPost =
+                    result.data as ProductPost;
+
+                setThumbnailFile(null);
+                setPendingImages([]);
+
+                return createdPost;
             } catch (err) {
                 const message =
                     err instanceof Error
@@ -285,7 +394,9 @@ export function useProductPostAdd() {
         }, [
             buildPayload,
             draftPost.thumbnail,
+            draftPost.content,
             thumbnailFile,
+            pendingImages,
             uploadImage,
         ]);
 
@@ -304,17 +415,22 @@ export function useProductPostAdd() {
         setSaving(false);
         setError(null);
     }, []);
+
+
+
     return {
         draftPost,
         draftProducts,
 
         thumbnailFile,
+        pendingImages,
 
         saving,
         error,
 
         updatePost,
         setThumbnailFile,
+        setPendingImages,
 
         addProduct,
         updateProduct,

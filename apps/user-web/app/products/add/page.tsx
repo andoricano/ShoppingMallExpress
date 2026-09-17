@@ -33,6 +33,7 @@ export default function ProductPostAddPage() {
         saving,
         error,
         thumbnailFile,
+        setPendingImages,
         setThumbnailFile,
     } = useProductPostAdd();
 
@@ -138,11 +139,15 @@ export default function ProductPostAddPage() {
                         onThumbnailSelect={setThumbnailFile}
                     />
 
+
                     <ProductPostEditor
                         post={draftPost}
                         onChange={updatePost}
+                        onImagesChange={setPendingImages}
                         saving={saving}
                     />
+
+
                 </div>
 
                 {/* Product 등록 Modal */}

@@ -15,6 +15,8 @@ import type {
 
 import { API_ENDPOINTS } from "@mall/constants";
 import { useImageApi } from "../images/useImageApi";
+import type { PendingImage } from "@/component/products/post/editor/useEditSection";
+
 
 // ==========================================
 // Types
@@ -65,6 +67,13 @@ export function useProductPostEdit(
         thumbnailFile,
         setThumbnailFileState,
     ] = useState<File | null>(null);
+
+
+    const [
+        pendingImages,
+        setPendingImages,
+    ] = useState<PendingImage[]>([]);
+
 
     // ==========================================
     // 1. ProductPost 조회
@@ -323,6 +332,10 @@ export function useProductPostEdit(
                 let thumbnail =
                     draftPost.thumbnail;
 
+                // ==========================================
+                // Thumbnail 이미지 업로드
+                // ==========================================
+
                 if (thumbnailFile) {
                     const { imageUrl } =
                         await uploadImage(
@@ -335,10 +348,110 @@ export function useProductPostEdit(
                     };
                 }
 
+                // ==========================================
+                // Tiptap 이미지 업로드
+                // ==========================================
+
+                let content =
+                    draftPost.content;
+
+                if (pendingImages.length > 0) {
+                    const uploadedImages =
+                        await Promise.all(
+                            pendingImages.map(
+                                async (image) => {
+                                    const result =
+                                        await uploadImage(
+                                            image.file,
+                                        );
+
+                                    console.log(
+                                        "[TIPTAP IMAGE] uploaded:",
+                                        {
+                                            previewUrl:
+                                                image.previewUrl,
+                                            imageUrl:
+                                                result.imageUrl,
+                                            path: result.path,
+                                        },
+                                    );
+
+                                    return {
+                                        previewUrl:
+                                            image.previewUrl,
+                                        imageUrl:
+                                            result.imageUrl,
+                                    };
+                                },
+                            ),
+                        );
+
+                    const contentJson =
+                        JSON.parse(content);
+
+                    const replaceImageUrls = (
+                        node: any,
+                    ): any => {
+                        if (
+                            node.type ===
+                            "image" &&
+                            node.attrs?.src
+                        ) {
+                            const uploaded =
+                                uploadedImages.find(
+                                    (image) =>
+                                        image.previewUrl ===
+                                        node.attrs.src,
+                                );
+
+                            if (uploaded) {
+                                return {
+                                    ...node,
+                                    attrs: {
+                                        ...node.attrs,
+                                        src: uploaded.imageUrl,
+                                    },
+                                };
+                            }
+                        }
+
+                        if (
+                            Array.isArray(
+                                node.content,
+                            )
+                        ) {
+                            return {
+                                ...node,
+                                content:
+                                    node.content.map(
+                                        replaceImageUrls,
+                                    ),
+                            };
+                        }
+
+                        return node;
+                    };
+
+                    content = JSON.stringify(
+                        replaceImageUrls(
+                            contentJson,
+                        ),
+                    );
+                }
+
+                // ==========================================
+                // Payload
+                // ==========================================
+
                 const payload = {
                     ...buildPayload(),
                     thumbnail,
+                    content,
                 };
+
+                // ==========================================
+                // ProductPost 수정
+                // ==========================================
 
                 const res = await fetch(
                     API_ENDPOINTS.PRODUCT_POSTS.BY_ID(
@@ -372,6 +485,7 @@ export function useProductPostEdit(
 
                 setDraftPost(updatedPost);
                 setThumbnailFileState(null);
+                setPendingImages([]);
 
                 return updatedPost;
             } catch (err) {
@@ -390,8 +504,10 @@ export function useProductPostEdit(
             draftPost,
             buildPayload,
             thumbnailFile,
+            pendingImages,
             uploadImage,
         ]);
+
 
     // ==========================================
     // 8. ProductPost 삭제 API
@@ -446,11 +562,17 @@ export function useProductPostEdit(
                 setSaving(false);
             }
         }, [draftPost?.id]);
+
+
     return {
         draftPost,
         draftProducts,
 
         thumbnailFile,
+        setThumbnailFile,
+
+        pendingImages,
+        setPendingImages,
 
         loading,
         saving,
@@ -459,7 +581,6 @@ export function useProductPostEdit(
         fetchProductPost,
 
         updatePost,
-        setThumbnailFile,
 
         addProduct,
         updateProduct,

@@ -1,3 +1,5 @@
+// post/editor/tiptap/ProductDescriptionEditor.tsx
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -7,18 +9,28 @@ import StarterKit from "@tiptap/starter-kit";
 import Image from "@tiptap/extension-image";
 import TextAlign from "@tiptap/extension-text-align";
 
-import { EditSection } from "./EditSection";
+import {
+  EditSection,
+} from "./EditSection";
+import type { PendingImage } from "./useEditSection";
 
 interface ProductDescriptionEditorProps {
   initialContent?: JSONContent;
   onChange?: (content: JSONContent) => void;
+  onImagesChange?: (
+    images: PendingImage[],
+  ) => void;
 }
 
 export function ProductDescriptionEditor({
   initialContent,
   onChange,
+  onImagesChange,
 }: ProductDescriptionEditorProps) {
-  const [content, setContent] = useState<JSONContent | undefined>(
+  const [
+    content,
+    setContent,
+  ] = useState<JSONContent | undefined>(
     initialContent,
   );
 
@@ -27,7 +39,10 @@ export function ProductDescriptionEditor({
       StarterKit,
       Image,
       TextAlign.configure({
-        types: ["heading", "paragraph"],
+        types: [
+          "heading",
+          "paragraph",
+        ],
       }),
     ],
     content: initialContent,
@@ -44,8 +59,16 @@ export function ProductDescriptionEditor({
       }
     }, 500);
 
-    return () => clearTimeout(timer);
+    return () =>
+      clearTimeout(timer);
   }, [content, onChange]);
 
-  return <EditSection editor={editor} />;
+  return (
+    <EditSection
+      editor={editor}
+      onImagesChange={
+        onImagesChange
+      }
+    />
+  );
 }
