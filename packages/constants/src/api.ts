@@ -73,10 +73,6 @@ export const API_ENDPOINTS = {
         STATUS: (id: string) =>
             `/api/inventory-items/${id}/status`,
     },
-
-    // ==========================================
-    // 상품 게시물 관리 - Admin
-    // ==========================================
     PRODUCT_POSTS: {
         BASE: "/api/admin/product-posts",
 
@@ -85,6 +81,9 @@ export const API_ENDPOINTS = {
 
         STATUS: (id: string) =>
             `/api/admin/product-posts/${id}/status`,
+
+        BY_CATEGORY: (categoryId: string) =>
+            `/api/admin/product-posts/category/${categoryId}`,
     },
 
     // ==========================================

@@ -24,6 +24,10 @@ interface PostCategoryEditorProps {
 
     posts: ProductPost[];
 
+    onCategorySelect: (
+        categoryId: string,
+    ) => void | Promise<void>;
+
     onSave: (
         categories: ProductPostCategory[],
     ) => void | Promise<void>;
@@ -32,6 +36,7 @@ interface PostCategoryEditorProps {
 export default function PostCategoryEditor({
     categories,
     posts,
+    onCategorySelect,
     onSave,
 }: PostCategoryEditorProps) {
     const {
@@ -48,6 +53,13 @@ export default function PostCategoryEditor({
         () => toCategoryTreeList(draftCategories),
         [draftCategories],
     );
+
+    const handleSelectCategory = async (
+        categoryId: string,
+    ) => {
+        selectCategory(categoryId);
+        await onCategorySelect(categoryId);
+    };
 
     const handleSelectPost = (
         post: ProductPost,
@@ -94,13 +106,9 @@ export default function PostCategoryEditor({
                     <div className="max-h-[500px] overflow-y-auto p-2">
                         <CategoryTreeView
                             nodes={categoryTree}
-                            selectedId={
-                                selectedCategoryId
-                            }
-                            onSelect={(
-                                category,
-                            ) =>
-                                selectCategory(
+                            selectedId={selectedCategoryId}
+                            onSelect={(category) =>
+                                handleSelectCategory(
                                     category.id,
                                 )
                             }
@@ -111,12 +119,8 @@ export default function PostCategoryEditor({
                 {/* 게시물 */}
                 <CategoryEditorPostList
                     posts={posts}
-                    selectedIds={
-                        selectedPostIds
-                    }
-                    onSelect={
-                        handleSelectPost
-                    }
+                    selectedIds={selectedPostIds}
+                    onSelect={handleSelectPost}
                 />
             </div>
         </div>

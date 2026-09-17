@@ -10,17 +10,35 @@ interface ProductPostQuery {
 }
 
 export function useAdminPostProducts() {
-    const [postList, setPostList] = useState<ProductPost[]>([]);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+    const [
+        postList,
+        setPostList,
+    ] = useState<ProductPost[]>([]);
+
+    const [
+        loading,
+        setLoading,
+    ] = useState(false);
+
+    const [
+        error,
+        setError,
+    ] = useState<string | null>(null);
+
+    // ==========================================
+    // 전체 Product Post 조회
+    // ==========================================
 
     const fetchPosts = useCallback(
-        async (params?: ProductPostQuery) => {
+        async (
+            params?: ProductPostQuery,
+        ) => {
             setLoading(true);
             setError(null);
 
             try {
-                const searchParams = new URLSearchParams();
+                const searchParams =
+                    new URLSearchParams();
 
                 if (params?.search) {
                     searchParams.set(
@@ -29,10 +47,15 @@ export function useAdminPostProducts() {
                     );
                 }
 
-                if (params?.isPublished !== undefined) {
+                if (
+                    params?.isPublished !==
+                    undefined
+                ) {
                     searchParams.set(
                         "isPublished",
-                        String(params.isPublished),
+                        String(
+                            params.isPublished,
+                        ),
                     );
                 }
 
@@ -43,17 +66,28 @@ export function useAdminPostProducts() {
                     ? `${API_ENDPOINTS.PRODUCT_POSTS.BASE}?${queryString}`
                     : API_ENDPOINTS.PRODUCT_POSTS.BASE;
 
-                const res = await fetch(url);
+                const res =
+                    await fetch(url);
+
+                const result =
+                    await res
+                        .json()
+                        .catch(() => null);
 
                 if (!res.ok) {
                     throw new Error(
-                        "상품 게시물 목록 조회에 실패했습니다.",
+                        result?.message ||
+                            "상품 게시물 목록 조회에 실패했습니다.",
                     );
                 }
 
-                const result = await res.json();
-
-                setPostList(result.data ?? []);
+                setPostList(
+                    Array.isArray(
+                        result?.data,
+                    )
+                        ? result.data
+                        : [],
+                );
             } catch (err) {
                 setError(
                     err instanceof Error
@@ -67,49 +101,118 @@ export function useAdminPostProducts() {
         [],
     );
 
-    const deletePost = useCallback(
-        async (postId: string) => {
-            setLoading(true);
-            setError(null);
+    // ==========================================
+    // Category 기준 Product Post 조회
+    // ==========================================
 
-            try {
-                const res = await fetch(
-                    API_ENDPOINTS.PRODUCT_POSTS.BY_ID(postId),
-                    {
-                        method: "DELETE",
-                    },
-                );
+    const fetchCategoryPosts =
+        useCallback(
+            async (
+                categoryId: string,
+            ) => {
+                setLoading(true);
+                setError(null);
 
-                if (!res.ok) {
-                    const result = await res
-                        .json()
-                        .catch(() => null);
+                try {
+                    const res =
+                        await fetch(
+                            API_ENDPOINTS.PRODUCT_POSTS.BY_CATEGORY(
+                                categoryId,
+                            ),
+                        );
 
-                    throw new Error(
-                        result?.message ||
-                        "상품 게시물 삭제에 실패했습니다.",
+                    const result =
+                        await res
+                            .json()
+                            .catch(
+                                () => null,
+                            );
+
+                    if (!res.ok) {
+                        throw new Error(
+                            result?.message ||
+                                "카테고리 상품 게시물 목록 조회에 실패했습니다.",
+                        );
+                    }
+
+                    setPostList(
+                        Array.isArray(
+                            result?.data,
+                        )
+                            ? result.data
+                            : [],
                     );
+                } catch (err) {
+                    setError(
+                        err instanceof Error
+                            ? err.message
+                            : "카테고리 상품 게시물 목록 조회에 실패했습니다.",
+                    );
+                } finally {
+                    setLoading(false);
                 }
-            } catch (err) {
-                setError(
-                    err instanceof Error
-                        ? err.message
-                        : "상품 게시물 삭제에 실패했습니다.",
-                );
+            },
+            [],
+        );
 
-                throw err;
-            } finally {
-                setLoading(false);
-            }
-        },
-        [],
-    );
+    // ==========================================
+    // Product Post 삭제
+    // ==========================================
+
+    const deletePost =
+        useCallback(
+            async (
+                postId: string,
+            ) => {
+                setLoading(true);
+                setError(null);
+
+                try {
+                    const res =
+                        await fetch(
+                            API_ENDPOINTS.PRODUCT_POSTS.BY_ID(
+                                postId,
+                            ),
+                            {
+                                method: "DELETE",
+                            },
+                        );
+
+                    if (!res.ok) {
+                        const result =
+                            await res
+                                .json()
+                                .catch(
+                                    () => null,
+                                );
+
+                        throw new Error(
+                            result?.message ||
+                                "상품 게시물 삭제에 실패했습니다.",
+                        );
+                    }
+                } catch (err) {
+                    setError(
+                        err instanceof Error
+                            ? err.message
+                            : "상품 게시물 삭제에 실패했습니다.",
+                    );
+
+                    throw err;
+                } finally {
+                    setLoading(false);
+                }
+            },
+            [],
+        );
 
     return {
         postList,
         loading,
         error,
+
         fetchPosts,
-        deletePost
+        fetchCategoryPosts,
+        deletePost,
     };
 }

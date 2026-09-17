@@ -1,5 +1,3 @@
-// app/posts/page.tsx
-
 "use client";
 
 import { useEffect, useState } from "react";
@@ -47,18 +45,22 @@ export default function PostsPage() {
         categoryError,
         setCategoryError,
     ] = useState<string | null>(null);
+
     useEffect(() => {
         const load = async () => {
             setCategoryLoading(true);
             setCategoryError(null);
 
             try {
-                await Promise.all([
+                const [
+                    posts,
+                    categories,
+                ] = await Promise.all([
                     fetchPosts(),
-                    fetchCategories().then(
-                        setCategoryList,
-                    ),
+                    fetchCategories(),
                 ]);
+
+                setCategoryList(categories);
             } catch (err) {
                 setCategoryError(
                     err instanceof Error
@@ -76,6 +78,55 @@ export default function PostsPage() {
         fetchCategories,
     ]);
 
+    const handleCategorySelect = async (
+        categoryId: string,
+    ) => {
+        const category =
+            categoryList.find(
+                (item) =>
+                    item.id === categoryId,
+            );
+
+        if (!category) {
+            return;
+        }
+
+        // 이미 관계 데이터를 가져온 Category라면
+        // 다시 조회하지 않습니다.
+        if (
+            category.productPosts !==
+            undefined
+        ) {
+            return;
+        }
+
+        try {
+            setCategoryError(null);
+
+            const productPosts =
+                await fetchPostsByCategory(
+                    categoryId,
+                );
+
+            setCategoryList((current) =>
+                current.map((item) =>
+                    item.id === categoryId
+                        ? {
+                              ...item,
+                              productPosts,
+                          }
+                        : item,
+                ),
+            );
+        } catch (err) {
+            setCategoryError(
+                err instanceof Error
+                    ? err.message
+                    : "카테고리 게시물 조회에 실패했습니다.",
+            );
+        }
+    };
+
     const loading =
         postLoading || categoryLoading;
 
@@ -90,7 +141,8 @@ export default function PostsPage() {
                 const original =
                     categoryList.find(
                         (item) =>
-                            item.id === category.id,
+                            item.id ===
+                            category.id,
                     );
 
                 if (!original) {
@@ -103,7 +155,8 @@ export default function PostsPage() {
                             original.productPosts ??
                             []
                         ).map(
-                            (post) => post.id,
+                            (post) =>
+                                post.id,
                         ),
                     );
 
@@ -113,41 +166,40 @@ export default function PostsPage() {
                             category.productPosts ??
                             []
                         ).map(
-                            (post) => post.id,
+                            (post) =>
+                                post.id,
                         ),
                     );
 
-                const addedPostIds =
-                    (
-                        category.productPosts ??
-                        []
-                    )
-                        .filter(
-                            (post) =>
-                                !originalPostIds.has(
-                                    post.id,
-                                ),
-                        )
-                        .map(
-                            (post) =>
+                const addedPostIds = (
+                    category.productPosts ??
+                    []
+                )
+                    .filter(
+                        (post) =>
+                            !originalPostIds.has(
                                 post.id,
-                        );
+                            ),
+                    )
+                    .map(
+                        (post) =>
+                            post.id,
+                    );
 
-                const removedPostIds =
-                    (
-                        original.productPosts ??
-                        []
-                    )
-                        .filter(
-                            (post) =>
-                                !currentPostIds.has(
-                                    post.id,
-                                ),
-                        )
-                        .map(
-                            (post) =>
+                const removedPostIds = (
+                    original.productPosts ??
+                    []
+                )
+                    .filter(
+                        (post) =>
+                            !currentPostIds.has(
                                 post.id,
-                        );
+                            ),
+                    )
+                    .map(
+                        (post) =>
+                            post.id,
+                    );
 
                 if (
                     addedPostIds.length > 0
@@ -173,9 +225,6 @@ export default function PostsPage() {
                 }
             }
 
-            // 저장 성공 후에는 재조회하지 않음.
-            // 현재 Editor의 데이터가 이미 저장된 상태이므로
-            // 로컬 기준만 최신 상태로 맞춰준다.
             setCategoryList(categories);
         } catch (err) {
             setCategoryError(
@@ -209,6 +258,9 @@ export default function PostsPage() {
                             categoryList
                         }
                         posts={postList}
+                        onCategorySelect={
+                            handleCategorySelect
+                        }
                         onSave={handleSave}
                     />
                 )}

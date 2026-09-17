@@ -2,6 +2,7 @@ import { Router } from "express";
 
 import {
     getAdminProductPosts,
+    getAdminCategoryPosts,
     getProductPostById,
     createProductPost,
     updateProductPost,
@@ -20,6 +21,13 @@ const router: Router = Router();
 router.get(
     "/admin/product-posts",
     getAdminProductPosts,
+);
+
+// GET /api/admin/product-posts/category/:categoryId
+// 특정 Category의 상품 게시물 조회
+router.get(
+    "/admin/product-posts/category/:categoryId",
+    getAdminCategoryPosts,
 );
 
 // GET /api/admin/product-posts/:id

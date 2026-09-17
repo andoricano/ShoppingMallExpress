@@ -70,6 +70,12 @@ interface UpdateProductPostPayload {
     products?: ProductPostProductPayload[];
 }
 
+interface ProductPostQuery {
+    search?: string;
+    isPublished?: string;
+    categoryId?: string;
+}
+
 // ==========================================
 // 1. Admin 상품 게시물 목록 조회
 // ==========================================
@@ -266,6 +272,93 @@ export const createProductPost = async (
         });
     }
 };
+
+
+// ==========================================
+// Admin 특정 Category 상품 게시물 목록 조회
+// ==========================================
+
+export const getAdminCategoryPosts = async (
+    req: Request<{
+        categoryId: string;
+    }>,
+    res: Response,
+) => {
+    try {
+        const {
+            categoryId,
+        } = req.params;
+
+        if (!categoryId?.trim()) {
+            return res.status(400).json({
+                success: false,
+                message:
+                    "categoryId는 필수입니다.",
+            });
+        }
+
+        const {
+            data,
+            error,
+        } = await supabase
+            .from("product_posts")
+            .select(`
+                *,
+                product_post_products (
+                    id,
+                    product_id,
+                    display_order
+                ),
+                product_post_categories!inner (
+                    category_id
+                )
+            `)
+            .eq(
+                "product_post_categories.category_id",
+                categoryId.trim(),
+            )
+            .order("created_at", {
+                ascending: false,
+            });
+
+        if (error) {
+            throw error;
+        }
+
+        const posts = (data ?? []).map(
+            (post) => {
+                const {
+                    product_post_categories,
+                    ...productPost
+                } = post;
+
+                return productPost;
+            },
+        );
+
+        return res.json({
+            success: true,
+            data: toCamelCase(posts),
+        });
+    } catch (error) {
+        console.error(
+            "Get admin category product posts failed:",
+            error,
+        );
+
+        return res.status(500).json({
+            success: false,
+            message:
+                "카테고리 상품 게시물 목록 조회에 실패했습니다.",
+            error:
+                error instanceof Error
+                    ? error.message
+                    : JSON.stringify(error),
+        });
+    }
+};
+
+
 
 
 // ==========================================
