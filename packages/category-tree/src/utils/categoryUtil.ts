@@ -1,5 +1,3 @@
-// packages/category-tree/src/utils/categoryTree.ts
-
 import type { CategoryTree } from "../types/categoryTree";
 
 export function findCategory(
@@ -51,6 +49,16 @@ export function updateCategory(
     });
 }
 
+export function addCategoryRoot(
+    nodes: CategoryTree[],
+    category: CategoryTree,
+): CategoryTree[] {
+    return [
+        ...nodes,
+        category,
+    ];
+}
+
 export function addCategoryChild(
     nodes: CategoryTree[],
     parentId: string,
@@ -85,4 +93,26 @@ export function removeCategory(
                     id,
                 ),
         }));
+}
+
+export function flattenCategoryTree(
+    nodes: CategoryTree[],
+): CategoryTree[] {
+    const result: CategoryTree[] = [];
+
+    const walk = (
+        currentNodes: CategoryTree[],
+    ) => {
+        for (const node of currentNodes) {
+            result.push(node);
+
+            if (node.children.length > 0) {
+                walk(node.children);
+            }
+        }
+    };
+
+    walk(nodes);
+
+    return result;
 }

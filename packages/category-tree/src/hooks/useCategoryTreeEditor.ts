@@ -14,16 +14,25 @@ import type { CategoryTree } from "../types/categoryTree";
 import {
     addCategoryChild,
     findCategory,
+    removeCategory,
     updateCategory,
 } from "../utils/categoryUtil";
+
+import { useHistory } from "./useHistory";
 
 export function useCategoryTreeEditor(
     initialTree: CategoryTree[] = [],
 ) {
-    const [
-        tree,
-        setTree,
-    ] = useState<CategoryTree[]>(
+    const {
+        value: tree,
+        set: setTree,
+        commit,
+        undo,
+        redo,
+        reset: resetHistory,
+        canUndo,
+        canRedo,
+    } = useHistory<CategoryTree[]>(
         initialTree,
     );
 
@@ -34,26 +43,17 @@ export function useCategoryTreeEditor(
         null,
     );
 
-    const [
-        undoStack,
-        setUndoStack,
-    ] = useState<CategoryTree[][]>(
-        [],
-    );
-
-    const [
-        redoStack,
-        setRedoStack,
-    ] = useState<CategoryTree[][]>(
-        [],
-    );
+    // ==========================================
+    // 외부 Tree 변경
+    // ==========================================
 
     useEffect(() => {
-        setTree(initialTree);
+        resetHistory(initialTree);
         setSelectedId(null);
-        setUndoStack([]);
-        setRedoStack([]);
-    }, [initialTree]);
+    }, [
+        initialTree,
+        resetHistory,
+    ]);
 
     // ==========================================
     // Selected Category
@@ -86,6 +86,38 @@ export function useCategoryTreeEditor(
         );
 
     // ==========================================
+    // 최상위 Category 추가
+    //
+    // Undo 기록하지 않음
+    // ==========================================
+
+    const addRootCategory =
+        useCallback(() => {
+            const id =
+                crypto.randomUUID();
+
+            const root: CategoryTree = {
+                id,
+                parentId: null,
+                name: "새 카테고리",
+                slug: `category-${id}`,
+                depth: 1,
+                displayOrder:
+                    tree.length,
+                isActive: true,
+                isNew: true,
+                children: [],
+            };
+
+            setTree([
+                ...tree,
+                root,
+            ]);
+
+            setSelectedId(root.id);
+        }, [tree, setTree]);
+
+    // ==========================================
     // 이름 수정
     //
     // Undo / Redo 기록하지 않음
@@ -98,9 +130,9 @@ export function useCategoryTreeEditor(
                     return;
                 }
 
-                setTree((current) =>
+                setTree(
                     updateCategory(
-                        current,
+                        tree,
                         selectedId,
                         (node) => ({
                             ...node,
@@ -109,7 +141,11 @@ export function useCategoryTreeEditor(
                     ),
                 );
             },
-            [selectedId],
+            [
+                selectedId,
+                tree,
+                setTree,
+            ],
         );
 
     // ==========================================
@@ -128,22 +164,24 @@ export function useCategoryTreeEditor(
                 return;
             }
 
+            const id =
+                crypto.randomUUID();
+
             const child: CategoryTree = {
-                id: crypto.randomUUID(),
-                parentId: selectedNode.id,
+                id,
+                parentId:
+                    selectedNode.id,
                 name: "새 카테고리",
+                slug: `category-${id}`,
                 depth:
                     selectedNode.depth + 1,
+                displayOrder:
+                    selectedNode.children
+                        .length,
+                isActive: true,
                 isNew: true,
                 children: [],
             };
-
-            setUndoStack((current) => [
-                ...current,
-                tree,
-            ]);
-
-            setRedoStack([]);
 
             const nextTree =
                 addCategoryChild(
@@ -152,9 +190,14 @@ export function useCategoryTreeEditor(
                     child,
                 );
 
-            setTree(nextTree);
+            commit(nextTree);
+
             setSelectedId(child.id);
-        }, [selectedNode, tree]);
+        }, [
+            selectedNode,
+            tree,
+            commit,
+        ]);
 
     // ==========================================
     // Category 삭제
@@ -174,120 +217,46 @@ export function useCategoryTreeEditor(
                 return;
             }
 
-            setUndoStack((current) => [
-                ...current,
-                tree,
-            ]);
-
-            setRedoStack([]);
+            let nextTree: CategoryTree[];
 
             if (selectedNode.isNew) {
-                const parent =
-                    findCategory(
+                nextTree =
+                    removeCategory(
                         tree,
-                        selectedNode.parentId ??
-                        "",
+                        selectedNode.id,
                     );
-
-                if (!parent) {
-                    return;
-                }
-
-                setTree((current) =>
+            } else {
+                nextTree =
                     updateCategory(
-                        current,
-                        parent.id,
+                        tree,
+                        selectedNode.id,
                         (node) => ({
                             ...node,
-                            children:
-                                node.children.filter(
-                                    (child) =>
-                                        child.id !==
-                                        selectedNode.id,
-                                ),
+                            isDeleted: true,
                         }),
-                    ),
-                );
-
-                setSelectedId(null);
-
-                return;
+                    );
             }
 
-            setTree((current) =>
-                updateCategory(
-                    current,
-                    selectedNode.id,
-                    (node) => ({
-                        ...node,
-                        isDeleted: true,
-                    }),
-                ),
-            );
+            commit(nextTree);
 
             setSelectedId(null);
-        }, [selectedNode, tree]);
-
-    // ==========================================
-    // Undo
-    // ==========================================
-
-    const undo = useCallback(() => {
-        const previous =
-            undoStack.at(-1);
-
-        if (!previous) {
-            return;
-        }
-
-        setUndoStack((current) =>
-            current.slice(0, -1),
-        );
-
-        setRedoStack((current) => [
+        }, [
+            selectedNode,
             tree,
-            ...current,
+            commit,
         ]);
-
-        setTree(previous);
-        setSelectedId(null);
-    }, [undoStack, tree]);
-
-    // ==========================================
-    // Redo
-    // ==========================================
-
-    const redo = useCallback(() => {
-        const next =
-            redoStack[0];
-
-        if (!next) {
-            return;
-        }
-
-        setRedoStack((current) =>
-            current.slice(1),
-        );
-
-        setUndoStack((current) => [
-            ...current,
-            tree,
-        ]);
-
-        setTree(next);
-        setSelectedId(null);
-    }, [redoStack, tree]);
 
     // ==========================================
     // 초기화
     // ==========================================
 
     const reset = useCallback(() => {
-        setTree(initialTree);
+        resetHistory(initialTree);
         setSelectedId(null);
-        setUndoStack([]);
-        setRedoStack([]);
-    }, [initialTree]);
+    }, [
+        initialTree,
+        resetHistory,
+    ]);
 
     // ==========================================
     // 변경 여부
@@ -309,14 +278,13 @@ export function useCategoryTreeEditor(
 
         hasChanges,
 
-        canUndo:
-            undoStack.length > 0,
-
-        canRedo:
-            redoStack.length > 0,
+        canUndo,
+        canRedo,
 
         selectCategory,
         updateSelectedName,
+
+        addRootCategory,
         addChildCategory,
         deleteSelectedCategory,
 

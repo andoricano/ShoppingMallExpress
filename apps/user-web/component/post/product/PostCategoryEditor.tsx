@@ -13,12 +13,11 @@ import type { CategoryTree } from "@mall/category-tree";
 
 import { CategoryTreeView } from "@mall/category-tree";
 
-import { toCategoryTree } from "@/utils/postCategory";
-
 import { usePostCategoryEditor } from "@/hooks/category/usePostCategoryEditor";
 
 import CategoryEditorPostList from "./CategoryEditorPostList";
 import PostCategoryEditorToolbar from "./PostCategoryEditorToolbar";
+import { toCategoryTreeList } from "@/utils/postCategory";
 
 interface PostCategoryEditorProps {
     categories: ProductPostCategory[];
@@ -46,7 +45,7 @@ export default function PostCategoryEditor({
     } = usePostCategoryEditor(categories);
 
     const categoryTree = useMemo<CategoryTree[]>(
-        () => toCategoryTree(draftCategories),
+        () => toCategoryTreeList(draftCategories),
         [draftCategories],
     );
 

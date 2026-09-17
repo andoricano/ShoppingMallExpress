@@ -1,13 +1,14 @@
-// packages/category-tree/src/types/categoryTree.ts
-
 export interface CategoryTree {
     id: string;
 
     parentId: string | null;
 
     name: string;
+    slug: string;
 
     depth: number;
+    displayOrder: number;
+    isActive: boolean;
 
     isLeaf?: boolean;
 

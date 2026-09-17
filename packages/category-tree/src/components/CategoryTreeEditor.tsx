@@ -6,6 +6,7 @@ import { useCategoryTreeEditor } from "../hooks/useCategoryTreeEditor";
 
 import type { CategoryTree } from "../types/categoryTree";
 
+import CategoryTreeEditorEmpty from "./CategoryTreeEditorEmpty";
 import CategoryTreeEditorForm from "./CategoryTreeEditorForm";
 import CategoryTreeEditorHeader from "./CategoryTreeEditorHeader";
 import CategoryTreeView from "./CategoryTreeView";
@@ -20,11 +21,12 @@ interface CategoryTreeEditorProps {
 
 export default function CategoryTreeEditor({
     nodes,
-    onSave,
+    onSave
 }: CategoryTreeEditorProps) {
     const {
         tree,
         selectedNode,
+        addRootCategory,
         selectCategory,
         updateSelectedName,
         addChildCategory,
@@ -39,12 +41,20 @@ export default function CategoryTreeEditor({
         nodes,
     );
 
+    if (tree.length === 0) {
+        return (
+            <section className="w-full">
+                <CategoryTreeEditorEmpty
+                    onStart={addRootCategory}
+                />
+            </section>
+        );
+    }
+
     return (
         <section className="w-full">
             <CategoryTreeEditorHeader
-                hasChanges={
-                    hasChanges
-                }
+                hasChanges={hasChanges}
                 canUndo={canUndo}
                 canRedo={canRedo}
                 onUndo={undo}
@@ -73,9 +83,7 @@ export default function CategoryTreeEditor({
 
                 {/* Category Editor Form */}
                 <CategoryTreeEditorForm
-                    node={
-                        selectedNode
-                    }
+                    node={selectedNode}
                     onSaveName={
                         updateSelectedName
                     }

@@ -90,8 +90,8 @@ export const getProductPostCategories = async (
                 error instanceof Error
                     ? error.message
                     : JSON.stringify(
-                          error,
-                      ),
+                        error,
+                    ),
         });
     }
 };
@@ -266,12 +266,11 @@ export const createProductPostCategory =
                     error instanceof Error
                         ? error.message
                         : JSON.stringify(
-                              error,
-                          ),
+                            error,
+                        ),
             });
         }
     };
-
 // ==========================================
 // 3. Category 수정
 // ==========================================
@@ -286,8 +285,40 @@ export const updateProductPostCategory =
         res: Response,
     ) => {
         try {
-            const { id } =
-                req.params;
+            const { id } = req.params;
+
+            // ------------------------------------------
+            // 1. 현재 Category 조회
+            // ------------------------------------------
+
+            const {
+                data: current,
+                error: currentError,
+            } = await supabase
+                .from(
+                    "product_post_category",
+                )
+                .select(
+                    "id, parent_id, depth",
+                )
+                .eq("id", id)
+                .maybeSingle();
+
+            if (currentError) {
+                throw currentError;
+            }
+
+            if (!current) {
+                return res.status(404).json({
+                    success: false,
+                    message:
+                        "카테고리를 찾을 수 없습니다.",
+                });
+            }
+
+            // ------------------------------------------
+            // 2. Request Body
+            // ------------------------------------------
 
             const {
                 parentId,
@@ -303,13 +334,13 @@ export const updateProductPostCategory =
                 unknown
             > = {};
 
-            if (
-                name !== undefined
-            ) {
+            // ------------------------------------------
+            // 3. 일반 필드 검증
+            // ------------------------------------------
+
+            if (name !== undefined) {
                 if (!name.trim()) {
-                    return res.status(
-                        400,
-                    ).json({
+                    return res.status(400).json({
                         success: false,
                         message:
                             "name은 비어 있을 수 없습니다.",
@@ -320,13 +351,9 @@ export const updateProductPostCategory =
                     name.trim();
             }
 
-            if (
-                slug !== undefined
-            ) {
+            if (slug !== undefined) {
                 if (!slug.trim()) {
-                    return res.status(
-                        400,
-                    ).json({
+                    return res.status(400).json({
                         success: false,
                         message:
                             "slug는 비어 있을 수 없습니다.",
@@ -337,27 +364,20 @@ export const updateProductPostCategory =
                     slug.trim();
             }
 
-            if (
-                depth !== undefined
-            ) {
+            if (depth !== undefined) {
                 if (
-                    !Number.isInteger(
-                        depth,
-                    ) ||
+                    !Number.isInteger(depth) ||
                     depth < 1 ||
                     depth > 3
                 ) {
-                    return res.status(
-                        400,
-                    ).json({
+                    return res.status(400).json({
                         success: false,
                         message:
                             "depth는 1~3 사이의 정수여야 합니다.",
                     });
                 }
 
-                updateData.depth =
-                    depth;
+                updateData.depth = depth;
             }
 
             if (
@@ -370,9 +390,7 @@ export const updateProductPostCategory =
                     ) ||
                     displayOrder < 0
                 ) {
-                    return res.status(
-                        400,
-                    ).json({
+                    return res.status(400).json({
                         success: false,
                         message:
                             "displayOrder는 0 이상의 정수여야 합니다.",
@@ -387,10 +405,36 @@ export const updateProductPostCategory =
                 isActive !==
                 undefined
             ) {
+                if (
+                    typeof isActive !==
+                    "boolean"
+                ) {
+                    return res.status(400).json({
+                        success: false,
+                        message:
+                            "isActive는 boolean이어야 합니다.",
+                    });
+                }
+
                 updateData.is_active =
                     isActive;
             }
 
+            // ------------------------------------------
+            // 4. 다음 parentId / depth 계산
+            // ------------------------------------------
+
+            const nextParentId =
+                parentId !== undefined
+                    ? parentId
+                    : current.parent_id;
+
+            const nextDepth =
+                depth !== undefined
+                    ? depth
+                    : current.depth;
+
+            // parentId가 요청에 포함된 경우
             if (
                 parentId !== undefined
             ) {
@@ -398,16 +442,49 @@ export const updateProductPostCategory =
                     parentId;
             }
 
+            // ------------------------------------------
+            // 5. parentId / depth 관계 검증
+            // ------------------------------------------
+
             if (
-                depth !== undefined ||
-                parentId !==
-                    undefined
+                parentId !== undefined ||
+                depth !== undefined
             ) {
-                const {
-                    data: current,
-                    error: currentError,
-                } =
-                    await supabase
+                // ------------------------------
+                // 최상위 Category
+                // ------------------------------
+
+                if (nextParentId === null) {
+                    if (nextDepth !== 1) {
+                        return res.status(400).json({
+                            success: false,
+                            message:
+                                "최상위 카테고리의 depth는 1이어야 합니다.",
+                        });
+                    }
+                }
+
+                // ------------------------------
+                // 하위 Category
+                // ------------------------------
+
+                else {
+                    // 자기 자신 검사
+                    if (
+                        nextParentId === id
+                    ) {
+                        return res.status(400).json({
+                            success: false,
+                            message:
+                                "자기 자신을 상위 카테고리로 지정할 수 없습니다.",
+                        });
+                    }
+
+                    // 부모 Category 조회
+                    const {
+                        data: parent,
+                        error: parentError,
+                    } = await supabase
                         .from(
                             "product_post_category",
                         )
@@ -416,129 +493,109 @@ export const updateProductPostCategory =
                         )
                         .eq(
                             "id",
-                            id,
+                            nextParentId,
                         )
-                        .single();
+                        .maybeSingle();
 
-                if (currentError) {
-                    throw currentError;
-                }
-
-                if (!current) {
-                    return res.status(404).json({
-                        success: false,
-                        message:
-                            "카테고리를 찾을 수 없습니다.",
-                    });
-                }
-
-                const nextParentId =
-                    parentId !==
-                    undefined
-                        ? parentId
-                        : current.parent_id;
-
-                const nextDepth =
-                    depth !==
-                    undefined
-                        ? depth
-                        : current.depth;
-
-                if (
-                    nextParentId
-                ) {
-                    if (
-                        nextParentId ===
-                        id
-                    ) {
-                        return res.status(
-                            400,
-                        ).json({
-                            success: false,
-                            message:
-                                "자기 자신을 상위 카테고리로 지정할 수 없습니다.",
-                        });
-                    }
-
-                    const {
-                        data: parent,
-                        error: parentError,
-                    } =
-                        await supabase
-                            .from(
-                                "product_post_category",
-                            )
-                            .select(
-                                "id, depth",
-                            )
-                            .eq(
-                                "id",
-                                nextParentId,
-                            )
-                            .single();
-
-                    if (
-                        parentError
-                    ) {
+                    if (parentError) {
                         throw parentError;
                     }
 
                     if (!parent) {
-                        return res
-                            .status(
-                                400,
-                            )
-                            .json({
-                                success: false,
-                                message:
-                                    "상위 카테고리를 찾을 수 없습니다.",
-                            });
-                    }
-
-                    if (
-                        parent.depth >=
-                        3
-                    ) {
-                        return res
-                            .status(
-                                400,
-                            )
-                            .json({
-                                success: false,
-                                message:
-                                    "3단계를 초과하는 카테고리는 사용할 수 없습니다.",
-                            });
-                    }
-
-                    if (
-                        nextDepth !==
-                        parent.depth +
-                            1
-                    ) {
-                        return res
-                            .status(
-                                400,
-                            )
-                            .json({
-                                success: false,
-                                message:
-                                    "parentId와 depth가 일치하지 않습니다.",
-                            });
-                    }
-                } else if (
-                    nextDepth !== 1
-                ) {
-                    return res
-                        .status(
-                            400,
-                        )
-                        .json({
+                        return res.status(400).json({
                             success: false,
                             message:
-                                "최상위 카테고리의 depth는 1이어야 합니다.",
+                                "상위 카테고리를 찾을 수 없습니다.",
                         });
+                    }
+
+                    // 부모가 이미 3단계인 경우
+                    if (parent.depth >= 3) {
+                        return res.status(400).json({
+                            success: false,
+                            message:
+                                "3단계를 초과하는 카테고리는 사용할 수 없습니다.",
+                        });
+                    }
+
+                    // parent.depth + 1 검증
+                    if (
+                        nextDepth !==
+                        parent.depth + 1
+                    ) {
+                        return res.status(400).json({
+                            success: false,
+                            message:
+                                "parentId와 depth가 일치하지 않습니다.",
+                        });
+                    }
+
+                    // --------------------------------------
+                    // 순환 참조 검사
+                    //
+                    // 현재 Category의 하위 Category를
+                    // 부모로 지정하면 안 됨
+                    // --------------------------------------
+
+                    let ancestorId:
+                        | string
+                        | null =
+                        parent.id;
+
+                    while (
+                        ancestorId !== null
+                    ) {
+                        if (
+                            ancestorId === id
+                        ) {
+                            return res
+                                .status(400)
+                                .json({
+                                    success: false,
+                                    message:
+                                        "하위 카테고리를 상위 카테고리로 지정할 수 없습니다.",
+                                });
+                        }
+
+                        const {
+                            data: ancestor,
+                            error: ancestorError,
+                        } =
+                            await supabase
+                                .from(
+                                    "product_post_category",
+                                )
+                                .select(
+                                    "id, parent_id",
+                                )
+                                .eq(
+                                    "id",
+                                    ancestorId,
+                                )
+                                .maybeSingle();
+
+                        if (
+                            ancestorError
+                        ) {
+                            throw ancestorError;
+                        }
+
+                        if (!ancestor) {
+                            break;
+                        }
+
+                        ancestorId =
+                            ancestor.parent_id;
+                    }
                 }
+
+                updateData.depth =
+                    nextDepth;
             }
+
+            // ------------------------------------------
+            // 6. 수정할 데이터 확인
+            // ------------------------------------------
 
             if (
                 Object.keys(
@@ -552,26 +609,28 @@ export const updateProductPostCategory =
                 });
             }
 
+            // ------------------------------------------
+            // 7. updated_at
+            // ------------------------------------------
+
             updateData.updated_at =
                 new Date().toISOString();
+
+            // ------------------------------------------
+            // 8. DB Update
+            // ------------------------------------------
 
             const {
                 data,
                 error,
-            } =
-                await supabase
-                    .from(
-                        "product_post_category",
-                    )
-                    .update(
-                        updateData,
-                    )
-                    .eq(
-                        "id",
-                        id,
-                    )
-                    .select()
-                    .single();
+            } = await supabase
+                .from(
+                    "product_post_category",
+                )
+                .update(updateData)
+                .eq("id", id)
+                .select()
+                .single();
 
             if (error) {
                 throw error;
@@ -597,12 +656,11 @@ export const updateProductPostCategory =
                     error instanceof Error
                         ? error.message
                         : JSON.stringify(
-                              error,
-                          ),
+                            error,
+                        ),
             });
         }
     };
-
 // ==========================================
 // 4. Category 삭제
 // ==========================================
@@ -615,24 +673,19 @@ export const deleteProductPostCategory =
         res: Response,
     ) => {
         try {
-            const { id } =
-                req.params;
+            const { id } = req.params;
 
             const {
                 data,
                 error,
-            } =
-                await supabase
-                    .from(
-                        "product_post_category",
-                    )
-                    .delete()
-                    .eq(
-                        "id",
-                        id,
-                    )
-                    .select()
-                    .single();
+            } = await supabase
+                .from(
+                    "product_post_category",
+                )
+                .delete()
+                .eq("id", id)
+                .select()
+                .maybeSingle();
 
             if (error) {
                 throw error;
@@ -648,9 +701,7 @@ export const deleteProductPostCategory =
 
             return res.json({
                 success: true,
-                data: toCamelCase(
-                    data,
-                ),
+                data: toCamelCase(data),
             });
         } catch (error) {
             console.error(
