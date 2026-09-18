@@ -1,55 +1,99 @@
 "use client";
 
-import { useClientAuthStore } from "@/store/useClientAuthStore";
-import { useRouter } from "next/navigation";
+import { ProfileCard } from "@/components/mypage/main/ProfileCard";
+import { MyPageSidebar } from "@/components/mypage/MyPageSidbar";
+import { useMyPage } from "@/hooks/user/useMyPage";
 
+
+const mockProfile = {
+    id: "a7807bc2-81b9-4230-a63e-7b2910f7d879",
+    name: "Five C",
+    email: "cektjtro@gmail.com",
+    phone: "01033987008",
+    role: "ADMIN",
+};
 
 export default function MyPage() {
-    const router = useRouter();
+    const {
+        sidebarItems,
+        selectedId,
+        selectSection,
+    } = useMyPage();
 
-    const user =
-        useClientAuthStore(
-            (state) => state.user,
-        );
+    const renderContent = () => {
+        switch (selectedId) {
+            case "profile":
+                return (
+                    <ProfileCard
+                        profile={mockProfile}
+                    />
+                );
+
+            case "address":
+                return (
+                    <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+                        <h2 className="text-lg font-semibold text-slate-900">
+                            배송지
+                        </h2>
+                    </section>
+                );
+
+            case "point":
+                return (
+                    <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+                        <h2 className="text-lg font-semibold text-slate-900">
+                            포인트
+                        </h2>
+                    </section>
+                );
+
+            case "agreement":
+                return (
+                    <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+                        <h2 className="text-lg font-semibold text-slate-900">
+                            약관 및 동의
+                        </h2>
+                    </section>
+                );
+
+            case "withdraw":
+                return (
+                    <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+                        <h2 className="text-lg font-semibold text-slate-900">
+                            회원 탈퇴
+                        </h2>
+                    </section>
+                );
+
+            default:
+                return null;
+        }
+    };
 
     return (
-        <div className="p-6">
-            <h1 className="text-2xl font-bold">
-                마이페이지
-            </h1>
+        <div className="min-h-screen bg-slate-50/50 p-6 md:p-8">
+            <div className="mx-auto max-w-7xl">
+                <div className="mb-6">
+                    <h1 className="text-2xl font-bold text-slate-900">
+                        마이페이지
+                    </h1>
 
-            <pre className="mt-6 overflow-auto rounded-lg bg-slate-950 p-4 text-sm text-white">
-                {JSON.stringify(
-                    user,
-                    null,
-                    2,
-                )}
-            </pre>
+                    <p className="mt-1 text-sm text-slate-500">
+                        내 정보와 계정 설정을 관리합니다.
+                    </p>
+                </div>
 
-            <div className="mt-6 flex gap-3">
-                <button
-                    type="button"
-                    onClick={() =>
-                        router.push(
-                            "/mypage/history",
-                        )
-                    }
-                    className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-                >
-                    주문 이력
-                </button>
+                <div className="grid grid-cols-1 gap-6 lg:grid-cols-[240px_minmax(0,1fr)]">
+                    <MyPageSidebar
+                        items={sidebarItems}
+                        selectedId={selectedId}
+                        onSelect={selectSection}
+                    />
 
-                <button
-                    type="button"
-                    onClick={() =>
-                        router.push(
-                            "/mypage/point",
-                        )
-                    }
-                    className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-                >
-                    Point 테스트
-                </button>
+                    <main className="min-w-0">
+                        {renderContent()}
+                    </main>
+                </div>
             </div>
         </div>
     );
