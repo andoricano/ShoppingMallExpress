@@ -49,14 +49,14 @@ export default function HomePage() {
 
   return (
     <main className="min-h-screen">
-      {mainPageMock.header.isActive && (
+      {/* {mainPageMock.header.isActive && (
         <MainHeader
           config={mainPageMock.header}
           isLoggedIn={isLoggedIn}
           onNavigate={handleNavigate}
           onLogout={signOut}
         />
-      )}
+      )} */}
 
       <MainPage
         config={mainPageMock}
