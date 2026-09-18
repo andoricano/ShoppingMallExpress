@@ -37,7 +37,7 @@ export function ProductCard({
     const hasDiscount =
         cardType === "DISCOUNT" &&
         typeof product.discount ===
-            "number" &&
+        "number" &&
         product.discount > 0;
 
     return (
@@ -127,7 +127,7 @@ export function ProductCard({
                 {/* Tags */}
                 {product.tags &&
                     product.tags.length >
-                        0 && (
+                    0 && (
                         <div className="mt-3 flex flex-wrap gap-1.5">
                             {product.tags.map(
                                 (tag) => (

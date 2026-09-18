@@ -1,5 +1,3 @@
-// packages/mall-page-viewer/src/components/product/ProductDetailedThumbnailCard.tsx
-
 "use client";
 
 import type { ProductCardData } from "../../types/mainPage";
@@ -35,8 +33,8 @@ export function ProductDetailedThumbnailCard({
                     : "",
             ].join(" ")}
         >
-            {/* Thumbnail */}
-            <div className="aspect-[16/9] overflow-hidden bg-neutral-100">
+            {/* Image */}
+            <div className="relative aspect-square overflow-hidden bg-neutral-100">
                 {product.imageUrl ? (
                     <img
                         src={product.imageUrl}
@@ -51,48 +49,48 @@ export function ProductDetailedThumbnailCard({
             </div>
 
             {/* Content */}
-            <div className="p-5">
-                <h3 className="text-base font-semibold leading-6 text-neutral-900">
+            <div className="p-4">
+                <h3 className="truncate text-sm font-semibold text-neutral-900">
                     {product.title}
                 </h3>
 
                 {product.summary && (
-                    <p className="mt-2 line-clamp-3 text-sm leading-6 text-neutral-500">
+                    <p className="mt-1 line-clamp-1 text-xs text-neutral-500">
                         {product.summary}
                     </p>
                 )}
 
                 {/* Price */}
-                <div className="mt-4">
+                <div className="mt-3">
                     {hasDiscount ? (
-                        <div className="flex items-end gap-2">
-                            <span className="text-sm text-slate-400 line-through">
+                        <>
+                            <p className="text-sm text-slate-400 line-through">
                                 {product.price.toLocaleString()}
                                 원
-                            </span>
+                            </p>
 
-                            <span className="text-xl font-bold text-rose-600">
+                            <p className="mt-0.5 text-xl font-bold text-rose-600">
                                 {product.discount!.toLocaleString()}
                                 원
-                            </span>
-                        </div>
+                            </p>
+                        </>
                     ) : (
-                        <span className="text-xl font-bold text-neutral-900">
+                        <p className="text-xl font-bold text-neutral-900">
                             {product.price.toLocaleString()}
                             원
-                        </span>
+                        </p>
                     )}
                 </div>
 
                 {/* Tags */}
                 {product.tags &&
                     product.tags.length > 0 && (
-                        <div className="mt-4 flex flex-wrap gap-1.5">
+                        <div className="mt-3 flex flex-wrap gap-1.5">
                             {product.tags.map(
                                 (tag) => (
                                     <span
                                         key={tag}
-                                        className="rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-600"
+                                        className="rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-600"
                                     >
                                         #{tag}
                                     </span>

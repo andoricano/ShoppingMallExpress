@@ -1,11 +1,12 @@
 "use client";
 
-import { ProductCardData, ProductSectionConfig } from "../../types/mainPage";
+import type {
+    ProductCardData,
+    ProductSectionConfig,
+} from "../../types/mainPage";
+
 import { ProductCard } from "./ProductCard";
 import { ProductDetailedThumbnailCard } from "./ProductDetailedThumbnailCard";
-
-
-
 
 interface ProductSectionProps {
     section: ProductSectionConfig;
@@ -40,7 +41,7 @@ export default function ProductSection({
 
     if (products.length === 0) {
         return (
-            <section className="mx-auto max-w-7xl px-4 py-20 text-center text-neutral-500 sm:px-6 lg:px-8">
+            <section className="py-20 text-center text-neutral-500">
                 등록된 상품이 없습니다.
             </section>
         );
@@ -50,8 +51,7 @@ export default function ProductSection({
         product: ProductCardData,
     ) => {
         if (
-            section.cardType ===
-            "DETAILED"
+            section.cardType === "DETAILED"
         ) {
             return (
                 <ProductDetailedThumbnailCard
@@ -70,9 +70,7 @@ export default function ProductSection({
             <ProductCard
                 key={product.id}
                 product={product}
-                cardType={
-                    section.cardType
-                }
+                cardType={section.cardType}
                 onClick={() =>
                     onNavigate?.(
                         `/products/${product.id}`,
@@ -96,44 +94,36 @@ export default function ProductSection({
     };
 
     return (
-        <section className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
-            <div className="mb-10 flex items-end justify-between">
-                <h2 className="text-2xl font-bold tracking-tight text-neutral-900">
-                    {section.title}
-                </h2>
+        <section className="py-20">
+            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                <div className="mb-10 flex items-end justify-between">
+                    <h2 className="text-2xl font-bold tracking-tight text-neutral-900">
+                        {section.title}
+                    </h2>
 
-                <button
-                    type="button"
-                    onClick={() =>
-                        onNavigate?.(
-                            "/products",
-                        )
-                    }
-                    className="text-sm font-medium text-neutral-900 hover:underline"
-                >
-                    전체보기 →
-                </button>
-            </div>
+                    <button
+                        type="button"
+                        onClick={() =>
+                            onNavigate?.(
+                                "/products",
+                            )
+                        }
+                        className="text-sm font-medium text-neutral-900 hover:underline"
+                    >
+                        전체보기 →
+                    </button>
+                </div>
 
-            {section.layout ===
-                "GRID" && (
-                    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-                        {products.map(
-                            renderProductCard,
-                        )}
-                    </div>
-                )}
-
-            {section.layout ===
-                "HORIZONTAL_SCROLL" && (
-                    <div className="flex gap-6 overflow-x-auto pb-2">
+                {section.layout ===
+                    "HORIZONTAL_SCROLL" ? (
+                    <div className="flex gap-5 overflow-x-auto pb-2">
                         {products.map(
                             (product) => (
                                 <div
                                     key={
                                         product.id
                                     }
-                                    className="w-[220px] shrink-0"
+                                    className="w-[360px] shrink-0"
                                 >
                                     {renderProductCard(
                                         product,
@@ -142,16 +132,14 @@ export default function ProductSection({
                             ),
                         )}
                     </div>
-                )}
-
-            {section.layout ===
-                "LARGE" && (
-                    <div className="grid grid-cols-1 gap-6">
+                ) : (
+                    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
                         {products.map(
                             renderProductCard,
                         )}
                     </div>
                 )}
+            </div>
         </section>
     );
 }

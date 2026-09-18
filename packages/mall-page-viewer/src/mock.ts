@@ -257,7 +257,7 @@ export const mainPageMock: PageConfig = {
 
             type: "PRODUCT",
 
-            title: "상품 자세히 보기",
+            title: "신상 입고 보기",
 
             products: [
                 {
