@@ -1,12 +1,13 @@
 "use client";
 
 import type {
+    CartItem,
     Product,
     ProductPost,
 } from "@mall/types";
 
 import { ProductPostSummary } from "./ProductPostSummary";
-import { ProductPurchase } from "./ProductPurchase";
+import { ProductPurchase } from "../purchase/ProductPurchase";
 import ProductPostActions from "./ProductPostActions";
 
 interface ProductPostHeaderProps {
@@ -17,6 +18,10 @@ interface ProductPostHeaderProps {
 
     onWishlistClick?: () => void;
     onCartClick?: () => void;
+
+    onSelectionChange?: (
+        item: CartItem,
+    ) => void;
 }
 
 export function ProductPostHeader({
@@ -25,6 +30,7 @@ export function ProductPostHeader({
     isWishlisted = false,
     onWishlistClick,
     onCartClick,
+    onSelectionChange,
 }: ProductPostHeaderProps) {
     return (
         <section className="w-full py-10">
@@ -50,8 +56,9 @@ export function ProductPostHeader({
                         </div>
 
                         <ProductPurchase
-                            products={
-                                products
+                            products={products}
+                            onSelectionChange={
+                                onSelectionChange
                             }
                         />
                     </div>

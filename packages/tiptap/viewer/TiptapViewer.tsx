@@ -23,7 +23,10 @@ export function TiptapViewer({
     } catch {
         return null;
     }
-
+    console.log(
+        "[TiptapViewer] json:",
+        json,
+    );
     return (
         <div
             className="

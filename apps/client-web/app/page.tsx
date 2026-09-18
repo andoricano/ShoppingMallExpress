@@ -24,39 +24,13 @@ export default function HomePage() {
     fetchPosts,
   } = useProductPost();
 
-  const authUserId =
-    useClientAuthStore(
-      (state) => state.authUserId,
-    );
-
-  const signOut =
-    useClientAuthStore(
-      (state) => state.signOut,
-    );
-
   useEffect(() => {
     fetchPosts();
   }, [fetchPosts]);
 
-  const handleNavigate = (
-    path: string,
-  ) => {
-    window.location.href = path;
-  };
-
-  const isLoggedIn =
-    Boolean(authUserId);
 
   return (
     <main className="min-h-screen">
-      {/* {mainPageMock.header.isActive && (
-        <MainHeader
-          config={mainPageMock.header}
-          isLoggedIn={isLoggedIn}
-          onNavigate={handleNavigate}
-          onLogout={signOut}
-        />
-      )} */}
 
       <MainPage
         config={mainPageMock}

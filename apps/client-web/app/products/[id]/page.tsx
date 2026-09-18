@@ -6,6 +6,10 @@ import {
 } from "react";
 import { useParams } from "next/navigation";
 
+import type {
+    CartItem,
+} from "@mall/types";
+
 import { useProductPost } from "@/hooks/useProductPost";
 import { useWishlist } from "@/hooks/user/useWishlist";
 import { useCart } from "@/hooks/user/useCart";
@@ -36,6 +40,13 @@ export default function ProductDetailPage() {
     const {
         addCart,
     } = useCart();
+
+    const [
+        selectedCartItem,
+        setSelectedCartItem,
+    ] = useState<CartItem | null>(
+        null,
+    );
 
     const [
         showPurchaseButton,
@@ -101,29 +112,15 @@ export default function ProductDetailPage() {
 
     const handleCartClick =
         async () => {
-            const product =
-                products[0];
-
-            if (!product) {
+            if (!selectedCartItem) {
                 return;
             }
 
             await addCart(
-                product.id,
-                1,
+                selectedCartItem.product.id,
+                selectedCartItem.quantity,
             );
         };
-
-    const handlePurchase = () => {
-        document
-            .getElementById(
-                "product-purchase",
-            )
-            ?.scrollIntoView({
-                behavior: "smooth",
-                block: "start",
-            });
-    };
 
     if (loading) {
         return (
@@ -167,17 +164,10 @@ export default function ProductDetailPage() {
                 onCartClick={
                     handleCartClick
                 }
+                onSelectionChange={
+                    setSelectedCartItem
+                }
             />
-
-            {showPurchaseButton && (
-                <button
-                    type="button"
-                    onClick={handlePurchase}
-                    className="fixed bottom-6 right-6 z-50 rounded-full bg-slate-900 px-6 py-3 text-sm font-semibold text-white shadow-xl transition-colors hover:bg-slate-800"
-                >
-                    구매하기
-                </button>
-            )}
         </main>
     );
 }

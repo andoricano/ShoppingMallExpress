@@ -72,6 +72,12 @@ export default function CategoryPage({
                 item.name === categoryName,
         );
 
+    const handleNavigate = (
+        path: string,
+    ) => {
+        window.location.href = path;
+    };
+
     useEffect(() => {
         if (
             categoryLoading ||
@@ -204,9 +210,8 @@ export default function CategoryPage({
                     <ProductPostList
                         posts={posts}
                         onClick={(postId) => {
-                            console.log(
-                                "[CategoryPage] Product Post:",
-                                postId,
+                            handleNavigate(
+                                `/products/${postId}`,
                             );
                         }}
                     />

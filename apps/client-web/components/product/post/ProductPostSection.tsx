@@ -1,8 +1,7 @@
-// component/products/post/ProductPost.tsx
-
 "use client";
 
 import type {
+    CartItem,
     Product,
     ProductPost as ProductPostType,
 } from "@mall/types";
@@ -29,6 +28,10 @@ interface ProductPostSectionProps {
 
     onWishlistClick?: () => void;
     onCartClick?: () => void;
+
+    onSelectionChange?: (
+        item: CartItem,
+    ) => void;
 }
 
 export function ProductPostSection({
@@ -38,6 +41,7 @@ export function ProductPostSection({
     isWishlisted = false,
     onWishlistClick,
     onCartClick,
+    onSelectionChange,
 }: ProductPostSectionProps) {
     return (
         <main className="min-h-screen bg-white">
@@ -52,6 +56,9 @@ export function ProductPostSection({
                 }
                 onCartClick={
                     onCartClick
+                }
+                onSelectionChange={
+                    onSelectionChange
                 }
             />
 
