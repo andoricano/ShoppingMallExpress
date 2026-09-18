@@ -5,7 +5,7 @@ import { useCallback, useState } from "react";
 import type { MyPageSidebarItem } from "@/components/mypage/MyPageSidbar";
 
 export const MY_PAGE_SECTION = {
-    PROFILE: "profile",
+    INFO:"info",
     ADDRESS: "address",
     POINT: "point",
     AGREEMENT: "agreement",
@@ -23,7 +23,7 @@ const DEFAULT_SIDEBAR_ITEMS: MyPageSidebarItem[] = [
     },
     {
         type: "sub",
-        id: MY_PAGE_SECTION.PROFILE,
+        id: MY_PAGE_SECTION.INFO,
         label: "프로필",
     },
     {
@@ -59,7 +59,7 @@ const DEFAULT_SIDEBAR_ITEMS: MyPageSidebarItem[] = [
 export function useMyPage() {
     const [selectedId, setSelectedId] =
         useState<MyPageSection>(
-            MY_PAGE_SECTION.PROFILE,
+            MY_PAGE_SECTION.INFO,
         );
 
     const selectSection = useCallback(

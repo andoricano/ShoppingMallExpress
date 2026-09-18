@@ -1,17 +1,9 @@
 "use client";
 
-import { ProfileCard } from "@/components/mypage/main/ProfileCard";
+import { MyInfoSection } from "@/components/mypage/my/MyInfoSection";
 import { MyPageSidebar } from "@/components/mypage/MyPageSidbar";
 import { useMyPage } from "@/hooks/user/useMyPage";
 
-
-const mockProfile = {
-    id: "a7807bc2-81b9-4230-a63e-7b2910f7d879",
-    name: "Five C",
-    email: "cektjtro@gmail.com",
-    phone: "01033987008",
-    role: "ADMIN",
-};
 
 export default function MyPage() {
     const {
@@ -22,11 +14,9 @@ export default function MyPage() {
 
     const renderContent = () => {
         switch (selectedId) {
-            case "profile":
+            case "info":
                 return (
-                    <ProfileCard
-                        profile={mockProfile}
-                    />
+                    MyInfoSection()
                 );
 
             case "address":

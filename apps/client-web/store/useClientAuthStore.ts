@@ -18,6 +18,10 @@ interface ClientAuthState {
     signInWithGoogle: () => Promise<void>;
     getSession: () => Promise<void>;
     getProfile: () => Promise<void>;
+    updateProfile: (
+        name: string,
+        phone: string,
+    ) => Promise<void>;
 
     updatePoint: (
         point: Point,
@@ -182,6 +186,56 @@ export const useClientAuthStore =
         // Point 갱신
         // ==========================================
 
+
+        // ==========================================
+        // Client Profile 수정
+        // ==========================================
+
+        updateProfile: async (
+            name,
+            phone,
+        ) => {
+            set({
+                loading: true,
+                error: null,
+            });
+
+            try {
+                const profile =
+                    await authProfile.updateProfile(
+                        name,
+                        phone,
+                    );
+
+                set({
+                    user: profile,
+                    authUserId:
+                        profile?.id ?? null,
+                });
+            } catch (error) {
+                const message =
+                    error instanceof Error
+                        ? error.message
+                        : "Client 프로필 수정에 실패했습니다.";
+
+                console.error(
+                    "[ClientAuth] Profile 수정 실패:",
+                    error,
+                );
+
+                set({
+                    error: message,
+                });
+
+                throw error;
+            } finally {
+                set({
+                    loading: false,
+                });
+            }
+        },
+
+        
         updatePoint: (
             point,
         ) => {

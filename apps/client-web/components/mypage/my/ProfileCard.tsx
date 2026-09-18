@@ -286,20 +286,6 @@ export function ProfileCard({
                     <p className="text-sm text-slate-500">
                         등록된 프로필이 없습니다.
                     </p>
-
-                    {onCreate && (
-                        <button
-                            type="button"
-                            onClick={() =>
-                                setIsEditing(
-                                    true,
-                                )
-                            }
-                            className="mt-3 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800"
-                        >
-                            프로필 생성
-                        </button>
-                    )}
                 </div>
             )}
         </section>

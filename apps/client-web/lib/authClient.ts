@@ -84,6 +84,34 @@ export const authProfile = {
         }
     },
 
+
+
+    // ==========================================
+    // Update DB Profile
+    // ==========================================
+    async updateProfile(
+        name: string,
+        phone: string,
+    ) {
+        const supabase = createClient();
+
+        const { data, error } =
+            await supabase.rpc(
+                "update_my_profile",
+                {
+                    p_name: name,
+                    p_phone: phone,
+                },
+            );
+
+        if (error) {
+            throw error;
+        }
+
+        return data as ClientProfile;
+    },
+
+
     // ==========================================
     // Logout
     // ==========================================
