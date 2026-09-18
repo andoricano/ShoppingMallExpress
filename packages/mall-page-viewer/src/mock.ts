@@ -18,41 +18,41 @@ export const mainPageMock: PageConfig = {
 
         menus: [
             {
-                id: "menu-1",
+                id: "menu-new",
                 title: "신상품",
-                href: "/products?categoryId=new",
+                href: "/category/new",
             },
             {
-                id: "menu-2",
+                id: "menu-women",
                 title: "여성",
-                href: "/products?categoryId=women",
+                href: "/category/women",
                 children: [
                     {
-                        id: "menu-2-1",
+                        id: "menu-women-clothing",
                         title: "의류",
-                        href: "/products?categoryId=women-clothing",
+                        href: "/category/women/clothing",
                     },
                     {
-                        id: "menu-2-2",
+                        id: "menu-women-shoes",
                         title: "신발",
-                        href: "/products?categoryId=women-shoes",
+                        href: "/category/women/shoes",
                     },
                 ],
             },
             {
-                id: "menu-3",
+                id: "menu-men",
                 title: "남성",
-                href: "/products?categoryId=men",
+                href: "/category/men",
                 children: [
                     {
-                        id: "menu-3-1",
+                        id: "menu-men-clothing",
                         title: "의류",
-                        href: "/products?categoryId=men-clothing",
+                        href: "/category/men/clothing",
                     },
                     {
-                        id: "menu-3-2",
+                        id: "menu-men-shoes",
                         title: "신발",
-                        href: "/products?categoryId=men-shoes",
+                        href: "/category/men/shoes",
                     },
                 ],
             },

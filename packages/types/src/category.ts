@@ -25,3 +25,18 @@ export interface ProductPostCategory {
     createdAt: string;
     updatedAt: string;
 }
+
+export interface ClientCategory {
+    id: string;
+
+    parentId: string | null;
+
+    name: string;
+    slug: string;
+
+    depth: number;
+    displayOrder: number;
+
+    createdAt: string;
+    updatedAt: string;
+}
