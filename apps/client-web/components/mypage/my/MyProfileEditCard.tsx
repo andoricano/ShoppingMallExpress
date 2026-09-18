@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import type { ClientProfile } from "@mall/types";
 
-interface MyEditProfileCardProps {
+interface MyProfileEditCardProps {
     profile: ClientProfile;
     saving?: boolean;
     error?: string | null;
@@ -16,13 +16,13 @@ interface MyEditProfileCardProps {
     onCancel: () => void;
 }
 
-export function MyEditProfileCard({
+export function MyProfileEditCard({
     profile,
     saving = false,
     error = null,
     onSave,
     onCancel,
-}: MyEditProfileCardProps) {
+}: MyProfileEditCardProps) {
     const [name, setName] =
         useState(profile.name ?? "");
 
@@ -46,7 +46,7 @@ export function MyEditProfileCard({
     };
 
     return (
-        <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div>
             <div>
                 <h2 className="text-lg font-semibold text-slate-900">
                     프로필 수정
@@ -155,6 +155,6 @@ export function MyEditProfileCard({
                     </button>
                 </div>
             </form>
-        </section>
+        </div>
     );
 }

@@ -4,14 +4,14 @@ export interface ClientAddress {
     id: string;
     clientId: string;
 
-    label?: string;
+    label: string | null;
 
     recipientName: string;
     phone: string;
 
     zonecode: string;
     address: string;
-    addressDetail?: string;
+    addressDetail: string | null;
 
     isDefault: boolean;
 
@@ -19,29 +19,28 @@ export interface ClientAddress {
     updatedAt: string;
 }
 
-
 export interface CreateClientAddressInput {
-    label?: string;
+    label?: string | null;
 
     recipientName: string;
     phone: string;
 
     zonecode: string;
     address: string;
-    addressDetail?: string;
+    addressDetail?: string | null;
 
     isDefault?: boolean;
 }
 
 export interface UpdateClientAddressInput {
-    label?: string;
+    label?: string | null;
 
     recipientName?: string;
     phone?: string;
 
     zonecode?: string;
     address?: string;
-    addressDetail?: string;
+    addressDetail?: string | null;
 
     isDefault?: boolean;
 }
