@@ -243,3 +243,134 @@ export const chargePoint = async (
         });
     }
 };
+
+
+// ==========================================
+// 3. Client Point Transaction 조회
+// ==========================================
+
+export const getClientPointTransactions =
+    async (
+        req: Request,
+        res: Response,
+    ) => {
+        try {
+            const authHeader =
+                req.headers.authorization;
+
+            if (
+                !authHeader ||
+                !authHeader.startsWith(
+                    "Bearer ",
+                )
+            ) {
+                return res.status(401).json({
+                    success: false,
+                    message:
+                        "로그인이 필요합니다.",
+                });
+            }
+
+            const accessToken =
+                authHeader.substring(7);
+
+            const userSupabase =
+                createClient(
+                    process.env[
+                        "SUPABASE_URL"
+                    ]!,
+                    process.env[
+                        "SUPABASE_SECRET_KEY"
+                    ]!,
+                    {
+                        global: {
+                            headers: {
+                                Authorization:
+                                    `Bearer ${accessToken}`,
+                            },
+                        },
+                    },
+                );
+
+            const {
+                data: {
+                    user,
+                },
+                error: userError,
+            } =
+                await userSupabase.auth.getUser();
+
+            if (userError) {
+                throw userError;
+            }
+
+            if (!user) {
+                return res.status(401).json({
+                    success: false,
+                    message:
+                        "로그인이 필요합니다.",
+                });
+            }
+
+            const {
+                data,
+                error,
+            } =
+                await userSupabase
+                    .from(
+                        "point_transactions",
+                    )
+                    .select(
+                        [
+                            "id",
+                            "point_id",
+                            "client_id",
+                            "type",
+                            "amount",
+                            "balance",
+                            "order_id",
+                            "reason",
+                            "admin_id",
+                            "created_at",
+                        ].join(", "),
+                    )
+                    .eq(
+                        "client_id",
+                        user.id,
+                    )
+                    .order(
+                        "created_at",
+                        {
+                            ascending: false,
+                        },
+                    );
+
+            if (error) {
+                throw error;
+            }
+
+            return res.json({
+                success: true,
+                data: toCamelCase(
+                    data ?? [],
+                ),
+            });
+        } catch (error) {
+            console.error(
+                "Get client point transactions failed:",
+                error,
+            );
+
+            return res.status(500).json({
+                success: false,
+                message:
+                    "포인트 이용 내역 조회에 실패했습니다.",
+                error:
+                    error instanceof Error
+                        ? error.message
+                        : JSON.stringify(
+                              error,
+                          ),
+            });
+        }
+    };

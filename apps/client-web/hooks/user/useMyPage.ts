@@ -6,7 +6,6 @@ import type { MyPageSidebarItem } from "@/components/mypage/MyPageSidbar";
 
 export const MY_PAGE_SECTION = {
     INFO:"info",
-    ADDRESS: "address",
     POINT: "point",
     AGREEMENT: "agreement",
     WITHDRAW: "withdraw",
@@ -25,11 +24,6 @@ const DEFAULT_SIDEBAR_ITEMS: MyPageSidebarItem[] = [
         type: "sub",
         id: MY_PAGE_SECTION.INFO,
         label: "프로필",
-    },
-    {
-        type: "sub",
-        id: MY_PAGE_SECTION.ADDRESS,
-        label: "배송지",
     },
     {
         type: "sub",

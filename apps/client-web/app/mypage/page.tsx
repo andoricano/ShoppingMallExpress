@@ -2,8 +2,8 @@
 
 import { MyInfoSection } from "@/components/mypage/my/MyInfoSection";
 import { MyPageSidebar } from "@/components/mypage/MyPageSidbar";
+import { MyPointSection } from "@/components/mypage/point/MyPointSection";
 import { useMyPage } from "@/hooks/user/useMyPage";
-
 
 export default function MyPage() {
     const {
@@ -15,27 +15,10 @@ export default function MyPage() {
     const renderContent = () => {
         switch (selectedId) {
             case "info":
-                return (
-                    MyInfoSection()
-                );
-
-            case "address":
-                return (
-                    <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-                        <h2 className="text-lg font-semibold text-slate-900">
-                            배송지
-                        </h2>
-                    </section>
-                );
+                return <MyInfoSection />;
 
             case "point":
-                return (
-                    <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-                        <h2 className="text-lg font-semibold text-slate-900">
-                            포인트
-                        </h2>
-                    </section>
-                );
+                return <MyPointSection />;
 
             case "agreement":
                 return (

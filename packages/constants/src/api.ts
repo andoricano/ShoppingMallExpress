@@ -102,6 +102,9 @@ export const API_ENDPOINTS = {
 
         CHARGE:
             "/api/client/points/charge",
+
+        TRANSACTIONS:
+            "/api/client/points/transactions",
     },
     // ==========================================
     // 상품 이미지 / 에셋

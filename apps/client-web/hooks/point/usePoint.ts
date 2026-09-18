@@ -11,6 +11,7 @@ import {
 
 import type {
     Point,
+    PointTransaction,
 } from "@mall/types";
 
 import { authProfile } from "@/lib/authClient";
@@ -37,6 +38,12 @@ export function usePoint() {
     ] = useState<string | null>(
         null,
     );
+
+
+    const [
+        transactions,
+        setTransactions,
+    ] = useState<PointTransaction[]>([]);
 
     // ==========================================
     // 1. Client Point 조회
@@ -86,7 +93,7 @@ export function usePoint() {
                     if (!response.ok) {
                         throw new Error(
                             result?.message ||
-                                "포인트를 불러오지 못했습니다.",
+                            "포인트를 불러오지 못했습니다.",
                         );
                     }
 
@@ -121,6 +128,84 @@ export function usePoint() {
             },
             [updatePoint],
         );
+    // ==========================================
+    // 2. Client Point Transaction 조회
+    // ==========================================
+
+    const fetchPointTransactions =
+        useCallback(
+            async () => {
+                setLoading(true);
+                setError(null);
+
+                try {
+                    const session =
+                        await authProfile.getSession();
+
+                    if (
+                        !session?.access_token
+                    ) {
+                        throw new Error(
+                            "로그인이 필요합니다.",
+                        );
+                    }
+
+                    const url =
+                        `${API_BASE_URL}${API_ENDPOINTS.CLIENT_POINTS.TRANSACTIONS}`;
+
+                    const response =
+                        await fetch(url, {
+                            headers: {
+                                Authorization:
+                                    `Bearer ${session.access_token}`,
+                            },
+                        });
+
+                    const result =
+                        await response
+                            .json()
+                            .catch(
+                                () => null,
+                            );
+
+                    console.log(
+                        "[usePoint] Point Transaction 조회 API result:",
+                        result,
+                    );
+
+                    if (!response.ok) {
+                        throw new Error(
+                            result?.message ||
+                            "포인트 이용 내역을 불러오지 못했습니다.",
+                        );
+                    }
+
+                    const data =
+                        Array.isArray(
+                            result?.data,
+                        )
+                            ? (result.data as PointTransaction[])
+                            : [];
+
+                    setTransactions(data);
+                } catch (err) {
+                    console.error(
+                        "[usePoint] Point Transaction 조회 실패:",
+                        err,
+                    );
+
+                    setError(
+                        err instanceof Error
+                            ? err.message
+                            : "포인트 이용 내역 조회에 실패했습니다.",
+                    );
+                } finally {
+                    setLoading(false);
+                }
+            },
+            [],
+        );
+
 
     // ==========================================
     // 2. Client Point 충전
@@ -179,7 +264,7 @@ export function usePoint() {
                     if (!response.ok) {
                         throw new Error(
                             result?.message ||
-                                "포인트 충전에 실패했습니다.",
+                            "포인트 충전에 실패했습니다.",
                         );
                     }
 
@@ -219,7 +304,10 @@ export function usePoint() {
         loading,
         error,
 
+        transactions,
+
         fetchPoint,
+        fetchPointTransactions,
         chargePoint,
     };
 }
