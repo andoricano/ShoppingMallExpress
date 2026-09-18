@@ -60,6 +60,14 @@ export const API_ENDPOINTS = {
     CLIENT_CART: {
         BASE: "/api/client/cart",
     },
+    CLIENT_CATEGORY: {
+        BASE: "/api/client/category",
+
+        POSTS: (
+            categoryId: string,
+        ) =>
+            `/api/client/category/${categoryId}/posts`,
+    },
     // ==========================================
     // 재고 관리 - Admin
     // ==========================================

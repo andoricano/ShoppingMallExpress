@@ -24,6 +24,7 @@ import clientPointRoutes from "./routes/client/point.routes.js";
 import clientPaymentRoutes from "./routes/client/payment.routes.js";
 import clientWishlistRoutes from "./routes/client/wishlist.router.js";
 import clientCartRoutes from "./routes/client/cart.routes.js";
+import category from "./routes/client/category.routes.js";
 import productPostCategoryRoutes from "./routes/productPostCategory.routes.js";
 
 
@@ -132,7 +133,10 @@ app.use(
     "/api/client/cart",
     clientCartRoutes,
 );
-
+app.use(
+    "/api/client/category",
+    category,
+);
 // Admin Refund
 app.use(
     "/api/admin/refunds",

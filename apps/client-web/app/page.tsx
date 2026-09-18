@@ -13,6 +13,8 @@ import MainPage from "@/components/home/MainPage";
 import { useProductPost } from "@/hooks/useProductPost";
 import { useClientAuthStore } from "@/store/useClientAuthStore";
 import MainHeader from "@/components/mypage/header/MainHeader";
+import { useProductPostCategories } from "@/hooks/category/useProductPostCategories";
+
 
 export default function HomePage() {
   const {

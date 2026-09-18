@@ -5,6 +5,8 @@ import { useEffect } from "react";
 import { useClientAuthStore } from "@/store/useClientAuthStore";
 import { useCart } from "@/hooks/user/useCart";
 import { useWishlist } from "@/hooks/user/useWishlist";
+import { useProductPostCategoryStore } from "@/store/useProductPostCategoryStore";
+
 
 export function Initializer() {
     const getSession =
@@ -42,6 +44,33 @@ export function Initializer() {
 
         initializeAuth();
     }, [getSession]);
+
+
+    const fetchCategories =
+        useProductPostCategoryStore(
+            (state) => state.fetchCategories,
+        );
+
+    useEffect(() => {
+        const initializeCategories =
+            async () => {
+                console.log(
+                    "[Initializer] Product Post Category 초기화",
+                );
+
+                try {
+                    await fetchCategories();
+                } catch (error) {
+                    console.error(
+                        "[Initializer] Category 초기화 실패:",
+                        error,
+                    );
+                }
+            };
+
+        initializeCategories();
+    }, [fetchCategories]);
+
 
     useEffect(() => {
         if (!authUserId) {
