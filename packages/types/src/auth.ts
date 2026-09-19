@@ -1,4 +1,4 @@
-import type { Point } from "./point";
+import type { Point } from "./point.js";
 
 // 1. 역할(Role) 타입 정의
 

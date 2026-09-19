@@ -1,6 +1,7 @@
 // @/types/history.ts
 
-import { OrderStatus } from "./order";
+import type { OrderStatus } from "./order.js";
+
 
 export type HistoryActorType =
     | "CLIENT"

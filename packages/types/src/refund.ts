@@ -1,6 +1,6 @@
 // @/types/refund.ts
 
-import type { Order } from "./order";
+import type { Order } from "./order.js";
 
 /**
  * 환불 요청 상태
