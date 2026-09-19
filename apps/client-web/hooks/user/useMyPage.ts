@@ -5,8 +5,9 @@ import { useCallback, useState } from "react";
 import type { MyPageSidebarItem } from "@/components/mypage/MyPageSidbar";
 
 export const MY_PAGE_SECTION = {
-    INFO:"info",
+    INFO: "info",
     POINT: "point",
+    HISTORY: "history",
     AGREEMENT: "agreement",
     WITHDRAW: "withdraw",
 } as const;
@@ -29,6 +30,11 @@ const DEFAULT_SIDEBAR_ITEMS: MyPageSidebarItem[] = [
         type: "sub",
         id: MY_PAGE_SECTION.POINT,
         label: "포인트",
+    },
+    {
+        type: "sub",
+        id: MY_PAGE_SECTION.HISTORY,
+        label: "주문내역",
     },
     {
         type: "divider",

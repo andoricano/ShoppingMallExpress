@@ -2,6 +2,7 @@
 
 import { MyInfoSection } from "@/components/mypage/my/MyInfoSection";
 import { MyPageSidebar } from "@/components/mypage/MyPageSidbar";
+import OrderHistorySection from "@/components/mypage/OrderHistorySection";
 import { MyPointSection } from "@/components/mypage/point/MyPointSection";
 import { useMyPage } from "@/hooks/user/useMyPage";
 
@@ -29,6 +30,9 @@ export default function MyPage() {
                     </section>
                 );
 
+            case "history":
+                return <OrderHistorySection />;
+
             case "withdraw":
                 return (
                     <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -44,8 +48,8 @@ export default function MyPage() {
     };
 
     return (
-        <div className="min-h-screen bg-slate-50/50 p-6 md:p-8">
-            <div className="mx-auto max-w-7xl">
+        <div className="flex min-h-[calc(100vh-4rem)] flex-col bg-slate-50/50 p-6 md:p-8">
+            <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col">
                 <div className="mb-6">
                     <h1 className="text-2xl font-bold text-slate-900">
                         마이페이지
@@ -56,7 +60,7 @@ export default function MyPage() {
                     </p>
                 </div>
 
-                <div className="grid grid-cols-1 gap-6 lg:grid-cols-[240px_minmax(0,1fr)]">
+                <div className="grid flex-1 grid-cols-1 items-stretch gap-6 lg:grid-cols-[240px_minmax(0,1fr)]">
                     <MyPageSidebar
                         items={sidebarItems}
                         selectedId={selectedId}
