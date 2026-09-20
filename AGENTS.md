@@ -1,176 +1,173 @@
-# Repository Agent Instructions
+# AGENTS.md
 
 ## General
 
-This repository is a pnpm monorepo.
+* Only modify code that is directly required by the requested task.
+* Do not expand the scope based on unrelated issues discovered during the task.
+* Report unrelated issues instead of fixing them.
+* Do not re-analyze the entire repository unless explicitly requested.
+* Inspect only files and code paths directly related to the current task.
+* Preserve all existing user changes.
 
-Work conservatively and keep the scope of every task as small as possible.
+## Repository Exploration
 
-Do not expand the requested scope based on issues discovered during the task.
+* Avoid repository-wide scans unless explicitly requested.
+* Do not generate full dependency graphs, import graphs, dead-code reports, or architecture reports by default.
+* Do not inspect generated or dependency directories unless specifically required:
 
-If an unrelated problem is discovered, report it at the end instead of fixing it.
+  * `node_modules/`
+  * `.next/`
+  * `dist/`
+  * `build/`
+  * `coverage/`
+  * `.turbo/`
+* Prefer targeted `rg` searches and direct file inspection.
+* Do not read framework documentation from `node_modules` unless necessary.
 
-Prefer modifying existing architecture over introducing new abstractions, dependencies, or infrastructure.
+## Scope Control
 
-## Repository exploration
+* Do not perform opportunistic refactoring.
+* Do not fix unrelated bugs, warnings, security issues, lint issues, or type errors unless they directly block the requested task.
+* If an unrelated issue is discovered:
 
-Before modifying code, inspect only the files necessary to understand the requested area.
+  1. Leave it unchanged.
+  2. Record it.
+  3. Report it at the end.
+* Do not remove apparently unused or legacy code without confirming its references.
+* Prefer the smallest change that satisfies the requested task.
 
-Do not perform exhaustive repository-wide analysis unless explicitly requested.
+## API and Client Boundaries
 
-Do not generate full dependency graphs, import graphs, dead-code reports, or architecture reports unless explicitly requested.
+For client application work, use the following as the source of truth for API contracts:
 
-Do not inspect generated or dependency directories unless a specific problem requires it:
+* `packages/types`
+* `docs/api`
 
-* node_modules/
-* .next/
-* dist/
-* build/
-* coverage/
-* .turbo/
-* generated/
+During client work:
 
-Do not read framework documentation from node_modules.
+* Do not inspect or modify `apps/api`.
+* Do not investigate API internals unless explicitly requested.
+* If the documented API contract is missing, ambiguous, or insufficient, report the gap instead of analyzing the API implementation.
 
-Do not search the web unless explicitly requested or required because the repository does not contain enough information to proceed.
+During explicitly requested API work:
 
-Prefer existing repository code and configuration as the source of truth.
+* Modifying `apps/api` is allowed.
+* Update `packages/types` when the public contract changes.
+* Update `docs/api` when the public contract changes.
+* Do not modify client applications unless explicitly requested.
 
-## Scope control
 
-Only modify files directly required for the requested task.
-
-Do not fix unrelated bugs, warnings, type errors, security issues, lint issues, or architectural problems.
-
-When an unrelated issue is discovered:
-
-1. Leave it unchanged.
-2. Record the file and issue.
-3. Report it after completing the requested task.
-
-Do not modify another application merely because it shares code with the application currently being changed unless the requested task requires that modification.
-
-Do not perform opportunistic refactoring.
-
-Do not remove apparently unused code unless explicitly requested.
-
-Before deleting code, confirm that it has no relevant references.
-
-## Existing user changes
-
-Preserve all pre-existing user modifications.
-
-Never overwrite, revert, clean, reset, or discard changes that existed before the current task.
-
-Do not use destructive Git commands.
-
-Never use:
-
-* git reset --hard
-* git clean -fd
-* git checkout -- .
-* git restore .
-
-Treat unrelated modified files as user-owned changes.
 
 ## Validation
 
-The user performs runtime validation manually.
+Run only small, targeted validation directly related to the changed code.
 
-Do not automatically run:
+Allowed by default:
 
-* tests
-* typecheck
-* lint
-* build
-* Docker builds
-* development servers
-* production servers
+* targeted unit tests for the changed module
+* targeted typecheck for the affected package
+* targeted lint for the affected files or package
+* a small number of directly related API tests
+* focused build checks only when necessary to confirm the change
+
+Do not run by default:
+
+* full repository tests
+* full monorepo typecheck
+* full monorepo lint
+* unrelated package tests
+* end-to-end test suites
 * browser automation
-* end-to-end tests
+* Docker builds
+* long-running integration test suites
+* production deployment tests
 
-Do not create new tests unless explicitly requested.
+Validation must stay within the scope of the current task.
 
-Do not run validation commands after making changes unless explicitly requested.
+If a targeted validation fails because of an unrelated existing issue, do not investigate or fix that issue unless it directly blocks the requested task. Report it instead.
 
-Perform only static review of the changed code.
+Keep command output concise and avoid repeatedly running the same validation without a code change.
 
-Check relevant imports, types, call sites, and obvious syntax issues by reading the affected files.
+Never claim that something was verified unless the corresponding validation was actually executed.
 
-At the end, provide the exact commands the user can run manually to validate the work.
 
-## Commands
 
-Avoid commands that scan the entire repository when a targeted command can answer the same question.
+## Error Fixes
 
-Prefer targeted searches such as:
+When the user provides an error log:
 
-* rg within the relevant app or package
-* reading specific package.json files
-* reading directly related imports and call sites
+* Start from the exact reported error.
+* Inspect only the directly related code first.
+* Do not re-analyze the entire repository.
+* Apply the smallest valid fix.
+* Preserve existing behavior outside the failing path.
 
-Avoid custom scripts that crawl every TypeScript or JavaScript file unless explicitly requested.
+## Task Documentation
 
-Keep terminal output small and relevant.
+For meaningful feature work, refactoring, or architectural changes, create or update a concise document under:
 
-## Architecture
+`docs/changes/`
 
-Do not redesign repository architecture during ordinary implementation tasks.
+Do not create task documents for trivial edits.
 
-If the existing architecture blocks the requested task:
+When useful, include:
 
-1. Identify the exact blocking issue.
-2. Make the smallest change necessary to unblock the task.
-3. Explain the reason in the final summary.
+* Goal
+* Changed areas
+* Implementation
+* Static verification
+* Not verified
+* Manual validation
+* Known risks
 
-Do not perform broader cleanup at the same time.
+Keep task documents concise.
 
-## Dependencies
+Manual validation should contain exact commands and practical verification steps for the user.
 
-Do not add, remove, or upgrade dependencies unless required by the requested task.
+Clearly distinguish between:
 
-Prefer dependencies already present in the repository.
+* statically reviewed
+* actually executed and verified
 
-Do not upgrade framework or package versions as part of unrelated work.
+## Git Workflow
 
-## Git workflow
+* Inspect `git status` before modifying files.
+* Preserve pre-existing user changes.
+* Do not include unrelated user changes in commits.
+* Commit after completing one logical task.
+* Prefer one commit per logical task, not one commit per file.
+* Use concise commit messages describing the actual change.
+* Do not push.
+* Do not amend, squash, rebase, or rewrite existing commits unless explicitly requested.
 
-Use Git to preserve a useful history of completed work.
+Never use destructive Git commands such as:
 
-Inspect git status before modifying files.
+* `git reset --hard`
+* `git clean -fd`
+* `git checkout -- .`
+* `git restore .`
 
-After completing one logical task:
+## Dependencies and Architecture
 
-1. Inspect the relevant diff.
-2. Commit only files belonging to that task.
-3. Use a concise commit message describing the actual change.
+* Prefer existing dependencies and existing repository patterns.
+* Do not add, remove, or upgrade dependencies unless required by the requested task.
+* Do not redesign repository architecture during ordinary implementation work.
+* If the existing architecture directly blocks the requested task:
 
-Do not include unrelated pre-existing user changes in commits.
+  1. Identify the exact blocker.
+  2. Make the smallest necessary change.
+  3. Report the reason and impact.
 
-Do not push.
-
-Do not amend, squash, rebase, or rewrite existing commits unless explicitly requested.
-
-Prefer one commit per logical task rather than one commit per file.
-
-## Questions
-
-Do not ask questions when the answer can be determined safely from the existing repository.
-
-If a product decision genuinely cannot be inferred, ask only the minimum question required to continue.
-
-Do not repeatedly stop implementation for minor implementation choices.
-
-## Completion report
+## Completion Report
 
 Keep the final report concise.
 
 Include:
 
-* what was changed
-* files or areas affected
-* unrelated issues discovered but intentionally left unchanged
+* what changed
+* affected areas
+* related issues intentionally left unchanged
 * manual validation commands
-* Git commit created
+* created Git commit
 
-Do not include lengthy explanations of repository structure unless reque
+Do not provide lengthy repository explanations unless explicitly requested.

@@ -15,4 +15,7 @@ export interface SkuInventory {
 
     /** SKU를 구분하기 위한 사용자 정의 속성 */
     meta?: Record<string, unknown>;
+
+    createdAt: string;
+    updatedAt: string;
 }

@@ -22,6 +22,15 @@ export interface OrderShippingAddress {
     detailAddress?: string;
 }
 
+/** 주문 생성·수정 요청에 공통으로 사용하는 배송지 입력 */
+export interface OrderShippingAddressInput
+    extends Omit<
+        OrderShippingAddress,
+        "name"
+    > {
+    name?: string;
+}
+
 /**
  * 주문 배송 정보
  */

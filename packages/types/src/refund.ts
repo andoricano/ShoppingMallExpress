@@ -19,7 +19,7 @@ export type RefundStatus =
 export interface RefundRequest {
     id: string;
 
-    order: Order;
+    order: Order | null;
 
     status: RefundStatus;
 

@@ -17,3 +17,14 @@ export interface CartItem {
 export interface Cart {
     items: CartItem[];
 }
+
+/** API 장바구니 조회/생성에서 반환하는 저장 행 */
+export interface CartEntry {
+    id: string;
+    clientId: string;
+    productId: string;
+    quantity: number;
+    createdAt: string;
+    updatedAt: string;
+    product?: Product;
+}

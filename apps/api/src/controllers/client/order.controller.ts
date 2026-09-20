@@ -2,6 +2,9 @@
 
 import type { Request, Response } from "express";
 import { createClient } from "@supabase/supabase-js";
+import type {
+    OrderShippingAddressInput,
+} from "@mall/types";
 
 import { supabase } from "../../config/supabase.js";
 import { toCamelCase } from "../../utils/caseConverter.js";
@@ -18,13 +21,7 @@ interface CreateOrderPayload {
         quantity: number;
     }[];
 
-    shippingAddress: {
-        recipient: string;
-        phone: string;
-        postalCode: string;
-        address: string;
-        detailAddress?: string;
-    };
+    shippingAddress: OrderShippingAddressInput;
 
     pointAmount: number;
 }
@@ -430,14 +427,7 @@ export const cancelOrder = async (
 };
 
 interface UpdateOrderPayload {
-    shippingAddress: {
-        name: string;
-        recipient: string;
-        phone: string;
-        postalCode: string;
-        address: string;
-        detailAddress?: string;
-    };
+    shippingAddress: OrderShippingAddressInput;
 }
 
 // ==========================================

@@ -14,9 +14,9 @@
 | `SkuInventory` | 재고 항목 |
 | `Product`, `ProductPost`, `ThumbnailInfo` | 상품/상품 게시물 |
 | `ProductPostCategory`, `ClientCategory`, `ProductPostCategoryItem` | 카테고리와 카테고리 게시물 요약 |
-| `Order`, `OrderItem`, `OrderStatus`, `OrderShippingAddress`, `OrderDelivery` | 주문 |
+| `Order`, `OrderItem`, `OrderStatus`, `OrderShippingAddress`, `OrderShippingAddressInput`, `OrderDelivery` | 주문 |
 | `UserProfile`, `UserRole` | 회원 관리 |
-| `Cart`, `CartItem`, `Wishlist` | 장바구니/관심상품 (실제 API는 DB 행 형태도 반환) |
+| `Cart`, `CartItem`, `CartEntry`, `Wishlist`, `WishlistEntry` | 장바구니/관심상품 |
 | `Point`, `PointTransaction`, `PointReservation` | 포인트 |
 | `RefundRequest`, `RefundStatus` | 환불 |
 | `History`, `ClientHistoryItem` | 이력 |
@@ -57,7 +57,7 @@
 
 - **Auth**: 없음
 - **Params/query/body**: query `search?: string`(SKU 부분 검색), `isActive?: "true" | "false"`; body 없음
-- **Success**: `200`, `data: SkuInventory[]` (DB가 제공하는 `createdAt`, `updatedAt`도 포함될 수 있음)
+- **Success**: `200`, `data: SkuInventory[]`
 - **주요 오류**: 공통 `500`
 - **관련 타입**: `SkuInventory`
 - **Notes**: 생성일 내림차순이다.
@@ -176,7 +176,7 @@
 
 ## 관리자 카테고리
 
-아래의 `/api/admin/product-post-categories`가 명시적 관리자 경로다. 동일 router가 `/api`에도 마운트되어 있어, **동일 계약의 legacy 경로** `GET|POST /api/`, `PATCH|DELETE /api/:id`, `GET|POST /api/:categoryId/posts`, `DELETE /api/:categoryId/posts/:postId`도 실제로 노출된다. 새 클라이언트는 관리자 경로를 사용해야 한다.
+아래의 `/api/admin/product-post-categories`가 명시적 관리자 경로다. 동일 router가 `/api`에도 마운트되어 있어, **deprecated legacy 경로** `GET|POST /api/`, `PATCH|DELETE /api/:id`, `GET|POST /api/:categoryId/posts`, `DELETE /api/:categoryId/posts/:postId`도 실제로 노출된다. legacy router는 모든 명시적 `/api` route 뒤에 등록되어 충돌하지 않으며, 새 클라이언트는 관리자 경로를 사용해야 한다.
 
 ### `GET /api/admin/product-post-categories`
 
@@ -247,10 +247,10 @@
 
 - **Auth**: 없음
 - **Params/query/body**: 없음
-- **Success**: 의도된 계약은 `200 data: Order[]` (items 없음)
+- **Success**: `200 data: Order[]` (items 없음)
 - **주요 오류**: 공통 `500`
 - **관련 타입**: `Order`
-- **Notes**: 현재 라우트 순서상 `GET /api/:id` legacy 카테고리 route가 먼저 매칭하므로 실제 요청은 카테고리 조회로 처리될 수 있다.
+- **Notes**: 생성일 내림차순이다.
 
 ### `GET /api/orders/:id`
 
@@ -259,7 +259,7 @@
 - **Success**: `200`, `data: Order` (`items: OrderItem[]` 포함)
 - **주요 오류**: `400` 빈 id, `404` 주문 없음
 - **관련 타입**: `Order`, `OrderItem`
-- **Notes**: 주문 상세 route 자체는 legacy 단일-segment 경로와 충돌하지 않는다.
+- **Notes**: 주문 상세 route는 인증을 요구하지 않는다.
 
 ### `PATCH /api/orders/:id`
 
@@ -274,10 +274,10 @@
 
 - **Auth**: 없음
 - **Params/query/body**: 없음
-- **Success**: 의도된 계약은 `200 data: UserProfile[]`
+- **Success**: `200 data: UserProfile[]`
 - **주요 오류**: 공통 `500`
 - **관련 타입**: `UserProfile`, `UserRole`
-- **Notes**: 현재 라우트 순서상 `GET /api/:id` legacy 카테고리 route가 먼저 매칭하므로 실제 요청은 카테고리 조회로 처리될 수 있다.
+- **Notes**: 생성일 내림차순이다.
 
 ### `PUT /api/users`
 
@@ -301,10 +301,10 @@
 
 - **Auth**: 없음
 - **Params/query/body**: 없음
-- **Success**: `200`, `data`는 `RefundRequest[]` 유사 형식. 각 항목은 `orderId`, `status`, `reason`, `createdAt`, `processedAt`, `order: Order | null`이며 order에는 `items`가 포함된다.
+- **Success**: `200`, `data: RefundRequest[]`. 각 항목의 `order`에는 `items`가 포함되며 `null`일 수 있다.
 - **주요 오류**: 공통 `500`
 - **관련 타입**: `RefundRequest`, `RefundStatus`, `Order`
-- **Notes**: 환불 생성일 내림차순이다. 타입의 `order`는 필수지만 이 endpoint에서는 `null`일 수 있다.
+- **Notes**: 환불 생성일 내림차순이다.
 
 ### `PATCH /api/admin/refunds/:id`
 
@@ -367,11 +367,11 @@
 ### `POST /api/client/orders`
 
 - **Auth**: 없음
-- **Params/query/body**: body `{ clientId: string, paymentId: string, items: { productId: string, quantity: number }[], shippingAddress: { recipient: string, phone: string, postalCode: string, address: string, detailAddress?: string }, pointAmount: number }`
+- **Params/query/body**: body `{ clientId: string, paymentId: string, items: { productId: string, quantity: number }[], shippingAddress: OrderShippingAddressInput, pointAmount: number }`
 - **Success**: `201`, `data`는 주문 생성 RPC 반환값
 - **주요 오류**: `400` `clientId`/`paymentId` 누락, 빈 `items`, 음수 또는 정수가 아닌 `pointAmount`
 - **관련 타입**: `Order`, `OrderShippingAddress`, `OrderItem`
-- **Notes**: 현재 이 endpoint는 Bearer token으로 `clientId`를 검증하지 않는다. `shippingAddress.name`은 생성 요청에는 없다.
+- **Notes**: 현재 이 endpoint는 Bearer token으로 `clientId`를 검증하지 않는다. `shippingAddress.name`은 생성·수정 모두 선택값이다.
 
 ### `GET /api/client/orders/:id`
 
@@ -394,20 +394,20 @@
 ### `PATCH /api/client/orders/:id`
 
 - **Auth**: Bearer access-token
-- **Params/query/body**: path `id`; body `{ shippingAddress: { name: string, recipient: string, phone: string, postalCode: string, address: string, detailAddress?: string } }`
+- **Params/query/body**: path `id`; body `{ shippingAddress: OrderShippingAddressInput }`
 - **Success**: `200`, `data`는 주문 수정 RPC 반환값
 - **주요 오류**: `401` 로그인 필요, `400` 빈 id 또는 `shippingAddress` 누락
 - **관련 타입**: `Order`, `OrderShippingAddress`
-- **Notes**: 생성과 달리 `shippingAddress.name`이 타입에 요구된다.
+- **Notes**: 생성 요청과 같은 배송지 입력 shape을 사용한다.
 
 ### `GET /api/client/history`
 
 - **Auth**: Bearer access-token
 - **Params/query/body**: 없음
 - **Success**: `200`, `data`는 이력 RPC 반환값 (통상 `ClientHistoryItem[]`)
-- **주요 오류**: `401` 헤더 형식 불량/토큰 무효 시 명시적으로 보장되지 않음; 오류는 `500`으로 변환될 수 있음
+- **주요 오류**: `401` 로그인 필요
 - **관련 타입**: `ClientHistoryItem`, `History`
-- **Notes**: controller는 token 존재 형식만 먼저 검사하고 RPC 반환을 camelCase로 전달한다.
+- **Notes**: token을 검증한 뒤 RPC 반환을 camelCase로 전달한다.
 
 ### `POST /api/client/refunds`
 
@@ -460,9 +460,9 @@
 
 - **Auth**: Bearer access-token
 - **Params/query/body**: 없음
-- **Success**: `200`, `data`는 `{ id, clientId, productPostId, createdAt, productPost: { id, title, thumbnail } }[]`
+- **Success**: `200`, `data: WishlistEntry[]`
 - **주요 오류**: `401` 로그인 필요
-- **관련 타입**: `Wishlist`, `ProductPost`, `ThumbnailInfo`
+- **관련 타입**: `WishlistEntry`
 - **Notes**: 생성일 내림차순이다.
 
 ### `POST /api/client/wishlist`
@@ -471,7 +471,7 @@
 - **Params/query/body**: body `{ productPostId: string }`
 - **Success**: `201`, GET과 같은 관심상품 행 한 건
 - **주요 오류**: `401` 로그인 필요, `400` `productPostId` 누락, `404` 게시물 없음, `409` 이미 등록됨
-- **관련 타입**: `Wishlist`, `ProductPost`
+- **관련 타입**: `WishlistEntry`
 - **Notes**: 게시물 공개 상태는 이 endpoint에서 확인하지 않는다.
 
 ### `DELETE /api/client/wishlist/:productId`
@@ -481,24 +481,24 @@
 - **Success**: `200 { success: true }`
 - **주요 오류**: `401` 로그인 필요, `400` path 값 누락
 - **관련 타입**: `Wishlist`
-- **Notes**: route parameter 이름은 `productId`지만 `wishlists.product_post_id`와 비교한다. 존재하지 않는 연결도 성공으로 응답할 수 있다.
+- **Notes**: route parameter 이름은 `productId`지만 `wishlists.product_post_id`와 비교한다. 이 이름은 deprecated이며 다음 major API version에서 `productPostId`로 변경해야 한다. 존재하지 않는 연결도 성공으로 응답할 수 있다.
 
 ### `GET /api/client/cart`
 
 - **Auth**: Bearer access-token
 - **Params/query/body**: 없음
-- **Success**: `200`, `data`는 `{ id, clientId, productId, quantity, createdAt, updatedAt, product: Product }[]`
+- **Success**: `200`, `data: CartEntry[]` (`product` 포함)
 - **주요 오류**: `401` 로그인 필요
-- **관련 타입**: `Cart`, `CartItem`, `Product`
-- **Notes**: `Cart` 타입과 달리 API는 장바구니 행 배열 및 연결 상품을 반환한다.
+- **관련 타입**: `CartEntry`
+- **Notes**: 장바구니 행 배열 및 연결 상품을 반환한다.
 
 ### `POST /api/client/cart`
 
 - **Auth**: Bearer access-token
 - **Params/query/body**: body `{ productId: string, quantity: number }` (`quantity`는 0보다 큰 정수)
-- **Success**: `201`, `data: { id, clientId, productId, quantity, createdAt, updatedAt }`
+- **Success**: `201`, `data: CartEntry` (`product` 생략)
 - **주요 오류**: `401` 로그인 필요, `400` productId 누락 또는 quantity 범위 위반
-- **관련 타입**: `Cart`, `CartItem`
+- **관련 타입**: `CartEntry`
 - **Notes**: 같은 사용자·상품 조합은 upsert로 수량을 교체한다. 응답에는 `product`가 없다.
 
 ### `DELETE /api/client/cart/:productId`
@@ -507,5 +507,5 @@
 - **Params/query/body**: path `productId`; body 없음
 - **Success**: `200 { success: true }`
 - **주요 오류**: `401` 로그인 필요, `400` path 값 누락
-- **관련 타입**: `Cart`, `CartItem`
+- **관련 타입**: `CartEntry`
 - **Notes**: 존재하지 않는 장바구니 행도 성공으로 응답할 수 있다.

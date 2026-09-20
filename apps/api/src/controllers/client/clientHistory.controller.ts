@@ -40,6 +40,21 @@ export const getMyHistory = async (
             );
 
         const {
+            data: {
+                user,
+            },
+            error: userError,
+        } = await userSupabase.auth.getUser();
+
+        if (userError || !user) {
+            return res.status(401).json({
+                success: false,
+                message:
+                    "로그인이 필요합니다.",
+            });
+        }
+
+        const {
             data,
             error,
         } = await userSupabase.rpc(

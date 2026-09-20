@@ -69,11 +69,6 @@ app.use(
 );
 
 app.use(
-    "/api",
-    categoryRoutes,
-);
-
-app.use(
     "/api/orders",
     orderRoutes,
 );
@@ -141,6 +136,14 @@ app.use(
 app.use(
     "/api/admin/refunds",
     adminRefundRoutes,
+);
+
+// Legacy category aliases must be registered after explicit /api routes.
+// The router contains GET /:id, which would otherwise intercept paths such
+// as /api/orders, /api/users, and /api/product-posts.
+app.use(
+    "/api",
+    categoryRoutes,
 );
 
 // Server
