@@ -10,7 +10,7 @@ export async function GET(request: Request) {
 
   const response = NextResponse.redirect(`${origin}/`);
   response.headers.set("Cache-Control", "no-store");
-  const supabase = await createClient();
+  const supabase = await createClient(response);
   const { error } = await supabase.auth.exchangeCodeForSession(code);
 
   if (error) {
