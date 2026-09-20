@@ -94,9 +94,21 @@ importers:
 
   apps/client-pwa:
     dependencies:
+      '@mall/constants':
+        specifier: workspace:*
+        version: link:../../packages/constants
+      '@mall/mall-page-viewer':
+        specifier: workspace:*
+        version: link:../../packages/mall-page-viewer
       '@mall/types':
         specifier: workspace:*
         version: link:../../packages/types
+      '@supabase/ssr':
+        specifier: ^0.12.4
+        version: 0.12.4(@supabase/supabase-js@2.112.3)
+      '@supabase/supabase-js':
+        specifier: ^2.49.1
+        version: 2.112.3
       lucide-react:
         specifier: ^1.42.0
         version: 1.42.0(react@19.2.8)
