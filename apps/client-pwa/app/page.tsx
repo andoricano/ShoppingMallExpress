@@ -21,7 +21,6 @@ export default function Home() {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [selectedProductId, setSelectedProductId] = useState("");
   const [selectedQuantity, setSelectedQuantity] = useState(1);
-  const [search, setSearch] = useState("");
   const [cart, setCart] = useState<CartItem[]>([]);
   const [order, setOrder] = useState<Order | null>(null);
   const [orderId, setOrderId] = useState("");
@@ -156,10 +155,10 @@ export default function Home() {
     {busy && <p role="status" className="mb-4 text-sm">처리 중입니다…</p>}
 
     {tab === "shop" && !detail && <>
-      <div className="mb-6 mt-4 flex flex-col gap-4 sm:mt-8 sm:flex-row sm:items-end sm:justify-between"><div><h2 className="text-2xl font-bold tracking-tight text-neutral-900">추천 상품</h2></div><label className="w-full sm:w-72"><span className="sr-only">상품 검색</span><input className="field" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="상품 이름으로 검색" /></label></div>
+      <div className="mb-10 mt-8"><h2 className="text-2xl font-bold tracking-tight text-neutral-900">추천 상품</h2></div>
       {loadingPosts ? <p role="status">상품을 불러오는 중입니다…</p> : <>
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-6 lg:grid-cols-4">
-          {posts.filter((post) => post.title.toLowerCase().includes(search.toLowerCase())).map((post) => <button key={post.id} type="button" aria-label={`${post.thumbnail.title} 상세 보기`} className="block min-w-0 text-left transition-transform hover:-translate-y-0.5 focus-visible:rounded-xl disabled:hover:translate-y-0" disabled={busy || !online} onClick={() => void run(async () => { await openProductDetail(post.id); })}>
+          {posts.map((post) => <button key={post.id} type="button" aria-label={`${post.thumbnail.title} 상세 보기`} className="block min-w-0 text-left transition-transform hover:-translate-y-0.5 focus-visible:rounded-xl disabled:hover:translate-y-0" disabled={busy || !online} onClick={() => void run(async () => { await openProductDetail(post.id); })}>
             <ProductPostCard
               imageUrl={post.thumbnail.imageUrl}
               title={post.thumbnail.title}
@@ -171,8 +170,6 @@ export default function Home() {
           </button>)}
         </div>
         {!posts.length && <p className="py-8">아직 표시할 상품이 없습니다.</p>}
-        {posts.length > 0 && !posts.some((post) => post.title.toLowerCase().includes(search.toLowerCase())) && <p>검색 결과가 없습니다.</p>}
-        <button className="mt-6 underline" disabled={busy || !online} onClick={() => void loadPosts()}>상품 새로고침</button>
       </>}
     </>}
 
