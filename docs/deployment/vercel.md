@@ -12,6 +12,8 @@ The production and preview environments use these variable names:
 
 Values are managed in Vercel and must not be committed. `turbo.json` declares these names for the `build` task so Turborepo's build cache tracks their values. `.vercel` is ignored and its local link data must remain untracked.
 
+`API_URL` is read while Next.js builds the `/api/*` rewrite; the two `NEXT_PUBLIC_*` values are embedded in client-side code at build time. Add or change any of these values in the target Vercel environment, then redeploy that environment. Production builds fail when `API_URL` is absent instead of deploying a rewrite to localhost.
+
 ## Additional frontend projects
 
 `client-web`, `user-web`, and `develop-web` can each be connected to a separate Vercel project using this same Git repository. For each project:
