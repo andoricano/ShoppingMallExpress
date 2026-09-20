@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import type { CartItem, Order, ProductPost } from "@mall/types";
+import { HeroBanner, mainPageMock } from "@mall/mall-page-viewer";
 import { ProductPostCard } from "@mall/tiptap";
 import { ChevronLeft, ChevronRight, ShoppingCart, UserRound } from "lucide-react";
 import { authProfile, getAuth } from "../lib/auth";
@@ -147,6 +148,7 @@ export default function Home() {
         </div>
       </div>
     </header>
+    {tab === "shop" && !detail && mainPageMock.hero.map((hero) => <HeroBanner key={hero.id} section={hero} onNavigate={() => { setTab("shop"); setDetail(null); setError(""); }} />)}
     <div className="mx-auto max-w-7xl px-4 pb-16 pt-6 sm:px-6 sm:pt-8 lg:px-8">
     {!online && <p role="status" className="mb-4 rounded-xl bg-amber-100 p-4">로그인을 해주세요. 주문은 로그인·장바구니·주문은 연결 후 이용할 수 있습니다.</p>}
     {error && <p role="alert" className="mb-4 rounded-xl bg-red-50 p-4 text-red-800">{error}</p>}
@@ -154,11 +156,7 @@ export default function Home() {
     {busy && <p role="status" className="mb-4 text-sm">처리 중입니다…</p>}
 
     {tab === "shop" && !detail && <>
-      <section className="my-2 grid gap-8 border border-neutral-200 bg-white p-6 sm:my-4 sm:grid-cols-2 sm:p-10 lg:p-12">
-        <div><p className="mb-4 text-xs font-medium tracking-[.2em] text-neutral-500">EVERYDAY, A LITTLE BETTER</p><h1 className="text-3xl font-semibold leading-tight tracking-tight sm:text-5xl">일상에 더하는<br />작은 즐거움.</h1><p className="mt-5 max-w-md text-sm leading-6 text-neutral-600 sm:text-base">마음에 드는 상품을 발견하고, 가볍게 담아보세요.</p></div>
-        <div className="flex min-h-28 items-end justify-start border-t border-neutral-200 pt-5 text-5xl font-light tracking-tight text-neutral-300 sm:min-h-0 sm:justify-end sm:border-l sm:border-t-0 sm:pl-8 sm:pt-0 sm:text-7xl" aria-hidden="true">MALL.</div>
-      </section>
-      <div className="mb-6 mt-10 flex flex-col gap-4 sm:mt-14 sm:flex-row sm:items-end sm:justify-between"><div><p className="text-xs font-medium tracking-[.18em] text-neutral-500">CURATED FOR YOU</p><h2 className="mt-2 text-2xl font-semibold tracking-tight">지금 만나보세요</h2></div><label className="w-full sm:w-72"><span className="sr-only">상품 검색</span><input className="field" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="상품 이름으로 검색" /></label></div>
+      <div className="mb-6 mt-4 flex flex-col gap-4 sm:mt-8 sm:flex-row sm:items-end sm:justify-between"><div><h2 className="text-2xl font-bold tracking-tight text-neutral-900">추천 상품</h2></div><label className="w-full sm:w-72"><span className="sr-only">상품 검색</span><input className="field" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="상품 이름으로 검색" /></label></div>
       {loadingPosts ? <p role="status">상품을 불러오는 중입니다…</p> : <>
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-6 lg:grid-cols-4">
           {posts.filter((post) => post.title.toLowerCase().includes(search.toLowerCase())).map((post) => <button key={post.id} type="button" aria-label={`${post.thumbnail.title} 상세 보기`} className="block min-w-0 text-left transition-transform hover:-translate-y-0.5 focus-visible:rounded-xl disabled:hover:translate-y-0" disabled={busy || !online} onClick={() => void run(async () => { await openProductDetail(post.id); })}>
