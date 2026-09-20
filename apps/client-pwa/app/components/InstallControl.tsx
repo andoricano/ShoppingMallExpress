@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { Download } from "lucide-react";
 
 interface InstallEvent extends Event {
   prompt(): Promise<void>;
@@ -21,12 +22,12 @@ export default function InstallControl() {
       window.removeEventListener("appinstalled", onInstalled);
     };
   }, []);
-  return <div className="text-xs text-stone-600">
-    <button className="underline underline-offset-4" onClick={async () => {
+  return <div className="text-xs text-neutral-600">
+    <button type="button" aria-label="홈 화면에 추가" className="inline-flex h-11 w-11 items-center justify-center text-neutral-700 transition-colors hover:text-black" onClick={async () => {
       if (!prompt) { setMessage("브라우저 메뉴에서 ‘앱 설치’ 또는 ‘홈 화면에 추가’를 선택하세요. iOS에서는 Safari의 공유 메뉴를 이용하세요."); return; }
       try { await prompt.prompt(); await prompt.userChoice; setPrompt(null); }
       catch { setMessage("브라우저 메뉴에서 홈 화면에 추가해 주세요."); }
-    }}>홈 화면에 추가</button>
+    }}><Download className="h-5 w-5" strokeWidth={1.8} /><span className="sr-only">홈 화면에 추가</span></button>
     {message && <p role="status" className="mt-2 max-w-sm">{message}</p>}
   </div>;
 }

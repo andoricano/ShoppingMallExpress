@@ -6,6 +6,7 @@ import type { Session } from "@supabase/supabase-js";
 import type { CartItem, Order, ProductPost } from "@mall/types";
 import { ProductCard } from "@mall/mall-page-viewer";
 import { ProductPostCard } from "@mall/tiptap";
+import { ShoppingCart, UserRound } from "lucide-react";
 import { authProfile, getAuth } from "../lib/auth";
 import { shopApi, type ProductDetail } from "../lib/api";
 import InstallControl from "./components/InstallControl";
@@ -113,37 +114,19 @@ export default function Home() {
 
   return <main className="min-h-screen bg-neutral-50 text-neutral-900">
     <header className="sticky top-0 z-50 border-b border-neutral-200 bg-white/90 backdrop-blur-md">
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
-        <Link href="/" className="shrink-0 text-xl font-bold tracking-wider text-neutral-900">MALL<span className="ml-2 hidden text-xs font-normal tracking-[0.2em] text-neutral-500 sm:inline">SHOP & GO</span></Link>
-        <nav aria-label="주요 메뉴" className="hidden h-full items-center gap-1 md:flex">
-          {([['shop', '상품'], ['cart', '장바구니'], ['order', '주문 조회']] as const).map(([value, title]) =>
-            <button key={value} aria-current={tab === value ? 'page' : undefined} disabled={busy} className={`h-full px-4 text-sm font-medium transition-colors ${tab === value ? 'text-neutral-950' : 'text-neutral-500 hover:text-neutral-950'}`} onClick={() => {
-              if (value === 'cart') void run(openCart);
-              else { setTab(value); setDetail(null); setError(''); }
-            }}>{title}</button>)}
-        </nav>
-        <div className="flex items-center gap-3">
-        <InstallControl />
-        <button className="action min-h-11 px-3 text-sm sm:px-4" disabled={busy || !authReady || !online} onClick={() => void run(async () => {
-          if (session) {
-            await authProfile.signOut();
-          } else {
-            await authProfile.signInWithGoogle();
-          }
-        })}>{!authReady ? "확인 중…" : session ? "로그아웃" : "Google 로그인"}</button>
+      <div className="mx-auto flex h-16 max-w-7xl items-center px-4 sm:px-6 lg:px-8">
+        <Link href="/" onClick={() => { setTab("shop"); setDetail(null); setError(""); }} className="shrink-0 text-xl font-bold tracking-wider text-neutral-900">MALL</Link>
+        <div className="ml-auto flex items-center gap-1 text-sm font-medium text-neutral-700">
+          <InstallControl />
+          {session ? <>
+            <button type="button" aria-label="장바구니" className="inline-flex h-11 w-11 items-center justify-center transition-colors hover:text-black" disabled={busy || !online} onClick={() => void run(openCart)}><ShoppingCart className="h-5 w-5" strokeWidth={1.8} /></button>
+            <button type="button" aria-label="주문 조회" className="inline-flex h-11 w-11 items-center justify-center transition-colors hover:text-black" disabled={busy} onClick={() => { setTab("order"); setDetail(null); setError(""); }}><UserRound className="h-5 w-5" strokeWidth={1.8} /></button>
+            <span className="mx-2 hidden h-4 w-px bg-neutral-200 sm:block" />
+            <button type="button" className="min-h-11 px-2 text-xs text-neutral-500 transition-colors hover:text-black" disabled={busy || !online} onClick={() => void run(async () => { await authProfile.signOut(); })}>로그아웃</button>
+          </> : <button type="button" className="min-h-11 rounded-md bg-neutral-900 px-3.5 text-xs font-semibold text-white transition-colors hover:bg-neutral-800" disabled={busy || !authReady || !online} onClick={() => void run(async () => { await authProfile.signInWithGoogle(); })}>{!authReady ? "확인 중…" : "Google 로그인"}</button>}
         </div>
       </div>
     </header>
-
-    <nav aria-label="주요 메뉴" className="border-b border-neutral-200 bg-white md:hidden">
-      <div className="mx-auto flex max-w-7xl gap-1 overflow-x-auto px-3 sm:px-6">
-      {([["shop", "상품"], ["cart", "장바구니"], ["order", "주문 조회"]] as const).map(([value, title]) =>
-        <button key={value} aria-current={tab === value ? "page" : undefined} disabled={busy} className={`min-h-12 shrink-0 border-b-2 px-4 text-sm font-medium ${tab === value ? "border-neutral-900 text-neutral-950" : "border-transparent text-neutral-500"}`} onClick={() => {
-          if (value === "cart") void run(openCart);
-          else { setTab(value); setDetail(null); setError(""); }
-        }}>{title}</button>)}
-      </div>
-    </nav>
     <div className="mx-auto max-w-7xl px-4 pb-16 pt-6 sm:px-6 sm:pt-8 lg:px-8">
     {!online && <p role="status" className="mb-4 rounded-xl bg-amber-100 p-4">로그인을 해주세요. 주문은 로그인·장바구니·주문은 연결 후 이용할 수 있습니다.</p>}
     {error && <p role="alert" className="mb-4 rounded-xl bg-red-50 p-4 text-red-800">{error}</p>}
