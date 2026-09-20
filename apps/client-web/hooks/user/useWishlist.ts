@@ -13,12 +13,9 @@ import {
 
 import type { Wishlist } from "@mall/types";
 
+import { API_BASE_URL } from "@/lib/api";
 import { authProfile } from "@/lib/authClient";
 import { useWishlistStore } from "@/store/wishlistStore";
-
-const API_BASE_URL =
-    process.env.NEXT_PUBLIC_API_URL ||
-    "http://localhost:8080";
 
 export function useWishlist() {
     const wishlist =

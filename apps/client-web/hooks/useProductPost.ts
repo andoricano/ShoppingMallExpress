@@ -8,6 +8,7 @@ import type {
   ProductPost,
 } from "@mall/types";
 import { API_ENDPOINTS } from "@mall/constants";
+import { API_BASE_URL } from "@/lib/api";
 
 
 interface ProductPostDetailResponse
@@ -19,11 +20,6 @@ interface ProductPostDetailResponse
     products: Product;
   }[];
 }
-
-
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL ||
-  "http://localhost:8080";
 
 export function useProductPost() {
   const [postList, setPostList] =

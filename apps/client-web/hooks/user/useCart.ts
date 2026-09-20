@@ -18,11 +18,9 @@ import {
 
 import { authProfile } from "@/lib/authClient";
 
-import { useCartStore } from "@/store/cartStore";
+import { API_BASE_URL } from "@/lib/api";
 
-const API_BASE_URL =
-    process.env.NEXT_PUBLIC_API_URL ||
-    "http://localhost:8080";
+import { useCartStore } from "@/store/cartStore";
 
 export function useCart() {
     const [

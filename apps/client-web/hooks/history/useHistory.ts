@@ -9,11 +9,8 @@ import {
 
 import { API_ENDPOINTS } from "@mall/constants";
 import type { ClientHistoryItem } from "@mall/types";
+import { API_BASE_URL } from "@/lib/api";
 import { authProfile } from "@/lib/authClient";
-
-const API_BASE_URL =
-    process.env.NEXT_PUBLIC_API_URL ||
-    "http://localhost:8080";
 
 export function useHistory() {
     const [

@@ -11,6 +11,7 @@ import type {
     Order,
 } from "@mall/types";
 import { CLIENT_ORDER_API } from "@mall/constants";
+import { API_BASE_URL } from "@/lib/api";
 import { authProfile } from "@/lib/authClient";
 
 interface OrderDeliveryStatus {
@@ -18,11 +19,6 @@ interface OrderDeliveryStatus {
     trackingNumber: string;
     status: string;
 }
-const API_BASE_URL =
-    process.env.NEXT_PUBLIC_API_URL ||
-    "http://localhost:8080";
-
-
 export function useOrderHistory() {
     // ==========================================
     // State
