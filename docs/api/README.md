@@ -11,7 +11,7 @@
 
 | 타입 | 주요 용도 |
 | --- | --- |
-| `SkuInventory` | 재고 항목 |
+| `SkuInventory`, `CreateInventoryInput` | 재고 항목 및 생성 요청 |
 | `Product`, `ProductPost`, `ThumbnailInfo` | 상품/상품 게시물 |
 | `ProductPostCategory`, `ClientCategory`, `ProductPostCategoryItem` | 카테고리와 카테고리 게시물 요약 |
 | `Order`, `OrderItem`, `OrderStatus`, `OrderShippingAddress`, `OrderShippingAddressInput`, `OrderDelivery` | 주문 |
@@ -65,10 +65,10 @@
 ### `POST /api/inventory-items`
 
 - **Auth**: 없음
-- **Params/query/body**: body `{ skuCode: string, currentStock?: number, isActive?: boolean, meta?: Record<string, unknown> }`; 기본값은 `0`, `true`
+- **Params/query/body**: body `CreateInventoryInput` (`{ skuCode: string, currentStock?: number, isActive?: boolean, meta?: Record<string, unknown> }`); 기본값은 `0`, `true`
 - **Success**: `201`, `data: SkuInventory`
 - **주요 오류**: `400` `skuCode` 누락, `currentStock`이 0 이상 정수가 아님
-- **관련 타입**: `SkuInventory`
+- **관련 타입**: `CreateInventoryInput`, `SkuInventory`
 - **Notes**: `meta` 미지정 시 `null`로 저장된다.
 
 ### `PATCH /api/inventory-items/:id`

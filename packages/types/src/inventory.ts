@@ -19,3 +19,11 @@ export interface SkuInventory {
     createdAt: string;
     updatedAt: string;
 }
+
+/** 재고 생성 API 요청 */
+export interface CreateInventoryInput {
+    skuCode: string;
+    currentStock?: number;
+    isActive?: boolean;
+    meta?: Record<string, unknown>;
+}

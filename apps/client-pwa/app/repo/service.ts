@@ -1,11 +1,13 @@
 // app/repositories/inventory.repository.ts
 
-import type { SkuInventory } from "@mall/types";
+import type {
+    CreateInventoryInput,
+    SkuInventory,
+} from "@mall/types";
 
 
 export const API_BASE_URL = 'https://shopping-ex-kz5p4lagfq-du.a.run.app';
 
-type CreateInventoryInput = Omit<SkuInventory, "id">;
 type UpdateInventoryInput = Partial<
     Pick<SkuInventory, "skuCode" | "isActive" | "meta">
 >;
