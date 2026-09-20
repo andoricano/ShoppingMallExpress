@@ -1,0 +1,23 @@
+# Vercel frontend deployment
+
+## Current client-pwa setup
+
+`apps/client-pwa` is linked to the existing Vercel project `andoricano/shopping-mall-express-client-pwa` and uses Vercel's Git integration. Pushes to the repository trigger Vercel deployments; do not add a direct `vercel --prod` deployment workflow.
+
+The production and preview environments use these variable names:
+
+- `API_URL`
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+
+Values are managed in Vercel and must not be committed. `turbo.json` declares these names for the `build` task so Turborepo's build cache tracks their values. `.vercel` is ignored and its local link data must remain untracked.
+
+## Additional frontend projects
+
+`client-web`, `user-web`, and `develop-web` can each be connected to a separate Vercel project using this same Git repository. For each project:
+
+1. Set the Vercel project root directory to its app workspace (for example, `apps/client-web`).
+2. Configure that app's required environment variables in Vercel; do not copy values into repository files.
+3. Keep Git integration enabled so commits and pull requests produce the normal production/preview deployments.
+
+Only `apps/client-pwa`'s Vercel link and environment-variable names are confirmed here. Before linking another app, verify its deployment-time environment-variable requirements from its own configuration.
