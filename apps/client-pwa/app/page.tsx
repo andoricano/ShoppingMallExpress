@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import type { CartItem, Order, ProductPost } from "@mall/types";
 import { ProductCard } from "@mall/mall-page-viewer";
-import { getAuth } from "../lib/auth";
+import { authProfile, getAuth } from "../lib/auth";
 import { shopApi, type ProductDetail } from "../lib/api";
 import InstallControl from "./components/InstallControl";
 
@@ -56,7 +56,7 @@ export default function Home() {
     let unsubscribe = () => {};
     try {
       const auth = getAuth();
-      const { data } = auth.auth.onAuthStateChange((_event, next) => {
+      const applySession = (next: Session | null) => {
         if (owner.current !== next?.user.id) {
           owner.current = next?.user.id;
           authEpoch.current += 1;
@@ -64,8 +64,15 @@ export default function Home() {
           setAddressVersion((value) => value + 1); setNotice(""); setError("");
         }
         setSession(next); setAuthReady(true);
+      };
+      const { data } = auth.auth.onAuthStateChange((_event, next) => {
+        applySession(next);
       });
       unsubscribe = () => data.subscription.unsubscribe();
+      void authProfile.getSession().then(applySession).catch((cause) => {
+        setError(cause instanceof Error ? cause.message : "로그인 설정을 확인해 주세요.");
+        setAuthReady(true);
+      });
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "로그인 설정을 확인해 주세요."); setAuthReady(true);
     }
@@ -109,12 +116,10 @@ export default function Home() {
       <div className="flex items-center gap-4">
         <InstallControl />
         <button className="action" disabled={busy || !authReady || !online} onClick={() => void run(async () => {
-          const auth = getAuth();
           if (session) {
-            const { error } = await auth.auth.signOut(); if (error) throw error;
+            await authProfile.signOut();
           } else {
-            const { error } = await auth.auth.signInWithOAuth({ provider: "google", options: { redirectTo: `${window.location.origin}/auth/callback` } });
-            if (error) throw error;
+            await authProfile.signInWithGoogle();
           }
         })}>{!authReady ? "확인 중…" : session ? "로그아웃" : "Google 로그인"}</button>
       </div>
