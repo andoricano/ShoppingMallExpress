@@ -1,9 +1,14 @@
 // app/repositories/inventory.repository.ts
 
-import { InventoryItem } from "@mall/types";
+import type { SkuInventory } from "@mall/types";
 
 
 export const API_BASE_URL = 'https://shopping-ex-kz5p4lagfq-du.a.run.app';
+
+type CreateInventoryInput = Omit<SkuInventory, "id">;
+type UpdateInventoryInput = Partial<
+    Pick<SkuInventory, "skuCode" | "isActive" | "meta">
+>;
 
 interface ApiResponse<T> {
     success: boolean;
@@ -44,9 +49,9 @@ async function request<T>(
  * InventoryItem 생성
  */
 export const createInventoryItem = async (
-    item: InventoryItem,
-): Promise<InventoryItem> => {
-    return request<InventoryItem>(
+    item: CreateInventoryInput,
+): Promise<SkuInventory> => {
+    return request<SkuInventory>(
         `${API_BASE_URL}/api/inventory-items`,
         {
             method: 'POST',
@@ -58,8 +63,8 @@ export const createInventoryItem = async (
 /**
  * InventoryItem 전체 조회
  */
-export const getInventoryItems = async (): Promise<InventoryItem[]> => {
-    return request<InventoryItem[]>(
+export const getInventoryItems = async (): Promise<SkuInventory[]> => {
+    return request<SkuInventory[]>(
         `${API_BASE_URL}/api/inventory-items`,
         {
             method: 'GET',
@@ -68,33 +73,15 @@ export const getInventoryItems = async (): Promise<InventoryItem[]> => {
 };
 
 /**
- * InventoryItem 단일 조회
- */
-export const getInventoryItem = async (
-    uuid: string,
-): Promise<InventoryItem | null> => {
-    try {
-        return await request<InventoryItem>(
-            `${API_BASE_URL}/api/inventory-items/${uuid}`,
-            {
-                method: 'GET',
-            },
-        );
-    } catch {
-        return null;
-    }
-};
-
-/**
  * InventoryItem 수정
  */
 export const updateInventoryItem = async (
-    uuid: string,
-    update: Partial<InventoryItem>,
-): Promise<InventoryItem | null> => {
+    id: string,
+    update: UpdateInventoryInput,
+): Promise<SkuInventory | null> => {
     try {
-        return await request<InventoryItem>(
-            `${API_BASE_URL}/api/inventory-items/${uuid}`,
+        return await request<SkuInventory>(
+            `${API_BASE_URL}/api/inventory-items/${id}`,
             {
                 method: 'PATCH',
                 body: JSON.stringify(update),
@@ -109,16 +96,12 @@ export const updateInventoryItem = async (
  * InventoryItem 삭제
  */
 export const deleteInventoryItem = async (
-    uuid: string,
-): Promise<InventoryItem | null> => {
-    try {
-        return await request<InventoryItem>(
-            `${API_BASE_URL}/api/inventory-items/${uuid}`,
-            {
-                method: 'DELETE',
-            },
-        );
-    } catch {
-        return null;
-    }
+    id: string,
+): Promise<void> => {
+    await request<void>(
+        `${API_BASE_URL}/api/inventory-items/${id}`,
+        {
+            method: 'DELETE',
+        },
+    );
 };

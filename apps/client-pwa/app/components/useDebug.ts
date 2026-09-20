@@ -117,9 +117,9 @@ export function useDebug() {
             setStatus('running');
 
             const item = {
-                uuid: createUuid(),
-                name: 'Debug 상품',
-                cnt: 10,
+                skuCode: `DEBUG-${createUuid()}`,
+                currentStock: 10,
+                isActive: true,
                 meta: {
                     size: 'L',
                     color: 'red',
@@ -131,7 +131,7 @@ export function useDebug() {
             const created = await createInventoryItem(item);
 
             addLog(
-                `[SUCCESS] 생성 완료: ${created.uuid}`,
+                `[SUCCESS] 생성 완료: ${created.id}`,
                 '#00ff00',
             );
 
@@ -173,9 +173,9 @@ export function useDebug() {
             const target = items[0];
 
             const updated = await updateInventoryItem(
-                target.uuid,
+                target.id,
                 {
-                    cnt: 9999,
+                    isActive: !target.isActive,
                 },
             );
 
@@ -191,7 +191,7 @@ export function useDebug() {
             }
 
             addLog(
-                `[SUCCESS] ${target.uuid} cnt: ${target.cnt} → ${updated.cnt}`,
+                `[SUCCESS] ${target.id} active: ${target.isActive} → ${updated.isActive}`,
                 '#00ff00',
             );
 
@@ -230,23 +230,10 @@ export function useDebug() {
 
             const target = items[0];
 
-            const deleted = await deleteInventoryItem(
-                target.uuid,
-            );
-
-            if (!deleted) {
-                addLog(
-                    '[DELETE] 대상 데이터를 찾지 못했습니다.',
-                    '#ffaa00',
-                );
-
-                setStatus('idle');
-
-                return;
-            }
+            await deleteInventoryItem(target.id);
 
             addLog(
-                `[SUCCESS] 삭제 완료: ${deleted.name}`,
+                `[SUCCESS] 삭제 완료: ${target.skuCode}`,
                 '#00ff00',
             );
 

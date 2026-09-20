@@ -77,7 +77,7 @@ Use a disposable/test Supabase project and test data. Test-order creation may cr
 5. Start the production PWA on port 3003 so production-only service-worker registration is exercised:
 
    ```bash
-   pnpm --filter @mall/client-pwa start -- --port 3003
+   pnpm --filter @mall/client-pwa start --port 3003
    ```
 
 6. Open `http://localhost:3003` and verify in this order:
