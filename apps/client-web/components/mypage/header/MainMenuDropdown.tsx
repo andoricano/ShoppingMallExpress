@@ -1,9 +1,7 @@
 "use client";
 
-import type {
-    HeaderMenuItem,
-    HeaderMenuMode,
-} from "../../types/mainPage";
+import { HeaderMenuItem, HeaderMenuMode } from "@mall/mall-page-viewer/src/types/mainPage";
+
 
 interface MainMenuDropdownProps {
     menu: HeaderMenuItem;

@@ -127,7 +127,7 @@ export default function Home() {
           else { setTab(value); setDetail(null); setError(""); }
         }}>{title}</button>)}
     </nav>
-    {!online && <p role="status" className="mb-4 rounded-xl bg-amber-100 p-4">오프라인입니다. 현재 화면은 참고용이며 로그인·장바구니·주문은 연결 후 이용할 수 있습니다.</p>}
+    {!online && <p role="status" className="mb-4 rounded-xl bg-amber-100 p-4">로그인을 해주세요. 주문은 로그인·장바구니·주문은 연결 후 이용할 수 있습니다.</p>}
     {error && <p role="alert" className="mb-4 rounded-xl bg-red-50 p-4 text-red-800">{error}</p>}
     {notice && <p role="status" className="mb-4 rounded-xl bg-emerald-50 p-4">{notice}</p>}
     {busy && <p role="status" className="mb-4 text-sm">처리 중입니다…</p>}
