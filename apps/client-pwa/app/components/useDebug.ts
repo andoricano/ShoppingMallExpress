@@ -238,8 +238,6 @@ export function useDebug() {
             );
 
             setStatus('success');
-
-            return deleted;
         } catch (error) {
             const message = String(error);
 
