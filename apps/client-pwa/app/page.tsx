@@ -191,16 +191,19 @@ export default function Home() {
       </div>
     </section>}
 
-    {tab === "cart" && <section className="max-w-2xl space-y-5">
-      <h1 className="text-3xl font-semibold">장바구니</h1>
-      {!session ? <p>로그인이 필요합니다.</p> : <>
-        {cart.map((item) => <article key={item.product.id} className="flex items-center justify-between gap-4 rounded-xl bg-white p-5">
-          <div><h2 className="font-semibold">{item.product.name}</h2><p>{item.quantity}개 · {money(item.product.price * item.quantity)}</p></div>
-          <button className="underline" disabled={busy || !online} onClick={() => void run(async (epoch) => { await shopApi.remove(await token(), item.product.id); await openCart(epoch); })}>삭제</button>
+    {tab === "cart" && <section className="mx-auto max-w-5xl">
+      <header className="mb-8 border-b border-neutral-200 pb-6"><p className="text-xs font-medium tracking-[.18em] text-neutral-500">SHOPPING BAG</p><h1 className="mt-2 text-3xl font-semibold tracking-tight">장바구니</h1><p className="mt-2 text-sm text-neutral-600">담아둔 상품을 확인하고 테스트 주문을 만들 수 있습니다.</p></header>
+      {!session ? <div className="border border-dashed border-neutral-300 bg-white p-8 text-center text-sm text-neutral-600">로그인이 필요합니다.</div> : <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
+        <div className="space-y-3">
+        {cart.map((item) => <article key={item.product.id} className="flex flex-col gap-4 border border-neutral-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+          <div className="min-w-0"><h2 className="truncate font-semibold">{item.product.name}</h2><p className="mt-1 text-sm text-neutral-600">{item.quantity}개 · {money(item.product.price * item.quantity)}</p></div>
+          <button className="min-h-11 self-start text-sm underline underline-offset-4 sm:self-auto" disabled={busy || !online} onClick={() => void run(async (epoch) => { await shopApi.remove(await token(), item.product.id); await openCart(epoch); })}>삭제</button>
         </article>)}
-        {!cart.length ? <p>장바구니가 비어 있습니다.</p> : <>
-          <p className="text-xl font-semibold">상품 합계 {money(cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0))}</p>
-          <form key={addressVersion} className="space-y-4 rounded-2xl border border-stone-300 p-6" onSubmit={(event) => {
+        {!cart.length && <div className="border border-dashed border-neutral-300 bg-white p-8 text-center text-sm text-neutral-500">장바구니가 비어 있습니다.</div>}
+        </div>
+        {cart.length > 0 && <aside className="space-y-5 border border-neutral-200 bg-white p-5 sm:p-6 lg:sticky lg:top-24">
+          <p className="flex items-baseline justify-between gap-4 text-lg font-semibold"><span>상품 합계</span><span>{money(cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0))}</span></p>
+          <form key={addressVersion} className="space-y-4 border-t border-neutral-200 pt-5" onSubmit={(event) => {
             event.preventDefault();
             if (submitted) return;
             const form = new FormData(event.currentTarget);
@@ -225,28 +228,27 @@ export default function Home() {
               }
             });
           }}>
-            <h2 className="text-xl font-semibold">배송지 · 테스트 주문</h2>
-            <p className="text-sm text-stone-600">실결제는 진행하지 않습니다. 테스트 주문도 서버의 재고와 주문 데이터에 반영될 수 있습니다.</p>
+            <h2 className="text-lg font-semibold">배송지 · 테스트 주문</h2>
+            <p className="text-sm leading-6 text-neutral-600">실결제는 진행하지 않습니다. 테스트 주문도 서버의 재고와 주문 데이터에 반영될 수 있습니다.</p>
             {([["recipient", "받는 분", "name"], ["phone", "연락처", "tel"], ["postalCode", "우편번호", "postal-code"], ["address", "주소", "street-address"], ["detailAddress", "상세 주소", "address-line2"]] as const).map(([name, label, autoComplete]) => <label key={name} className="block text-sm">{label}<input className="field mt-1" name={name} autoComplete={autoComplete} type={name === "phone" ? "tel" : "text"} required={name !== "detailAddress"} maxLength={200} /></label>)}
             {submitted && <p role="status">주문 요청이 전송되었습니다. 중복 방지를 위해 추가 전송을 막았습니다. 주문 조회 또는 관리자 확인 후 새로 방문해 주세요.</p>}
-            <button className="action w-full" disabled={busy || !online || submitted}>테스트 주문 생성</button>
+            <button className="action min-h-11 w-full" disabled={busy || !online || submitted}>테스트 주문 생성</button>
           </form>
-        </>}
-      </>}
+        </aside>}
+      </div>}
     </section>}
 
-    {tab === "order" && <section className="max-w-2xl space-y-5">
-      <h1 className="text-3xl font-semibold">내 주문 조회</h1>
-      <p className="text-sm text-stone-600">주문 번호로 로그인한 계정의 주문을 확인합니다. 테스트 주문은 실결제 완료를 의미하지 않습니다.</p>
-      <form className="flex gap-3" onSubmit={(event) => { event.preventDefault(); void run(async (epoch) => {
+    {tab === "order" && <section className="mx-auto max-w-3xl">
+      <header className="border-b border-neutral-200 pb-6"><p className="text-xs font-medium tracking-[.18em] text-neutral-500">ORDER HISTORY</p><h1 className="mt-2 text-3xl font-semibold tracking-tight">내 주문 조회</h1><p className="mt-2 text-sm leading-6 text-neutral-600">주문 번호로 로그인한 계정의 주문을 확인합니다. 테스트 주문은 실결제 완료를 의미하지 않습니다.</p></header>
+      <form className="mt-6 flex flex-col gap-3 sm:flex-row" onSubmit={(event) => { event.preventDefault(); void run(async (epoch) => {
         setOrder(null); const result = await shopApi.order(await token(), orderId.trim());
         if (epoch === authEpoch.current) setOrder(result);
       }); }}>
         <label className="grow"><span className="sr-only">주문 번호</span><input className="field" placeholder="주문 번호" value={orderId} onChange={(event) => setOrderId(event.target.value)} required /></label>
-        <button className="action" disabled={busy || !online || !session}>조회</button>
+        <button className="action min-h-11 shrink-0" disabled={busy || !online || !session}>조회</button>
       </form>
-      {!session && <p>로그인 후 주문을 조회할 수 있습니다.</p>}
-      {order && <article className="space-y-4 rounded-2xl bg-white p-6">
+      {!session && <p className="mt-5 border border-dashed border-neutral-300 bg-white p-5 text-sm text-neutral-600">로그인 후 주문을 조회할 수 있습니다.</p>}
+      {order && <article className="mt-6 space-y-4 border border-neutral-200 bg-white p-5 sm:p-6">
         <h2 className="break-all font-semibold">주문 {order.id}</h2><p>상태: {order.status} · {money(order.totalPrice)}</p>
         {order.items?.map((item) => <p key={item.id}>{item.productName} · {item.quantity}개 · {money(item.price * item.quantity)}</p>)}
         <p>{order.shippingAddress.recipient} · {order.shippingAddress.address} {order.shippingAddress.detailAddress}</p>
