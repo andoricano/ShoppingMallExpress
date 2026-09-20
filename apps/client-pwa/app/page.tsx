@@ -110,28 +110,40 @@ export default function Home() {
     setCart(items); setTab("cart"); setOrder(null);
   }
 
-  return <main className="mx-auto max-w-6xl px-5 pb-16 sm:px-10">
-    <header className="flex flex-wrap items-center justify-between gap-4 border-b border-stone-300 py-6">
-      <Link href="/" className="text-xl font-bold tracking-tight">mall<span className="ml-1 font-normal italic">pocket</span><span className="ml-3 text-xs font-normal tracking-widest">SHOP & GO</span></Link>
-      <div className="flex items-center gap-4">
+  return <main className="min-h-screen bg-neutral-50 text-neutral-900">
+    <header className="sticky top-0 z-50 border-b border-neutral-200 bg-white/90 backdrop-blur-md">
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+        <Link href="/" className="shrink-0 text-xl font-bold tracking-wider text-neutral-900">MALL<span className="ml-2 hidden text-xs font-normal tracking-[0.2em] text-neutral-500 sm:inline">SHOP & GO</span></Link>
+        <nav aria-label="주요 메뉴" className="hidden h-full items-center gap-1 md:flex">
+          {([['shop', '상품'], ['cart', '장바구니'], ['order', '주문 조회']] as const).map(([value, title]) =>
+            <button key={value} aria-current={tab === value ? 'page' : undefined} disabled={busy} className={`h-full px-4 text-sm font-medium transition-colors ${tab === value ? 'text-neutral-950' : 'text-neutral-500 hover:text-neutral-950'}`} onClick={() => {
+              if (value === 'cart') void run(openCart);
+              else { setTab(value); setDetail(null); setError(''); }
+            }}>{title}</button>)}
+        </nav>
+        <div className="flex items-center gap-3">
         <InstallControl />
-        <button className="action" disabled={busy || !authReady || !online} onClick={() => void run(async () => {
+        <button className="action min-h-11 px-3 text-sm sm:px-4" disabled={busy || !authReady || !online} onClick={() => void run(async () => {
           if (session) {
             await authProfile.signOut();
           } else {
             await authProfile.signInWithGoogle();
           }
         })}>{!authReady ? "확인 중…" : session ? "로그아웃" : "Google 로그인"}</button>
+        </div>
       </div>
     </header>
 
-    <nav aria-label="주요 메뉴" className="my-6 flex gap-2">
+    <nav aria-label="주요 메뉴" className="border-b border-neutral-200 bg-white md:hidden">
+      <div className="mx-auto flex max-w-7xl gap-1 overflow-x-auto px-3 sm:px-6">
       {([["shop", "상품"], ["cart", "장바구니"], ["order", "주문 조회"]] as const).map(([value, title]) =>
-        <button key={value} aria-current={tab === value ? "page" : undefined} disabled={busy} className={tab === value ? "action" : "rounded-xl px-4 py-3"} onClick={() => {
+        <button key={value} aria-current={tab === value ? "page" : undefined} disabled={busy} className={`min-h-12 shrink-0 border-b-2 px-4 text-sm font-medium ${tab === value ? "border-neutral-900 text-neutral-950" : "border-transparent text-neutral-500"}`} onClick={() => {
           if (value === "cart") void run(openCart);
           else { setTab(value); setDetail(null); setError(""); }
         }}>{title}</button>)}
+      </div>
     </nav>
+    <div className="mx-auto max-w-7xl px-4 pb-16 pt-6 sm:px-6 sm:pt-8 lg:px-8">
     {!online && <p role="status" className="mb-4 rounded-xl bg-amber-100 p-4">로그인을 해주세요. 주문은 로그인·장바구니·주문은 연결 후 이용할 수 있습니다.</p>}
     {error && <p role="alert" className="mb-4 rounded-xl bg-red-50 p-4 text-red-800">{error}</p>}
     {notice && <p role="status" className="mb-4 rounded-xl bg-emerald-50 p-4">{notice}</p>}
@@ -237,6 +249,7 @@ export default function Home() {
         <p>{order.shippingAddress.recipient} · {order.shippingAddress.address} {order.shippingAddress.detailAddress}</p>
       </article>}
     </section>}
-    <footer className="mt-16 border-t border-stone-300 pt-6 text-xs text-stone-500">MALL POCKET · 나만의 작은 쇼핑 공간</footer>
+    <footer className="mt-16 border-t border-neutral-200 pt-6 text-xs text-neutral-500">MALL POCKET · 나만의 작은 쇼핑 공간</footer>
+    </div>
   </main>;
 }
