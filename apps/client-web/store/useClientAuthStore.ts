@@ -102,14 +102,6 @@ export const useClientAuthStore =
                     return;
                 }
 
-                console.log(
-                    "[ClientAuth] Session 확인:",
-                    {
-                        id: session.user.id,
-                        email: session.user.email,
-                    },
-                );
-
                 set({
                     authUserId:
                         session.user.id,
@@ -150,11 +142,6 @@ export const useClientAuthStore =
             try {
                 const profile =
                     await authProfile.getProfile();
-
-                console.log(
-                    "[ClientAuth] Profile 확인:",
-                    profile,
-                );
 
                 set({
                     user: profile,
