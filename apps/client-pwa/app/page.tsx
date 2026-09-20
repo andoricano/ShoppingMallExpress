@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import type { CartItem, Order, ProductPost } from "@mall/types";
 import { ProductCard } from "@mall/mall-page-viewer";
+import { ProductPostCard } from "@mall/tiptap";
 import { authProfile, getAuth } from "../lib/auth";
 import { shopApi, type ProductDetail } from "../lib/api";
 import InstallControl from "./components/InstallControl";
@@ -157,10 +158,16 @@ export default function Home() {
       <div className="mb-6 mt-10 flex flex-col gap-4 sm:mt-14 sm:flex-row sm:items-end sm:justify-between"><div><p className="text-xs font-medium tracking-[.18em] text-neutral-500">CURATED FOR YOU</p><h2 className="mt-2 text-2xl font-semibold tracking-tight">지금 만나보세요</h2></div><label className="w-full sm:w-72"><span className="sr-only">상품 검색</span><input className="field" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="상품 이름으로 검색" /></label></div>
       {loadingPosts ? <p role="status">상품을 불러오는 중입니다…</p> : <>
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-6 lg:grid-cols-4">
-          {posts.filter((post) => post.title.toLowerCase().includes(search.toLowerCase())).map((post) => <article key={post.id} className="min-w-0">
-            <ProductCard product={{ id: post.id, ...post.thumbnail }} cardType="DISCOUNT" />
-            <button className="mt-3 min-h-11 w-full border border-neutral-300 px-3 py-2 text-left text-sm font-medium text-neutral-800 transition-colors hover:border-neutral-900 disabled:hover:border-neutral-300" disabled={busy || !online} onClick={() => void run(async () => setDetail(await shopApi.post(post.id)))}>{post.thumbnail.title} <span className="hidden text-neutral-500 sm:inline">자세히 보기</span></button>
-          </article>)}
+          {posts.filter((post) => post.title.toLowerCase().includes(search.toLowerCase())).map((post) => <button key={post.id} type="button" aria-label={`${post.thumbnail.title} 상세 보기`} className="block min-w-0 text-left transition-transform hover:-translate-y-0.5 focus-visible:rounded-xl disabled:hover:translate-y-0" disabled={busy || !online} onClick={() => void run(async () => setDetail(await shopApi.post(post.id)))}>
+            <ProductPostCard
+              imageUrl={post.thumbnail.imageUrl}
+              title={post.thumbnail.title}
+              summary={post.thumbnail.summary}
+              discount={post.thumbnail.discount}
+              price={post.thumbnail.price}
+              tags={post.thumbnail.tags}
+            />
+          </button>)}
         </div>
         {!posts.length && <p className="py-8">아직 표시할 상품이 없습니다.</p>}
         {posts.length > 0 && !posts.some((post) => post.title.toLowerCase().includes(search.toLowerCase())) && <p>검색 결과가 없습니다.</p>}
