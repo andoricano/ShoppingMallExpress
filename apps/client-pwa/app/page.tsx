@@ -208,16 +208,18 @@ export default function Home() {
 
     {tab === "cart" && <section className="mx-auto max-w-5xl">
       <header className="mb-8 border-b border-neutral-200 pb-6"><p className="text-xs font-medium tracking-[.18em] text-neutral-500">SHOPPING BAG</p><h1 className="mt-2 text-3xl font-semibold tracking-tight">장바구니</h1><p className="mt-2 text-sm text-neutral-600">담아둔 상품을 확인하고 테스트 주문을 만들 수 있습니다.</p></header>
-      {!session ? <div className="border border-dashed border-neutral-300 bg-white p-8 text-center text-sm text-neutral-600">로그인이 필요합니다.</div> : <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
-        <div className="space-y-3">
-        {cart.map((item) => <article key={item.product.id} className="flex flex-col gap-4 border border-neutral-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
-          <div className="min-w-0"><h2 className="truncate font-semibold">{item.product.name}</h2><p className="mt-1 text-sm text-neutral-600">{item.quantity}개 · {money(item.product.price * item.quantity)}</p></div>
-          <button className="min-h-11 self-start text-sm underline underline-offset-4 sm:self-auto" disabled={busy || !online} onClick={() => void run(async (epoch) => { await shopApi.remove(await token(), item.product.id); await openCart(epoch); })}>삭제</button>
-        </article>)}
-        {!cart.length && <div className="border border-dashed border-neutral-300 bg-white p-8 text-center text-sm text-neutral-500">장바구니가 비어 있습니다.</div>}
+      {!session ? <div className="border border-dashed border-neutral-300 bg-white p-8 text-center text-sm text-neutral-600">로그인이 필요합니다.</div> : <>
+        <div className="space-y-4">
+          {cart.map((item) => <article key={item.product.id} className="flex items-center gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:gap-5 sm:p-5">
+            <div className="h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-slate-100 sm:h-24 sm:w-24">{item.product.mainImageUrl ? <img src={item.product.mainImageUrl} alt={item.product.name} className="h-full w-full object-cover" /> : <div className="flex h-full items-center justify-center text-xs text-slate-400">이미지 없음</div>}</div>
+            <div className="min-w-0 flex-1"><h2 className="truncate text-sm font-semibold text-slate-900">{item.product.name}</h2><p className="mt-1 text-sm text-slate-500">{money(item.product.price)}</p><p className="mt-1 text-xs text-slate-500">수량 {item.quantity}개</p></div>
+            <p className="hidden w-28 text-right text-sm font-bold text-slate-900 sm:block">{money(item.product.price * item.quantity)}</p>
+            <button type="button" className="min-h-11 text-xs text-slate-400 transition-colors hover:text-slate-900" disabled={busy || !online} onClick={() => void run(async (epoch) => { await shopApi.remove(await token(), item.product.id); await openCart(epoch); })}>삭제</button>
+          </article>)}
+          {!cart.length && <div className="flex min-h-60 items-center justify-center rounded-xl border border-dashed border-slate-300 bg-slate-50"><p className="text-sm text-slate-400">장바구니가 비어 있습니다.</p></div>}
         </div>
-        {cart.length > 0 && <aside className="space-y-5 border border-neutral-200 bg-white p-5 sm:p-6 lg:sticky lg:top-24">
-          <p className="flex items-baseline justify-between gap-4 text-lg font-semibold"><span>상품 합계</span><span>{money(cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0))}</span></p>
+        {cart.length > 0 && <section className="mt-6 rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
+          <p className="flex items-center justify-between"><span className="text-sm text-slate-500">총 상품 금액</span><span className="text-2xl font-bold text-slate-900">{money(cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0))}</span></p>
           <form key={addressVersion} className="space-y-4 border-t border-neutral-200 pt-5" onSubmit={(event) => {
             event.preventDefault();
             if (submitted) return;
@@ -249,8 +251,8 @@ export default function Home() {
             {submitted && <p role="status">주문 요청이 전송되었습니다. 중복 방지를 위해 추가 전송을 막았습니다. 주문 조회 또는 관리자 확인 후 새로 방문해 주세요.</p>}
             <button className="action min-h-11 w-full" disabled={busy || !online || submitted}>테스트 주문 생성</button>
           </form>
-        </aside>}
-      </div>}
+        </section>}
+      </>}
     </section>}
 
     {tab === "order" && <section className="mx-auto max-w-3xl">
