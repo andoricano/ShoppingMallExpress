@@ -8,6 +8,7 @@ import {
 } from "react";
 
 import type {
+    CartEntry,
     CartItem,
 } from "@mall/types";
 
@@ -101,7 +102,13 @@ export function useCart() {
                     Array.isArray(
                         result?.data,
                     )
-                        ? (result.data as CartItem[])
+                        ? (result.data as CartEntry[])
+                            .flatMap(
+                                ({ product, quantity }) =>
+                                    product
+                                        ? [{ product, quantity }]
+                                        : [],
+                            )
                         : [];
 
                 setItems(data);
