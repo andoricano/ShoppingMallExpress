@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  transpilePackages: ["@mall/constants", "@mall/mall-page-viewer", "@mall/tiptap"],
+  transpilePackages: ["@mall/constants", "@mall/tiptap"],
   async rewrites() {
     const apiUrl = process.env.API_URL?.replace(/\/$/, "");
     if (process.env.NODE_ENV === "production" && !apiUrl) {

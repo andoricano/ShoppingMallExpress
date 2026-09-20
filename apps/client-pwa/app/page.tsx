@@ -4,9 +4,8 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import type { CartItem, Order, ProductPost } from "@mall/types";
-import { ProductCard } from "@mall/mall-page-viewer";
 import { ProductPostCard } from "@mall/tiptap";
-import { ShoppingCart, UserRound } from "lucide-react";
+import { ChevronLeft, ChevronRight, ShoppingCart, UserRound } from "lucide-react";
 import { authProfile, getAuth } from "../lib/auth";
 import { shopApi, type ProductDetail } from "../lib/api";
 import InstallControl from "./components/InstallControl";
@@ -18,6 +17,9 @@ export default function Home() {
   const [tab, setTab] = useState<Tab>("shop");
   const [posts, setPosts] = useState<ProductPost[]>([]);
   const [detail, setDetail] = useState<ProductDetail | null>(null);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [selectedProductId, setSelectedProductId] = useState("");
+  const [selectedQuantity, setSelectedQuantity] = useState(1);
   const [search, setSearch] = useState("");
   const [cart, setCart] = useState<CartItem[]>([]);
   const [order, setOrder] = useState<Order | null>(null);
@@ -112,6 +114,24 @@ export default function Home() {
     setCart(items); setTab("cart"); setOrder(null);
   }
 
+  async function openProductDetail(postId: string) {
+    const nextDetail = await shopApi.post(postId);
+    const firstProduct = [...(nextDetail.productPostProducts ?? [])]
+      .sort((a, b) => a.displayOrder - b.displayOrder)[0]?.products;
+    setDetail(nextDetail);
+    setSelectedImageIndex(0);
+    setSelectedProductId(firstProduct?.id ?? "");
+    setSelectedQuantity(1);
+  }
+
+  const detailImages = detail
+    ? [detail.thumbnail.imageUrl, ...detail.imageUrls].filter((image): image is string => Boolean(image))
+    : [];
+  const detailProducts = detail
+    ? [...(detail.productPostProducts ?? [])].sort((a, b) => a.displayOrder - b.displayOrder)
+    : [];
+  const selectedProduct = detailProducts.find(({ products }) => products?.id === selectedProductId)?.products ?? detailProducts[0]?.products;
+
   return <main className="min-h-screen bg-neutral-50 text-neutral-900">
     <header className="sticky top-0 z-50 border-b border-neutral-200 bg-white/90 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-7xl items-center px-4 sm:px-6 lg:px-8">
@@ -141,7 +161,7 @@ export default function Home() {
       <div className="mb-6 mt-10 flex flex-col gap-4 sm:mt-14 sm:flex-row sm:items-end sm:justify-between"><div><p className="text-xs font-medium tracking-[.18em] text-neutral-500">CURATED FOR YOU</p><h2 className="mt-2 text-2xl font-semibold tracking-tight">지금 만나보세요</h2></div><label className="w-full sm:w-72"><span className="sr-only">상품 검색</span><input className="field" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="상품 이름으로 검색" /></label></div>
       {loadingPosts ? <p role="status">상품을 불러오는 중입니다…</p> : <>
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-6 lg:grid-cols-4">
-          {posts.filter((post) => post.title.toLowerCase().includes(search.toLowerCase())).map((post) => <button key={post.id} type="button" aria-label={`${post.thumbnail.title} 상세 보기`} className="block min-w-0 text-left transition-transform hover:-translate-y-0.5 focus-visible:rounded-xl disabled:hover:translate-y-0" disabled={busy || !online} onClick={() => void run(async () => setDetail(await shopApi.post(post.id)))}>
+          {posts.filter((post) => post.title.toLowerCase().includes(search.toLowerCase())).map((post) => <button key={post.id} type="button" aria-label={`${post.thumbnail.title} 상세 보기`} className="block min-w-0 text-left transition-transform hover:-translate-y-0.5 focus-visible:rounded-xl disabled:hover:translate-y-0" disabled={busy || !online} onClick={() => void run(async () => { await openProductDetail(post.id); })}>
             <ProductPostCard
               imageUrl={post.thumbnail.imageUrl}
               title={post.thumbnail.title}
@@ -161,23 +181,28 @@ export default function Home() {
     {tab === "shop" && detail && <section className="mx-auto max-w-5xl">
       <button className="mb-6 min-h-11 text-sm font-medium underline underline-offset-4" onClick={() => setDetail(null)}>← 상품 목록</button>
       <div className="grid gap-8 lg:grid-cols-2 lg:gap-14">
-        <div className="lg:sticky lg:top-24 lg:self-start"><ProductCard product={{ id: detail.id, ...detail.thumbnail }} cardType="DISCOUNT" /></div>
-        <div><p className="text-xs font-medium tracking-[.18em] text-neutral-500">PRODUCT DETAIL</p><h1 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">{detail.title}</h1>
-      <h2 className="mt-8 border-t border-neutral-200 pt-6 text-lg font-semibold">옵션 선택</h2>
-      <div className="mt-4 space-y-3">{[...(detail.productPostProducts ?? [])].sort((a, b) => a.displayOrder - b.displayOrder).map(({ products: product }) => product && <form key={product.id} className="flex flex-col gap-4 border border-neutral-200 bg-white p-4 sm:flex-row sm:items-end sm:p-5" onSubmit={(event) => {
-        event.preventDefault();
-        const quantity = Number(new FormData(event.currentTarget).get("quantity"));
-        void run(async (epoch) => {
-          await shopApi.add(await token(), product.id, quantity);
-          if (epoch === authEpoch.current) setNotice("장바구니에 담았습니다.");
-        });
-      }}><div className="mr-auto"><h3 className="font-semibold">{product.name}</h3><p className="mt-1 text-sm text-neutral-600">{money(product.price)}</p></div>
-        <label className="w-full text-sm sm:w-20">수량<input className="field mt-1" name="quantity" type="number" min="1" max="99" step="1" defaultValue="1" required /></label>
-        <button className="action min-h-11 shrink-0" disabled={busy || !online || !session}>담기</button>
-      </form>)}</div>
-      {!detail.productPostProducts?.length && <p className="mt-4">구매 가능한 옵션이 없습니다.</p>}
-      {!session && <p className="mt-4 text-sm text-neutral-600">상품을 담으려면 먼저 Google로 로그인해 주세요.</p>}
+        <div className="lg:sticky lg:top-24 lg:self-start">
+          <div className="aspect-square overflow-hidden rounded-xl bg-neutral-100">
+            {detailImages[selectedImageIndex] ? <img src={detailImages[selectedImageIndex]} alt={detail.thumbnail.title} className="h-full w-full object-cover" /> : <div className="flex h-full items-center justify-center text-sm text-neutral-400">대표 이미지 없음</div>}
+          </div>
+          {detailImages.length > 0 && <div className="mt-4 flex items-center gap-2">
+            <button type="button" aria-label="이전 상품 이미지" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 transition-colors hover:bg-slate-50 disabled:opacity-30" disabled={detailImages.length <= 1} onClick={() => setSelectedImageIndex((index) => (index - 1 + detailImages.length) % detailImages.length)}><ChevronLeft size={16} /></button>
+            <div className="flex min-w-0 gap-2 overflow-hidden">{detailImages.map((image, index) => <button key={`${image}-${index}`} type="button" aria-label={`상품 이미지 ${index + 1}`} className={`h-16 w-16 shrink-0 overflow-hidden rounded-lg border-2 ${selectedImageIndex === index ? "border-blue-500" : "border-transparent"}`} onClick={() => setSelectedImageIndex(index)}><img src={image} alt="" className="h-full w-full object-cover" /></button>)}</div>
+            <button type="button" aria-label="다음 상품 이미지" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 transition-colors hover:bg-slate-50 disabled:opacity-30" disabled={detailImages.length <= 1} onClick={() => setSelectedImageIndex((index) => (index + 1) % detailImages.length)}><ChevronRight size={16} /></button>
+          </div>}
+          <div className="mt-6"><h1 className="text-2xl font-bold text-slate-900">{detail.title}</h1>{detail.thumbnail.summary && <p className="mt-2 text-sm text-slate-500">{detail.thumbnail.summary}</p>}<div className="mt-4">{detail.thumbnail.discount > 0 ? <><p className="text-sm text-slate-400 line-through">{money(detail.thumbnail.price)}</p><p className="mt-1 text-2xl font-bold text-rose-600">{money(detail.thumbnail.discount)}</p></> : <p className="text-2xl font-bold text-slate-900">{money(detail.thumbnail.price)}</p>}</div>{detail.thumbnail.tags.length > 0 && <div className="mt-4 flex flex-wrap gap-2">{detail.thumbnail.tags.map((tag) => <span key={tag} className="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-600">#{tag}</span>)}</div>}</div>
         </div>
+        <section className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
+          <div className="space-y-6">
+            <div><h2 className="text-lg font-semibold text-slate-900">상품 선택</h2><div className="mt-3 space-y-2">{detailProducts.map(({ products: product }) => product && <button key={product.id} type="button" className={`w-full rounded-lg border p-4 text-left transition-colors ${selectedProduct?.id === product.id ? "border-slate-900 bg-slate-50" : "border-slate-200 hover:bg-slate-50"}`} onClick={() => { setSelectedProductId(product.id); setSelectedQuantity(1); }}><span className="flex items-center justify-between gap-4"><span className="font-medium text-slate-900">{product.name}</span><span className="font-semibold text-slate-900">{money(product.price)}</span></span></button>)}</div></div>
+            <div className="h-px bg-slate-200" />
+            {selectedProduct && <div><label className="text-sm font-semibold text-slate-700">수량</label><div className="mt-2 flex items-center"><button type="button" aria-label="수량 감소" className="flex h-11 w-11 items-center justify-center rounded-l-lg border border-slate-200 bg-white text-lg text-slate-600 hover:bg-slate-50 disabled:opacity-40" disabled={selectedQuantity <= 1} onClick={() => setSelectedQuantity((quantity) => Math.max(1, quantity - 1))}>−</button><span className="flex h-11 min-w-14 items-center justify-center border-y border-slate-200 text-sm font-semibold">{selectedQuantity}</span><button type="button" aria-label="수량 증가" className="flex h-11 w-11 items-center justify-center rounded-r-lg border border-slate-200 bg-white text-lg text-slate-600 hover:bg-slate-50" onClick={() => setSelectedQuantity((quantity) => Math.min(99, quantity + 1))}>+</button></div></div>}
+            <div className="flex items-center justify-between"><span className="text-sm text-slate-500">총 상품 금액</span><span className="text-xl font-bold text-slate-900">{selectedProduct ? money(selectedProduct.price * selectedQuantity) : money(0)}</span></div>
+            <button type="button" className="action min-h-11 w-full" disabled={busy || !online || !session || !selectedProduct} onClick={() => void run(async (epoch) => { if (!selectedProduct) return; await shopApi.add(await token(), selectedProduct.id, selectedQuantity); if (epoch === authEpoch.current) setNotice("장바구니에 담았습니다."); })}>장바구니에 담기</button>
+            {!detailProducts.length && <p className="text-sm text-neutral-600">구매 가능한 옵션이 없습니다.</p>}
+            {!session && <p className="text-sm text-neutral-600">상품을 담으려면 먼저 Google로 로그인해 주세요.</p>}
+          </div>
+        </section>
       </div>
     </section>}
 
