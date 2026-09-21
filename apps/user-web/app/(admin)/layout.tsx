@@ -6,6 +6,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 import { useAdminAuthStore } from "@/store/useAdminAuth";
+import { AdminAuthStatus } from "@/component/master/AdminAuthStatus";
 
 export default function AdminLayout({
     children,
@@ -50,5 +51,12 @@ export default function AdminLayout({
         return null;
     }
 
-    return <>{children}</>;
+    return (
+        <>
+            <div className="fixed right-4 top-4 z-50 w-72">
+                <AdminAuthStatus />
+            </div>
+            {children}
+        </>
+    );
 }
