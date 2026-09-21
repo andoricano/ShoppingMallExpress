@@ -21,6 +21,7 @@
 | `RefundRequest`, `RefundStatus` | 환불 |
 | `History`, `ClientHistoryItem` | 이력 |
 | `ClientPageConfig` | 페이지 설정에서 사용할 수 있는 구성 값 |
+| `AdminDashboardOverview`, `AdminDashboardInventoryAlert` | 관리자 Dashboard overview |
 
 ## 상태 확인과 페이지 설정
 
@@ -50,6 +51,25 @@
 - **주요 오류**: `400` 빈 `key`
 - **관련 타입**: 값이 메인 페이지 설정이면 `ClientPageConfig`
 - **Notes**: 같은 key는 upsert로 덮어쓴다.
+
+## 관리자 Dashboard Overview
+
+### `GET /api/admin/overview`
+
+- **Auth**: `Bearer access-token` 필요. Supabase 사용자 확인 후 공식 `ADMIN` role만 허용한다.
+- **Params/query/body**: 없음
+- **Success**: `200 { success: true, data: AdminDashboardOverview }`
+- **주요 오류**: `401` 토큰 없음/유효하지 않음, `403` 관리자가 아님, 공통 `500`
+- **관련 타입**: `AdminDashboardOverview`, `AdminDashboardInventoryAlert`
+- **Notes**:
+  - `generatedAt`은 UTC ISO 8601 시각이다.
+  - 오늘 집계는 `Asia/Seoul` 날짜 경계로 계산한다.
+  - `todayOrders.totalAmount`는 오늘 생성된 주문의 `totalPrice` 합계이며 결제 매출이 아니다.
+  - `orders.pendingFulfillmentCount`는 `PENDING` 주문 수다.
+  - `refunds.requestedCount`는 `REQUESTED` 환불 요청 수다.
+  - 재고 부족 기준은 controller의 `LOW_STOCK_THRESHOLD = 5`이며, 품절은 `currentStock === 0`, 재고 부족은 `0 < currentStock <= 5`다. `alerts`는 두 조건에 해당하는 SKU의 최소 정보만 담는다.
+  - `pageConfig.isConfigured`는 `main_page` key가 저장되어 있는지 여부다.
+  - `productPosts`는 전체와 공개(`isPublished`) 게시물 수만 제공한다.
 
 ## 관리자 재고
 

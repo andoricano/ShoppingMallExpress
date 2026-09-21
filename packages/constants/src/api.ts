@@ -9,6 +9,10 @@ export const API_ENDPOINTS = {
         BASE: "/api/page-config",
     },
 
+    ADMIN_OVERVIEW: {
+        BASE: "/api/admin/overview",
+    },
+
     // ==========================================
     // 회원 관리 - Admin
     // ==========================================

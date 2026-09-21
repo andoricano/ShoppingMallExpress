@@ -26,6 +26,7 @@ import clientWishlistRoutes from "./routes/client/wishlist.router.js";
 import clientCartRoutes from "./routes/client/cart.routes.js";
 import category from "./routes/client/category.routes.js";
 import productPostCategoryRoutes from "./routes/productPostCategory.routes.js";
+import adminOverviewRoutes from "./routes/adminOverview.routes.js";
 
 
 const app = express();
@@ -136,6 +137,11 @@ app.use(
 app.use(
     "/api/admin/refunds",
     adminRefundRoutes,
+);
+
+app.use(
+    "/api/admin/overview",
+    adminOverviewRoutes,
 );
 
 // Legacy category aliases must be registered after explicit /api routes.

@@ -14,3 +14,4 @@ export * from './point.js';
 export * from './wishlist.js';
 export * from './category.js';
 export * from './clientAddress.js';
+export * from './adminOverview.js';
