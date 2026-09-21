@@ -13,6 +13,7 @@ export default function UserManagementPage() {
     loading,
     error,
     fetchUsers,
+    replaceUsers,
   } = useUserAdmin();
 
   useEffect(() => {
@@ -39,6 +40,7 @@ export default function UserManagementPage() {
     <UserManagementComponent
       users={users}
       isLoading={loading}
+      onUsersChange={replaceUsers}
     />
   );
 }

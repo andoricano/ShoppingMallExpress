@@ -1,16 +1,20 @@
 import { RoleFilterValue, UserSearchFilterState } from "@/component/user/UserSearchToolbar";
+import { API_ENDPOINTS } from "@mall/constants";
 import { useAdminAuthStore } from "@/store/useAdminAuth";
 import { OnboardedFilterValue } from "@/types/useManagement";
 import { UserProfile, UserRole } from "@mall/types";
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback } from "react";
 
-export function useUserManagement() {
-  // 1. 스토어 상태 및 메서어 연동
-  const { user: currentUser, getSession } = useAdminAuthStore();
+interface UseUserManagementParams {
+  users: UserProfile[];
+  onUsersChange: (users: UserProfile[]) => void;
+}
 
-  // 2. 유저 목록 데이터 상태 (서버 API/Supabase 연동 전 임시 state 또는 Store 연동)
-  const [users, setUsers] = useState<UserProfile[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+export function useUserManagement({
+  users,
+  onUsersChange,
+}: UseUserManagementParams) {
+  const currentUser = useAdminAuthStore((state) => state.user);
 
   // 3. 선택된 유저 (상세 패널 표시용)
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
@@ -22,10 +26,7 @@ export function useUserManagement() {
     onboarded: "ALL",
   });
 
-  // 최초 진입 시 세션 확인
-  useEffect(() => {
-    getSession();
-  }, [getSession]);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   // 검색어/필터 체인지 핸들러
   const handleKeywordChange = useCallback((keyword: string) => {
@@ -50,60 +51,6 @@ export function useUserManagement() {
       onboarded: "ALL",
     });
   }, []);
-
-
-  const fetchUsers = useCallback(async () => {
-    setIsLoading(true);
-
-    try {
-      const res = await fetch(
-        "/api/users",
-      );
-
-      const result =
-        await res
-          .json()
-          .catch(() => null);
-
-      console.log(
-        "[UserManagement] API Response:",
-        result,
-      );
-
-      if (!res.ok) {
-        throw new Error(
-          result?.message ||
-          "회원 목록 조회에 실패했습니다.",
-        );
-      }
-
-      const nextUsers =
-        Array.isArray(result?.data)
-          ? (result.data as UserProfile[])
-          : [];
-
-      console.log(
-        "[UserManagement] Users:",
-        nextUsers,
-      );
-
-      setUsers(nextUsers);
-
-      return nextUsers;
-    } catch (err) {
-      console.error(
-        "[UserManagement] 회원 목록 조회 실패:",
-        err,
-      );
-
-      setUsers([]);
-
-      return [];
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
 
   // 5. 클라이언트 사이드 검색/필터링 필터링 로직 (Discriminated Union 적용)
   const filteredUsers = useMemo(() => {
@@ -148,6 +95,8 @@ export function useUserManagement() {
   // 7. 유저 Role 변경 핸들러 (본인 권한 변경 방지 예외 처리 포함)
   const handleRoleChange = useCallback(
     async (targetUserId: string, newRole: UserRole) => {
+      setActionError(null);
+
       // 본인 계정 변경 제약 (PRD Edge Case)
       if (currentUser?.id === targetUserId) {
         alert("현재 로그인된 관리자 본인의 권한은 변경할 수 없습니다.");
@@ -158,50 +107,97 @@ export function useUserManagement() {
         return;
       }
 
-      // 서버/DB 권한 업데이트 로직 실행 위치
-      setUsers((prevUsers) =>
-        prevUsers.map((u) => {
-          if (u.id !== targetUserId) return u;
+      try {
+        const targetUser = users.find(
+          (user) => user.id === targetUserId,
+        );
 
-          // Discriminator 식별자에 맞춰 분기 업데이트
-          if (newRole === "CLIENT") {
-            return {
-              ...u,
+        if (!targetUser) {
+          return;
+        }
+
+        const nextUser: UserProfile = newRole === "CLIENT"
+          ? {
+              id: targetUser.id,
+              email: targetUser.email,
+              name: targetUser.name,
               role: "CLIENT",
+              createdAt: targetUser.createdAt,
+              updatedAt: targetUser.updatedAt,
               isOnboarded: false,
-            };
-          } else {
-            return {
-              ...u,
+            }
+          : {
+              id: targetUser.id,
+              email: targetUser.email,
+              name: targetUser.name,
               role: "ADMIN",
+              createdAt: targetUser.createdAt,
+              updatedAt: targetUser.updatedAt,
+              department: targetUser.role === "ADMIN"
+                ? targetUser.department
+                : undefined,
             };
-          }
-        })
-      );
 
-      // 현재 선택된 상세 유저 객체도 동기화
-      setSelectedUser((prev) => {
-        if (prev?.id !== targetUserId) return prev;
-        return newRole === "CLIENT"
-          ? { ...prev, role: "CLIENT", isOnboarded: false }
-          : { ...prev, role: "ADMIN" };
-      });
+        const res = await fetch(
+          API_ENDPOINTS.USERS.BASE,
+          {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              users: [nextUser],
+            }),
+          },
+        );
+
+        const result: {
+          data?: UserProfile[];
+          message?: string;
+        } | null = await res.json().catch(() => null);
+
+        if (!res.ok || !Array.isArray(result?.data)) {
+          throw new Error(
+            result?.message ||
+            "회원 역할 변경에 실패했습니다.",
+          );
+        }
+
+        const savedUser = result.data.find(
+          (user) => user.id === targetUserId,
+        );
+
+        if (!savedUser) {
+          throw new Error("변경된 회원 정보를 찾을 수 없습니다.");
+        }
+
+        const nextUsers = users.map((user) =>
+          user.id === targetUserId
+            ? savedUser
+            : user,
+        );
+
+        onUsersChange(nextUsers);
+        setSelectedUser(savedUser);
+      } catch (error) {
+        setActionError(
+          error instanceof Error
+            ? error.message
+            : "회원 역할 변경에 실패했습니다.",
+        );
+      }
     },
-    [currentUser]
+    [currentUser, onUsersChange, users]
   );
   return {
     // State
     users: filteredUsers,
-    rawUsers: users,
-    setUsers,
     selectedUser,
-    isLoading,
-    setIsLoading,
+    actionError,
     filters,
     currentUser,
 
     // Handlers
-    fetchUsers,
     handleKeywordChange,
     handleRoleFilterChange,
     handleOnboardedFilterChange,
@@ -209,6 +205,5 @@ export function useUserManagement() {
     handleSelectUser,
     handleCloseDetail,
     handleRoleChange,
-    getSession,
   };
 }

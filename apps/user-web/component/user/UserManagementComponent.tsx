@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React from "react";
 
 import { useUserManagement } from "@/hooks/useUserManagement";
 import { UserSearchToolbar } from "@/component/user/UserSearchToolbar";
@@ -11,6 +11,7 @@ import { UserProfile } from "@mall/types";
 interface UserManagementComponentProps {
     users: UserProfile[];
     isLoading?: boolean;
+    onUsersChange: (users: UserProfile[]) => void;
 
     title?: string;
     description?: string;
@@ -21,6 +22,8 @@ interface UserManagementComponentProps {
 
 export default function UserManagementComponent({
     users,
+    isLoading = false,
+    onUsersChange,
     title = "회원 관리",
     description = "등록된 고객(Client) 및 관리자(Admin) 계정을 조회하고 권한과 상세 정보를 관리합니다.",
     maxWidth = 1400,
@@ -28,9 +31,9 @@ export default function UserManagementComponent({
     className = "",
 }: UserManagementComponentProps) {
     const {
-        fetchUsers,
         selectedUser,
-        isLoading,
+        users: filteredUsers,
+        actionError,
         filters,
         handleKeywordChange,
         handleRoleFilterChange,
@@ -39,11 +42,10 @@ export default function UserManagementComponent({
         handleSelectUser,
         handleCloseDetail,
         handleRoleChange,
-    } = useUserManagement();
-
-    useEffect(() => {
-        fetchUsers();
-    }, [fetchUsers]);
+    } = useUserManagement({
+        users,
+        onUsersChange,
+    });
 
     return (
         <div
@@ -96,6 +98,12 @@ export default function UserManagementComponent({
                 }
             />
 
+            {actionError && (
+                <p className="mb-4 text-sm text-rose-600">
+                    {actionError}
+                </p>
+            )}
+
             {/* 3. 메인 콘텐츠 */}
             <div
                 style={{
@@ -114,7 +122,7 @@ export default function UserManagementComponent({
                     }}
                 >
                     <UserTable
-                        users={users}
+                        users={filteredUsers}
                         selectedUserId={
                             selectedUser?.id
                         }

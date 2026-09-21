@@ -97,11 +97,19 @@ export function useUserAdmin() {
         [],
     );
 
+    const replaceUsers = useCallback(
+        (nextUsers: UserProfile[]) => {
+            setUsers(nextUsers);
+        },
+        [],
+    );
+
     return {
         users,
         loading,
         error,
 
         fetchUsers,
+        replaceUsers,
     };
 }
