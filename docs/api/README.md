@@ -73,9 +73,11 @@
 
 ## 관리자 재고
 
+이 섹션의 모든 endpoint는 `Bearer access-token`과 공식 `ADMIN` role이 필요하다. 인증 정보가 없거나 유효하지 않으면 `401`, 인증됐지만 관리자가 아니면 `403`을 반환한다.
+
 ### `GET /api/inventory-items`
 
-- **Auth**: 없음
+- **Auth**: `Bearer access-token` 필요, `ADMIN` role
 - **Params/query/body**: query `search?: string`(SKU 부분 검색), `isActive?: "true" | "false"`; body 없음
 - **Success**: `200`, `data: SkuInventory[]`
 - **주요 오류**: 공통 `500`
@@ -84,7 +86,7 @@
 
 ### `POST /api/inventory-items`
 
-- **Auth**: 없음
+- **Auth**: `Bearer access-token` 필요, `ADMIN` role
 - **Params/query/body**: body `CreateInventoryInput` (`{ skuCode: string, currentStock?: number, isActive?: boolean, meta?: Record<string, unknown> }`); 기본값은 `0`, `true`
 - **Success**: `201`, `data: SkuInventory`
 - **주요 오류**: `400` `skuCode` 누락, `currentStock`이 0 이상 정수가 아님
@@ -93,7 +95,7 @@
 
 ### `PATCH /api/inventory-items/:id`
 
-- **Auth**: 없음
+- **Auth**: `Bearer access-token` 필요, `ADMIN` role
 - **Params/query/body**: path `id`; body `{ skuCode?: string, isActive?: boolean, meta?: Record<string, unknown> }`
 - **Success**: `200`, `data: SkuInventory`
 - **주요 오류**: `400` 빈 `skuCode` 또는 변경할 필드 없음
@@ -102,7 +104,7 @@
 
 ### `PATCH /api/inventory-items/:id/stock`
 
-- **Auth**: 없음
+- **Auth**: `Bearer access-token` 필요, `ADMIN` role
 - **Params/query/body**: path `id`; body `{ adjustmentQty: number }`
 - **Success**: `200`, `data`는 재고 조정 RPC 반환값
 - **주요 오류**: `400` id 누락 또는 `adjustmentQty`가 0이 아닌 정수가 아님
@@ -111,7 +113,7 @@
 
 ### `PATCH /api/inventory-items/:id/status`
 
-- **Auth**: 없음
+- **Auth**: `Bearer access-token` 필요, `ADMIN` role
 - **Params/query/body**: path `id`; body 없음
 - **Success**: `200`, `data: SkuInventory`
 - **주요 오류**: `404` 재고 없음
@@ -120,7 +122,7 @@
 
 ### `DELETE /api/inventory-items/:id`
 
-- **Auth**: 없음
+- **Auth**: `Bearer access-token` 필요, `ADMIN` role
 - **Params/query/body**: path `id`; body 없음
 - **Success**: `200 { success: true, message: "재고가 삭제되었습니다." }`
 - **주요 오류**: `404` 재고 없음, `400` 활성 재고, `409` 연결 상품 존재
@@ -131,9 +133,11 @@
 
 상품 게시물의 `thumbnail`은 `ThumbnailInfo`; 상품 입력은 `{ id?: string, name, mainImageUrl, imageUrls?, description?, price, inventoryId, displayOrder? }`이다. 상세/표시 응답의 게시물에는 `productPostProducts`가 포함되며 각 관계는 `id`, `productId`, `displayOrder`, 그리고 상세 조회에서는 `products`와 그 `inventoryItems`를 포함한다.
 
+이 섹션의 모든 endpoint는 `Bearer access-token`과 공식 `ADMIN` role이 필요하다. 인증 정보가 없거나 유효하지 않으면 `401`, 인증됐지만 관리자가 아니면 `403`을 반환한다.
+
 ### `GET /api/admin/product-posts`
 
-- **Auth**: 없음
+- **Auth**: `Bearer access-token` 필요, `ADMIN` role
 - **Params/query/body**: query `search?: string`, `isPublished?: "true" | "false"`; body 없음
 - **Success**: `200`, `data: (ProductPost & { productPostProducts: { id: string; productId: string; displayOrder: number }[] })[]`
 - **주요 오류**: 공통 `500`
@@ -142,7 +146,7 @@
 
 ### `GET /api/admin/product-posts/category/:categoryId`
 
-- **Auth**: 없음
+- **Auth**: `Bearer access-token` 필요, `ADMIN` role
 - **Params/query/body**: path `categoryId` (공백 불가); body 없음
 - **Success**: `200`, 위 목록과 같은 게시물 배열
 - **주요 오류**: `400` 빈 `categoryId`
@@ -151,7 +155,7 @@
 
 ### `GET /api/admin/product-posts/:id`
 
-- **Auth**: 없음
+- **Auth**: `Bearer access-token` 필요, `ADMIN` role
 - **Params/query/body**: path `id`; body 없음
 - **Success**: `200`, `data: ProductPost`와 `productPostProducts[]`; 각 관계의 `products`는 `Product`와 `inventoryItems: SkuInventory`를 포함한다.
 - **주요 오류**: `404` 게시물 없음
@@ -160,7 +164,7 @@
 
 ### `POST /api/admin/product-posts`
 
-- **Auth**: 없음
+- **Auth**: `Bearer access-token` 필요, `ADMIN` role
 - **Params/query/body**: body `{ title: string, thumbnail: ThumbnailInfo, imageUrls?: string[], content?: string, isPublished?: boolean, metadata?: Record<string, unknown>, products: ProductInput[] }`
 - **Success**: `201`, `data`는 상품 게시물 생성 RPC 반환값
 - **주요 오류**: `400` 빈 `title`
@@ -169,7 +173,7 @@
 
 ### `PATCH /api/admin/product-posts/:id`
 
-- **Auth**: 없음
+- **Auth**: `Bearer access-token` 필요, `ADMIN` role
 - **Params/query/body**: path `id`; body는 POST와 같은 전체 `{ title, thumbnail, imageUrls?, content?, isPublished?, metadata?, products? }`
 - **Success**: `200`, `data`는 상품 게시물 수정 RPC 반환값
 - **주요 오류**: `400` 빈 `title`
@@ -178,7 +182,7 @@
 
 ### `PATCH /api/admin/product-posts/:id/status`
 
-- **Auth**: 없음
+- **Auth**: `Bearer access-token` 필요, `ADMIN` role
 - **Params/query/body**: path `id`; body `{ isPublished: boolean }`
 - **Success**: `200`, `data: ProductPost`
 - **주요 오류**: `404` 게시물 없음
@@ -187,7 +191,7 @@
 
 ### `DELETE /api/admin/product-posts/:id`
 
-- **Auth**: 없음
+- **Auth**: `Bearer access-token` 필요, `ADMIN` role
 - **Params/query/body**: path `id`; body 없음
 - **Success**: `200 { success: true, message: "상품 게시물이 삭제되었습니다." }`
 - **주요 오류**: 공통 `500`
@@ -198,9 +202,11 @@
 
 아래의 `/api/admin/product-post-categories`가 명시적 관리자 경로다. 동일 router가 `/api`에도 마운트되어 있어, **deprecated legacy 경로** `GET|POST /api/`, `PATCH|DELETE /api/:id`, `GET|POST /api/:categoryId/posts`, `DELETE /api/:categoryId/posts/:postId`도 실제로 노출된다. legacy router는 모든 명시적 `/api` route 뒤에 등록되어 충돌하지 않으며, 새 클라이언트는 관리자 경로를 사용해야 한다.
 
+명시적 관리자 경로와 legacy aliases 모두 `Bearer access-token`과 공식 `ADMIN` role이 필요하다. 인증 정보가 없거나 유효하지 않으면 `401`, 인증됐지만 관리자가 아니면 `403`을 반환한다.
+
 ### `GET /api/admin/product-post-categories`
 
-- **Auth**: 없음
+- **Auth**: `Bearer access-token` 필요, `ADMIN` role
 - **Params/query/body**: 없음
 - **Success**: `200`, `data: ProductPostCategory[]`
 - **주요 오류**: 공통 `500`
@@ -209,7 +215,7 @@
 
 ### `POST /api/admin/product-post-categories`
 
-- **Auth**: 없음
+- **Auth**: `Bearer access-token` 필요, `ADMIN` role
 - **Params/query/body**: body `{ parentId?: string | null, name: string, slug: string, depth?: number, displayOrder?: number, isActive?: boolean }`
 - **Success**: `201`, `data: ProductPostCategory`
 - **주요 오류**: `400` 빈 `name`/`slug`, `depth`가 1–3 정수가 아님, 음수 `displayOrder`, 부모-깊이 관계 위반
@@ -218,7 +224,7 @@
 
 ### `PATCH /api/admin/product-post-categories/:id`
 
-- **Auth**: 없음
+- **Auth**: `Bearer access-token` 필요, `ADMIN` role
 - **Params/query/body**: path `id`; body는 생성 필드 모두 선택값
 - **Success**: `200`, `data: ProductPostCategory`
 - **주요 오류**: `404` 카테고리 없음; `400` 빈 문자열, 값 범위/부모-깊이 관계/순환 참조 위반, 변경 필드 없음
@@ -227,7 +233,7 @@
 
 ### `DELETE /api/admin/product-post-categories/:id`
 
-- **Auth**: 없음
+- **Auth**: `Bearer access-token` 필요, `ADMIN` role
 - **Params/query/body**: path `id`; body 없음
 - **Success**: `200`, `data: ProductPostCategory`
 - **주요 오류**: `404` 카테고리 없음
@@ -236,7 +242,7 @@
 
 ### `POST /api/admin/product-post-categories/:categoryId/posts`
 
-- **Auth**: 없음
+- **Auth**: `Bearer access-token` 필요, `ADMIN` role
 - **Params/query/body**: path `categoryId`; body `{ postIds: string[] }`
 - **Success**: `201`, `data`는 새로 생성된 관계 행 배열 (`productPostId`, `categoryId` 등)
 - **주요 오류**: `400` 빈 `postIds` 또는 존재하지 않는 게시물 id 포함 (`data`에 invalid id 배열), `404` 카테고리 없음
@@ -245,7 +251,7 @@
 
 ### `GET /api/admin/product-post-categories/:categoryId/posts`
 
-- **Auth**: 없음
+- **Auth**: `Bearer access-token` 필요, `ADMIN` role
 - **Params/query/body**: path `categoryId`; body 없음
 - **Success**: `200`, `data: ProductPostCategoryItem[]` (`{ id, thumbnail }`)
 - **주요 오류**: `404` 카테고리 없음
@@ -254,7 +260,7 @@
 
 ### `DELETE /api/admin/product-post-categories/:categoryId/posts/:postId`
 
-- **Auth**: 없음
+- **Auth**: `Bearer access-token` 필요, `ADMIN` role
 - **Params/query/body**: path `categoryId`, `postId`; body 없음
 - **Success**: `200`, `data`는 삭제한 관계 행
 - **주요 오류**: `404` 관계 없음
@@ -263,9 +269,11 @@
 
 ## 관리자 주문·회원·환불·이미지
 
+이 섹션의 모든 endpoint는 `Bearer access-token`과 공식 `ADMIN` role이 필요하다. 인증 정보가 없거나 유효하지 않으면 `401`, 인증됐지만 관리자가 아니면 `403`을 반환한다.
+
 ### `GET /api/orders`
 
-- **Auth**: 없음
+- **Auth**: `Bearer access-token` 필요, `ADMIN` role
 - **Params/query/body**: 없음
 - **Success**: `200 data: Order[]` (items 없음)
 - **주요 오류**: 공통 `500`
@@ -274,16 +282,16 @@
 
 ### `GET /api/orders/:id`
 
-- **Auth**: 없음
+- **Auth**: `Bearer access-token` 필요, `ADMIN` role
 - **Params/query/body**: path `id`; body 없음
 - **Success**: `200`, `data: Order` (`items: OrderItem[]` 포함)
 - **주요 오류**: `400` 빈 id, `404` 주문 없음
 - **관련 타입**: `Order`, `OrderItem`
-- **Notes**: 주문 상세 route는 인증을 요구하지 않는다.
+- **Notes**: 주문 상세 route는 관리자 인증을 요구한다.
 
 ### `PATCH /api/orders/:id`
 
-- **Auth**: 없음
+- **Auth**: `Bearer access-token` 필요, `ADMIN` role
 - **Params/query/body**: path `id`; body `{ status: "PENDING" | "SHIPPING" | "COMPLETED" | "CANCELLED", delivery?: { carrier: string, trackingNumber: string, shippedAt?: string } }`
 - **Success**: `200`, `data: Order` (items 없음)
 - **주요 오류**: `400` id/status 누락 또는 `SHIPPING`인데 배송사·운송장번호 누락
@@ -292,7 +300,7 @@
 
 ### `GET /api/users`
 
-- **Auth**: 없음
+- **Auth**: `Bearer access-token` 필요, `ADMIN` role
 - **Params/query/body**: 없음
 - **Success**: `200 data: UserProfile[]`
 - **주요 오류**: 공통 `500`
@@ -301,7 +309,7 @@
 
 ### `PUT /api/users`
 
-- **Auth**: 없음
+- **Auth**: `Bearer access-token` 필요, `ADMIN` role
 - **Params/query/body**: body `{ users: UserProfile[] }`
 - **Success**: `200`, `data: UserProfile[]`
 - **주요 오류**: `400` `users`가 배열이 아님
@@ -310,7 +318,7 @@
 
 ### `DELETE /api/users`
 
-- **Auth**: 없음
+- **Auth**: `Bearer access-token` 필요, `ADMIN` role
 - **Params/query/body**: body `{ ids: string[] }`
 - **Success**: `200`, `data: { id: string }[]`
 - **주요 오류**: `400` 빈 배열 또는 `ids`가 배열이 아님
@@ -319,7 +327,7 @@
 
 ### `GET /api/admin/refunds`
 
-- **Auth**: 없음
+- **Auth**: `Bearer access-token` 필요, `ADMIN` role
 - **Params/query/body**: 없음
 - **Success**: `200`, `data: RefundRequest[]`. 각 항목의 `order`에는 `items`가 포함되며 `null`일 수 있다.
 - **주요 오류**: 공통 `500`
@@ -328,7 +336,7 @@
 
 ### `PATCH /api/admin/refunds/:id`
 
-- **Auth**: 없음
+- **Auth**: `Bearer access-token` 필요, `ADMIN` role
 - **Params/query/body**: path `id`; body `{ status: "APPROVED" | "REJECTED" }`
 - **Success**: `200`, `data`는 환불 처리 RPC 반환값
 - **주요 오류**: `400` id 누락 또는 허용되지 않은 status
@@ -337,7 +345,7 @@
 
 ### `POST /api/images/upload-url`
 
-- **Auth**: 없음
+- **Auth**: `Bearer access-token` 필요, `ADMIN` role
 - **Params/query/body**: body `{ filename?: string, contentType: "image/jpeg" | "image/png" | "image/webp" }`
 - **Success**: `200`, `data: { path: string, token: string, signedUrl: string }`
 - **주요 오류**: `400` 지원하지 않는/누락된 `contentType`

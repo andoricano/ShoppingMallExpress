@@ -9,8 +9,13 @@ import {
     toggleProductPostStatus,
     deleteProductPost,
 } from "../controllers/productPost.controller.js";
+import {
+    requireAdmin,
+} from "../middleware/requireAdmin.js";
 
 const router: Router = Router();
+
+router.use(requireAdmin);
 
 // ==========================================
 // Admin 상품 게시물 API

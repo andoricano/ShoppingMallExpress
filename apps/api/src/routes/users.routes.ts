@@ -7,8 +7,13 @@ import {
     updateUsers,
     deleteUsers,
 } from "../controllers/user.controller.js";
+import {
+    requireAdmin,
+} from "../middleware/requireAdmin.js";
 
 const router: Router = Router();
+
+router.use(requireAdmin);
 
 // ==========================================
 // 회원 관리 - Admin

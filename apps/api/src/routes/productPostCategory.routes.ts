@@ -11,8 +11,13 @@ import {
     getProductPostsByCategory,
     removePostFromCategory,
 } from "../controllers/productPostCategory.controller.js";
+import {
+    requireAdmin,
+} from "../middleware/requireAdmin.js";
 
 const router: Router = Router();
+
+router.use(requireAdmin);
 
 // ==========================================
 // Category

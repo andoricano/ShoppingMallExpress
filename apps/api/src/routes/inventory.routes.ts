@@ -10,8 +10,13 @@ import {
     updateInventoryItem,
     deleteInventoryItem,
 } from "../controllers/inventory.controller.js";
+import {
+    requireAdmin,
+} from "../middleware/requireAdmin.js";
 
 const router: Router = Router();
+
+router.use(requireAdmin);
 
 // 재고 목록 / 검색
 router.get("/", getInventoryItems);

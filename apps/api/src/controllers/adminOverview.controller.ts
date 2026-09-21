@@ -1,5 +1,4 @@
 import type {
-    Request,
     Response,
 } from "express";
 
@@ -61,82 +60,10 @@ function getKoreaDayRange(
     };
 }
 
-async function requireAdmin(
-    req: Request,
-    res: Response,
-): Promise<boolean> {
-    const authorization = req.header("authorization");
-    const token = authorization?.startsWith("Bearer ")
-        ? authorization.slice("Bearer ".length).trim()
-        : "";
-
-    if (!token) {
-        res.status(401).json({
-            success: false,
-            message: "관리자 인증이 필요합니다.",
-        });
-
-        return false;
-    }
-
-    const {
-        data: authData,
-        error: authError,
-    } = await supabaseAdmin.auth.getUser(token);
-
-    if (authError || !authData.user) {
-        res.status(401).json({
-            success: false,
-            message: "유효하지 않은 인증 정보입니다.",
-        });
-
-        return false;
-    }
-
-    const {
-        data: profile,
-        error: profileError,
-    } = await supabaseAdmin
-        .from("users")
-        .select("role")
-        .eq("id", authData.user.id)
-        .maybeSingle();
-
-    if (profileError) {
-        console.error(
-            "[AdminOverview] 관리자 역할 조회 실패:",
-            profileError,
-        );
-
-        res.status(500).json({
-            success: false,
-            message: "관리자 권한을 확인하지 못했습니다.",
-        });
-
-        return false;
-    }
-
-    if (profile?.role !== "ADMIN") {
-        res.status(403).json({
-            success: false,
-            message: "관리자 권한이 필요합니다.",
-        });
-
-        return false;
-    }
-
-    return true;
-}
-
 export const getAdminOverview = async (
-    req: Request,
     res: Response,
 ) => {
     try {
-        if (!await requireAdmin(req, res)) {
-            return;
-        }
-
         const generatedAt = new Date();
         const today = getKoreaDayRange(generatedAt);
 
