@@ -19,7 +19,6 @@ const DEFAULT_PRODUCT: Product = {
     description: "",
     price: 0,
     inventoryId: "",
-    isActive: true,
     createdAt: "",
     updatedAt: "",
 };

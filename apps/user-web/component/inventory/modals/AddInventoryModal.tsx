@@ -1,14 +1,14 @@
 "use client";
 
 import React from "react";
-import type { SkuInventory } from "@mall/types";
+import type { CreateInventoryInput } from "@mall/types";
 import { ModalLabelInput } from "@/component/modal/ModalLabelInput";
 import { ModalFrame } from "@/component/modal/ModalFrame";
 
 interface AddInventoryModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: Omit<SkuInventory, "id">) => Promise<void>;
+  onSubmit: (data: CreateInventoryInput) => Promise<void>;
 }
 
 export const AddInventoryModal: React.FC<AddInventoryModalProps> = ({

@@ -8,7 +8,10 @@ import { InventoryTable } from "@/component/inventory/InventoryTable";
 import { AddInventoryModal } from "@/component/inventory/modals/AddInventoryModal";
 import { EditInventoryModal } from "@/component/inventory/modals/EditInventoryModal";
 import { AdjustStockModal } from "@/component/inventory/modals/AdjustStockModal";
-import type { SkuInventory } from "@mall/types";
+import type {
+  CreateInventoryInput,
+  SkuInventory,
+} from "@mall/types";
 
 interface AdjustTarget {
   skuId: string;
@@ -40,7 +43,7 @@ export default function AdminInventoryPage() {
 
   // 신규 재고 등록
   const handleCreateInventory = async (
-    data: Omit<SkuInventory, "id">
+    data: CreateInventoryInput
   ) => {
     await createInventoryItem(data);
     setIsAddModalOpen(false);
