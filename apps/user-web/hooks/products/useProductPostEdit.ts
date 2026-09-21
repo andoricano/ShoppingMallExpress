@@ -14,6 +14,7 @@ import type {
 } from "@mall/types";
 
 import { API_ENDPOINTS } from "@mall/constants";
+import { fetchAdminApi } from "@/lib/api/admin";
 import { useImageApi } from "../images/useImageApi";
 import type { PendingImage } from "@/component/products/post/editor/useEditSection";
 
@@ -84,7 +85,7 @@ export function useProductPostEdit(
             setError(null);
 
             try {
-                const res = await fetch(
+                const res = await fetchAdminApi(
                     API_ENDPOINTS.PRODUCT_POSTS.BY_ID(
                         productPostId,
                     ),
@@ -453,7 +454,7 @@ export function useProductPostEdit(
                 // ProductPost 수정
                 // ==========================================
 
-                const res = await fetch(
+                const res = await fetchAdminApi(
                     API_ENDPOINTS.PRODUCT_POSTS.BY_ID(
                         draftPost.id,
                     ),
@@ -525,7 +526,7 @@ export function useProductPostEdit(
             setError(null);
 
             try {
-                const res = await fetch(
+                const res = await fetchAdminApi(
                     API_ENDPOINTS.PRODUCT_POSTS.BY_ID(
                         draftPost.id,
                     ),

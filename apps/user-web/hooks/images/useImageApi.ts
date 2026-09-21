@@ -3,6 +3,7 @@
 import { useCallback } from "react";
 
 import { API_ENDPOINTS } from "@mall/constants";
+import { fetchAdminApi } from "@/lib/api/admin";
 
 export interface ImageUploadResult {
     path: string;
@@ -26,7 +27,7 @@ export function useImageApi() {
                 );
             }
 
-            const response = await fetch(
+            const response = await fetchAdminApi(
                 API_ENDPOINTS.IMAGES.UPLOAD_URL,
                 {
                     method: "POST",
@@ -62,7 +63,6 @@ export function useImageApi() {
                 path,
                 signedUrl,
             } = result.data;
-            console.log("upload-url result", result);
             const uploadResponse =
                 await fetch(signedUrl, {
                     method: "PUT",
@@ -73,11 +73,6 @@ export function useImageApi() {
                     body: file,
                 });
 
-            console.log("[IMAGE] upload response:", {
-                status: uploadResponse.status,
-                ok: uploadResponse.ok,
-                body: await uploadResponse.text(),
-            });
             if (!uploadResponse.ok) {
                 const message =
                     await uploadResponse.text();

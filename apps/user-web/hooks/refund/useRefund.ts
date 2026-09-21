@@ -12,6 +12,7 @@ import {
     API_ENDPOINTS,
 } from "@mall/constants";
 import { RefundRequest } from "@mall/types";
+import { fetchAdminApi } from "@/lib/api/admin";
 
 export function useRefund() {
     const [
@@ -40,7 +41,7 @@ export function useRefund() {
 
             try {
                 const res =
-                    await fetch(
+                    await fetchAdminApi(
                         API_ENDPOINTS.REFUNDS.BASE,
                     );
 
@@ -105,7 +106,7 @@ export function useRefund() {
 
             try {
                 const res =
-                    await fetch(
+                    await fetchAdminApi(
                         API_ENDPOINTS.REFUNDS.BY_ID(
                             refundId,
                         ),

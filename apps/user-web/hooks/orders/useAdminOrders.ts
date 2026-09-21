@@ -6,6 +6,7 @@ import { useCallback, useState } from "react";
 
 import type { Order } from "@mall/types";
 import { API_ENDPOINTS } from "@mall/constants";
+import { fetchAdminApi } from "@/lib/api/admin";
 
 export interface UpdateOrderStatusInput {
     status: Order["status"];
@@ -38,7 +39,7 @@ export function useAdminOrders() {
             setError(null);
 
             try {
-                const res = await fetch(
+                const res = await fetchAdminApi(
                     API_ENDPOINTS.ORDERS.BASE,
                 );
 
@@ -82,7 +83,7 @@ export function useAdminOrders() {
             setError(null);
 
             try {
-                const res = await fetch(
+                const res = await fetchAdminApi(
                     API_ENDPOINTS.ORDERS.BY_ID(
                         orderId,
                     ),
@@ -141,7 +142,7 @@ export function useAdminOrders() {
 
                 try {
                     const res =
-                        await fetch(
+                        await fetchAdminApi(
                             API_ENDPOINTS.ORDERS.BY_ID(
                                 orderId,
                             ),

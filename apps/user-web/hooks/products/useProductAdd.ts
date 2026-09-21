@@ -3,6 +3,7 @@
 import { useCallback, useState } from "react";
 import type { SkuInventory } from "@mall/types";
 import { API_ENDPOINTS } from "@mall/constants";
+import { fetchAdminApi } from "@/lib/api/admin";
 
 // ==========================================
 // Types
@@ -52,7 +53,7 @@ export function useProductAdd() {
                 const url =
                     `${API_ENDPOINTS.INVENTORY.BASE}?${query.toString()}`;
 
-                const res = await fetch(url);
+                const res = await fetchAdminApi(url);
 
                 if (!res.ok) {
                     const data = await res

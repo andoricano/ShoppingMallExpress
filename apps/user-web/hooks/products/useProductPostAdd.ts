@@ -5,6 +5,7 @@
 import { useCallback, useState } from "react";
 import type { Product, ProductPost } from "@mall/types";
 import { API_ENDPOINTS } from "@mall/constants";
+import { fetchAdminApi } from "@/lib/api/admin";
 import { useImageApi } from "../images/useImageApi";
 import type { PendingImage } from "@/component/products/post/editor/useEditSection";
 
@@ -347,7 +348,7 @@ export function useProductPostAdd() {
                 // ProductPost 생성
                 // ==========================================
 
-                const res = await fetch(
+                const res = await fetchAdminApi(
                     API_ENDPOINTS.PRODUCT_POSTS.BASE,
                     {
                         method: "POST",

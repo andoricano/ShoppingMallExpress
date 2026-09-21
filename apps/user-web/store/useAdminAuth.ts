@@ -21,10 +21,6 @@ export const useAdminAuthStore = create<AdminAuthState>((set, get) => ({
   thirdPartySignIn: async (provider: OAuthProvider) => {
     const supabase = createClient();
 
-    console.log(
-      `[AdminAuth] ${provider} OAuth 로그인 요청 시도`,
-    );
-
     const { error } =
       await supabase.auth.signInWithOAuth({
         provider: provider as Provider,
@@ -42,8 +38,6 @@ export const useAdminAuthStore = create<AdminAuthState>((set, get) => ({
     }
   },
   getSession: async () => {
-    console.log("[AdminAuth] 세션 확인 시도");
-
     const supabase = createClient();
 
     try {
@@ -54,11 +48,6 @@ export const useAdminAuthStore = create<AdminAuthState>((set, get) => ({
       } = await supabase.auth.getSession();
 
       if (sessionError || !session) {
-        console.log(
-          "[AdminAuth] 로그인 안 됨 (세션 없음)",
-          sessionError?.message,
-        );
-
         set({
           user: null,
         });
@@ -77,11 +66,6 @@ export const useAdminAuthStore = create<AdminAuthState>((set, get) => ({
         .single();
 
       if (dbError || !profile) {
-        console.error(
-          "[AdminAuth] DB 프로필 조회 실패:",
-          dbError,
-        );
-
         set({
           user: null,
         });
@@ -90,16 +74,7 @@ export const useAdminAuthStore = create<AdminAuthState>((set, get) => ({
       }
 
       // 3. 관리자 권한 체크
-      if (
-        profile.role !== "ADMIN" &&
-        profile.role !== "SUPER_ADMIN"
-      ) {
-        console.error(
-          "[AdminAuth] 접근 거부: 관리자 권한이 없습니다. (role:",
-          profile.role,
-          ")",
-        );
-
+      if (profile.role !== "ADMIN") {
         await supabase.auth.signOut();
 
         set({
@@ -119,18 +94,10 @@ export const useAdminAuthStore = create<AdminAuthState>((set, get) => ({
         updatedAt: profile.updated_at,
       };
 
-      console.log(
-        "[AdminAuth] Zustand 최종 매핑 객체:",
-        adminUser,
-      );
-
       set({
         user: adminUser,
       });
 
-      console.log(
-        "[AdminAuth] 관리자 로그인 및 프로필 로드 완료",
-      );
     } finally {
       set({
         authInitialized: true,
@@ -139,7 +106,6 @@ export const useAdminAuthStore = create<AdminAuthState>((set, get) => ({
   },
 
   completeOnboarding: async (input: CreateUserInput) => {
-    console.log("[AdminAuth] 온보딩 제출 시도:", input);
     const supabase = createClient();
 
     const { error } = await supabase.rpc("complete_onboarding", {
@@ -153,34 +119,24 @@ export const useAdminAuthStore = create<AdminAuthState>((set, get) => ({
     });
 
     if (error) {
-      console.error("[AdminAuth] 온보딩 실패:", error.message);
       throw new Error(error.message);
     }
-
-    console.log("[AdminAuth] 온보딩 완료. 세션 정보 갱신 중...");
 
     await get().getSession();
   },
 
   signOut: async () => {
-    console.log("[AdminAuth] 로그아웃(SignOut) 시도");
     const supabase = createClient();
 
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      console.error("[AdminAuth] 로그아웃 실패:", error.message);
-    }
+    await supabase.auth.signOut();
 
     set({ user: null });
-    console.log("[AdminAuth] Admin 세션 클리어 완료");
   },
 
   deleteAccount: async () => {
-    console.log("[AdminAuth] 회원탈퇴(DeleteAccount) 버튼 클릭됨");
     const supabase = createClient();
 
     await supabase.auth.signOut();
     set({ user: null });
-    console.log("[AdminAuth] Admin 계정 세션 제거 완료");
   },
 }));

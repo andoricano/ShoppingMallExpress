@@ -3,6 +3,7 @@
 import { useCallback, useState } from "react";
 import type { ProductPost } from "@mall/types";
 import { API_ENDPOINTS } from "@mall/constants";
+import { fetchAdminApi } from "@/lib/api/admin";
 
 interface ProductPostQuery {
     search?: string;
@@ -67,7 +68,7 @@ export function useAdminPostProducts() {
                     : API_ENDPOINTS.PRODUCT_POSTS.BASE;
 
                 const res =
-                    await fetch(url);
+                    await fetchAdminApi(url);
 
                 const result =
                     await res
@@ -115,7 +116,7 @@ export function useAdminPostProducts() {
 
                 try {
                     const res =
-                        await fetch(
+                        await fetchAdminApi(
                             API_ENDPOINTS.PRODUCT_POSTS.BY_CATEGORY(
                                 categoryId,
                             ),
@@ -169,7 +170,7 @@ export function useAdminPostProducts() {
 
                 try {
                     const res =
-                        await fetch(
+                        await fetchAdminApi(
                             API_ENDPOINTS.PRODUCT_POSTS.BY_ID(
                                 postId,
                             ),

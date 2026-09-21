@@ -1,6 +1,7 @@
 import { RoleFilterValue, UserSearchFilterState } from "@/component/user/UserSearchToolbar";
 import { API_ENDPOINTS } from "@mall/constants";
 import { useAdminAuthStore } from "@/store/useAdminAuth";
+import { fetchAdminApi } from "@/lib/api/admin";
 import { OnboardedFilterValue } from "@/types/useManagement";
 import { UserProfile, UserRole } from "@mall/types";
 import { useState, useMemo, useCallback } from "react";
@@ -138,7 +139,7 @@ export function useUserManagement({
                 : undefined,
             };
 
-        const res = await fetch(
+        const res = await fetchAdminApi(
           API_ENDPOINTS.USERS.BASE,
           {
             method: "PUT",

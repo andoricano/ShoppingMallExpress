@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
 import type { SkuInventory } from "@mall/types";
 import { API_ENDPOINTS } from "@mall/constants";
+import { fetchAdminApi } from "@/lib/api/admin";
 
 // ==========================================
 // Types
@@ -57,7 +58,7 @@ export function useAdminInventory() {
                     ? `${API_ENDPOINTS.INVENTORY.BASE}?${queryString}`
                     : API_ENDPOINTS.INVENTORY.BASE;
 
-                const res = await fetch(url);
+                const res = await fetchAdminApi(url);
 
                 if (!res.ok) {
                     throw new Error("재고 목록을 불러오지 못했습니다.");
@@ -92,7 +93,7 @@ export function useAdminInventory() {
             setError(null);
 
             try {
-                const res = await fetch(
+                const res = await fetchAdminApi(
                     API_ENDPOINTS.INVENTORY.BASE,
                     {
                         method: "POST",
@@ -132,7 +133,7 @@ export function useAdminInventory() {
             setError(null);
 
             try {
-                const res = await fetch(
+                const res = await fetchAdminApi(
                     API_ENDPOINTS.INVENTORY.STOCK(skuId),
                     {
                         method: "PATCH",
@@ -177,7 +178,7 @@ export function useAdminInventory() {
             setError(null);
 
             try {
-                const res = await fetch(
+                const res = await fetchAdminApi(
                     API_ENDPOINTS.INVENTORY.BY_ID(skuId),
                     {
                         method: "PATCH",
@@ -217,7 +218,7 @@ export function useAdminInventory() {
             setError(null);
 
             try {
-                const res = await fetch(
+                const res = await fetchAdminApi(
                     API_ENDPOINTS.INVENTORY.STATUS(skuId),
                     {
                         method: "PATCH",
@@ -255,7 +256,7 @@ export function useAdminInventory() {
             setError(null);
 
             try {
-                const res = await fetch(
+                const res = await fetchAdminApi(
                     API_ENDPOINTS.INVENTORY.BY_ID(skuId),
                     {
                         method: "DELETE",

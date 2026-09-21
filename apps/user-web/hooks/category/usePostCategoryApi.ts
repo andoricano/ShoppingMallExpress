@@ -12,6 +12,7 @@ import type {
 import {
     API_ENDPOINTS,
 } from "@mall/constants";
+import { fetchAdminApi } from "@/lib/api/admin";
 
 interface CreateCategoryPayload {
     parentId?: string | null;
@@ -34,7 +35,7 @@ interface UpdateCategoryPayload {
 export function usePostCategoryApi() {
     const fetchCategories = useCallback(
         async (): Promise<ProductPostCategory[]> => {
-            const res = await fetch(
+            const res = await fetchAdminApi(
                 API_ENDPOINTS.PRODUCT_POST_CATEGORIES.BASE,
             );
 
@@ -59,7 +60,7 @@ export function usePostCategoryApi() {
         async (
             data: CreateCategoryPayload,
         ): Promise<ProductPostCategory> => {
-            const res = await fetch(
+            const res = await fetchAdminApi(
                 API_ENDPOINTS.PRODUCT_POST_CATEGORIES.BASE,
                 {
                     method: "POST",
@@ -91,7 +92,7 @@ export function usePostCategoryApi() {
             categoryId: string,
             data: UpdateCategoryPayload,
         ): Promise<ProductPostCategory> => {
-            const res = await fetch(
+            const res = await fetchAdminApi(
                 API_ENDPOINTS.PRODUCT_POST_CATEGORIES.BY_ID(
                     categoryId,
                 ),
@@ -124,7 +125,7 @@ export function usePostCategoryApi() {
         async (
             categoryId: string,
         ): Promise<ProductPostCategory> => {
-            const res = await fetch(
+            const res = await fetchAdminApi(
                 API_ENDPOINTS.PRODUCT_POST_CATEGORIES.BY_ID(
                     categoryId,
                 ),
@@ -152,7 +153,7 @@ export function usePostCategoryApi() {
         async (
             categoryId: string,
         ): Promise<ProductPostCategoryItem[]> => {
-            const res = await fetch(
+            const res = await fetchAdminApi(
                 `${API_ENDPOINTS.PRODUCT_POST_CATEGORIES.BY_ID(categoryId)}/posts`,
             );
 
@@ -178,7 +179,7 @@ export function usePostCategoryApi() {
             categoryId: string,
             postIds: string[],
         ): Promise<void> => {
-            const res = await fetch(
+            const res = await fetchAdminApi(
                 `${API_ENDPOINTS.PRODUCT_POST_CATEGORIES.BY_ID(categoryId)}/posts`,
                 {
                     method: "POST",
@@ -210,7 +211,7 @@ export function usePostCategoryApi() {
             categoryId: string,
             postId: string,
         ): Promise<void> => {
-            const res = await fetch(
+            const res = await fetchAdminApi(
                 `${API_ENDPOINTS.PRODUCT_POST_CATEGORIES.BY_ID(categoryId)}/posts/${postId}`,
                 {
                     method: "DELETE",

@@ -4,6 +4,7 @@ import { useCallback, useState } from "react";
 
 import type { UserProfile } from "@mall/types";
 import { API_ENDPOINTS } from "@mall/constants";
+import { fetchAdminApi } from "@/lib/api/admin";
 
 export function useUserAdmin() {
     const [users, setUsers] =
@@ -25,7 +26,7 @@ export function useUserAdmin() {
             setError(null);
 
             try {
-                const res = await fetch(
+                const res = await fetchAdminApi(
                     API_ENDPOINTS.USERS.BASE,
                 );
 
@@ -33,25 +34,6 @@ export function useUserAdmin() {
                     await res
                         .json()
                         .catch(() => null);
-
-                console.log("[UserAdmin] API Response:", result);
-                console.log("[UserAdmin] result.data:", result?.data);
-                console.log(
-                    "[UserAdmin] Array:",
-                    Array.isArray(result?.data),
-                );
-                console.log(
-                    "[UserAdmin] Count:",
-                    Array.isArray(result?.data)
-                        ? result.data.length
-                        : 0,
-                );
-
-
-                console.log(
-                    "[UserAdmin] API Response:",
-                    result,
-                );
 
                 if (!res.ok) {
                     throw new Error(
@@ -69,22 +51,12 @@ export function useUserAdmin() {
 
                 setUsers(nextUsers);
 
-                console.log(
-                    "[UserAdmin] Users:",
-                    nextUsers,
-                );
-
                 return nextUsers;
             } catch (err) {
                 const message =
                     err instanceof Error
                         ? err.message
                         : "회원 목록 조회에 실패했습니다.";
-
-                console.error(
-                    "[UserAdmin] 조회 실패:",
-                    err,
-                );
 
                 setError(message);
                 setUsers([]);
