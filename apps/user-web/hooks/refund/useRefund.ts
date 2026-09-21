@@ -133,7 +133,7 @@ export function useRefund() {
                     );
                 }
 
-                return result?.data;
+                return true;
             } catch (err) {
                 setError(
                     err instanceof Error
@@ -141,7 +141,7 @@ export function useRefund() {
                         : "환불 요청 처리에 실패했습니다.",
                 );
 
-                return null;
+                return false;
             } finally {
                 setLoading(false);
             }
