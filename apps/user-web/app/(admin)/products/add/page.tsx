@@ -3,6 +3,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import type { SkuInventory } from "@mall/types";
 
 import { AdminMenuItem } from "@/component/common/AdminMenu";
@@ -18,6 +19,8 @@ import { ProductPostEditor } from "@/component/products/edit/ProductEditor";
 import { useProductPostAdd } from "@/hooks/products/useProductPostAdd";
 
 export default function ProductPostAddPage() {
+    const router = useRouter();
+
     const {
         addProduct,
 
@@ -102,6 +105,15 @@ export default function ProductPostAddPage() {
         setSelectedInventoryId(null);
     };
 
+    const handlePublish = async () => {
+        try {
+            await createProductPost();
+            router.replace("/products");
+        } catch {
+            // Hook에서 error 처리
+        }
+    };
+
     // ==========================================
     // Header Menu
     // ==========================================
@@ -109,7 +121,7 @@ export default function ProductPostAddPage() {
     const menu: AdminMenuItem[] = [
         {
             menuTitle: "게시하기",
-            onClick: createProductPost,
+            onClick: handlePublish,
         },
     ];
 
