@@ -7,7 +7,6 @@ import type { Order } from "@mall/types";
 interface OrderTableItemProps {
     order: Order;
 
-    onShip?: (order: Order) => void;
     onCancel?: (order: Order) => void;
     onDetail?: (order: Order) => void;
 }
@@ -38,7 +37,6 @@ const ORDER_STATUS_CLASS: Record<
 
 export function OrderTableItem({
     order,
-    onShip,
     onCancel,
     onDetail,
 }: OrderTableItemProps) {
@@ -136,14 +134,11 @@ export function OrderTableItem({
                             <>
                                 <button
                                     type="button"
-                                    onClick={() =>
-                                        onShip?.(
-                                            order,
-                                        )
-                                    }
-                                    className="rounded-md bg-slate-900 px-2.5 py-1.5 text-[11px] font-semibold text-white transition-colors hover:bg-slate-700"
+                                    disabled
+                                    title="배송 정보 입력 기능이 구현되면 출고할 수 있습니다."
+                                    className="cursor-not-allowed rounded-md bg-slate-300 px-2.5 py-1.5 text-[11px] font-semibold text-white"
                                 >
-                                    출고
+                                    출고 준비 중
                                 </button>
 
                                 <button

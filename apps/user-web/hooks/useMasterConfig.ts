@@ -11,8 +11,8 @@ export function useMasterConfig() {
     const [status, setStatus] =
         useState<ConnectionStatus>("checking");
 
-    const saveConfig = (config: MasterConfig) => {
-        console.log("[MasterConfig] save:", config);
+    const saveConfig = (_config: MasterConfig) => {
+        // 저장 기능은 아직 구현되지 않았습니다.
     };
 
     const checkConnection = async () => {

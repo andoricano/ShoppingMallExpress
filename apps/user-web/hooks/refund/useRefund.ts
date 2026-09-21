@@ -20,13 +20,6 @@ export function useRefund() {
     ] = useState<RefundRequest[]>([]);
 
     const [
-        selectedRefund,
-        setSelectedRefund,
-    ] = useState<RefundRequest | null>(
-        null,
-    );
-
-    const [
         loading,
         setLoading,
     ] = useState(false);
@@ -157,8 +150,6 @@ export function useRefund() {
     );
     return {
         refundList,
-        selectedRefund,
-
         loading,
         error,
 

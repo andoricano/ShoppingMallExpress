@@ -12,14 +12,12 @@ import { OrderInspectorShipping } from "./OrderInspectorShipping";
 interface OrderInspectorProps {
     order: Order | null;
 
-    onShip?: (order: Order) => void;
     onCancel?: (order: Order) => void;
     onComplete?: (order: Order) => void;
 }
 
 export function OrderInspector({
     order,
-    onShip,
     onCancel,
     onComplete,
 }: OrderInspectorProps) {
@@ -58,7 +56,6 @@ export function OrderInspector({
 
             <OrderInspectorController
                 order={order}
-                onShip={onShip}
                 onCancel={onCancel}
                 onComplete={onComplete}
             />

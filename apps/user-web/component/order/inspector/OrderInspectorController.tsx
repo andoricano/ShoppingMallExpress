@@ -7,21 +7,15 @@ import type { Order } from "@mall/types";
 interface OrderInspectorControllerProps {
     order: Order;
 
-    onShip?: (order: Order) => void;
     onCancel?: (order: Order) => void;
     onComplete?: (order: Order) => void;
 }
 
 export function OrderInspectorController({
     order,
-    onShip,
     onCancel,
     onComplete,
 }: OrderInspectorControllerProps) {
-    const handleShip = () => {
-        onShip?.(order);
-    };
-
     const handleCancel = () => {
         const confirmed = window.confirm(
             "이 주문을 취소하시겠습니까?",
@@ -48,10 +42,11 @@ export function OrderInspectorController({
                 <div className="flex gap-2">
                     <button
                         type="button"
-                        onClick={handleShip}
-                        className="flex-1 rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-slate-700"
+                        disabled
+                        title="배송 정보 입력 기능이 구현되면 출고할 수 있습니다."
+                        className="flex-1 cursor-not-allowed rounded-lg bg-slate-300 px-4 py-2.5 text-sm font-semibold text-white"
                     >
-                        출고
+                        출고 준비 중
                     </button>
 
                     <button

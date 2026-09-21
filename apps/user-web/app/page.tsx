@@ -127,13 +127,6 @@ export default function MainPage() {
         />
 
         <DashboardCard
-          title="오늘의 매출"
-          mainText={`${data.sales.todayTotalAmount.toLocaleString()}원`}
-          subText={`총 ${data.sales.todayOrderCount}건 결제`}
-          href="/analytics"
-        />
-
-        <DashboardCard
           title="재고 관리"
           mainText={`품절 임박 ${data.inventory.lowStockCount}개 / 품절 ${data.inventory.outOfStockCount}개`}
           thumbnails={

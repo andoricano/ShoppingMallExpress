@@ -3,7 +3,10 @@
 "use client";
 
 import React from "react";
-import type { OrderStatus } from "@mall/types";
+import type {
+    Order,
+    OrderStatus,
+} from "@mall/types";
 
 import { useAdminOrders } from "@/hooks/orders/useAdminOrders";
 import { OrderAdminHeader } from "@/component/order/OrderAdminHeader";
@@ -87,49 +90,13 @@ export default function AdminOrdersPage() {
         ]);
 
     const handleDetail = async (
-        order: Parameters<
-            NonNullable<
-                React.ComponentProps<
-                    typeof OrderInspector
-                >["onShip"]
-            >
-        >[0],
+        order: Order,
     ) => {
         await fetchOrder(order.id);
     };
 
-    const handleShip = async (
-        order: Parameters<
-            NonNullable<
-                React.ComponentProps<
-                    typeof OrderInspector
-                >["onShip"]
-            >
-        >[0],
-    ) => {
-        await updateOrderStatus(
-            order.id,
-            {
-                status: "SHIPPING",
-                delivery: {
-                    carrier: "택배사 입력 필요",
-                    trackingNumber:
-                        "운송장 입력 필요",
-                },
-            },
-        );
-
-        await fetchOrders();
-    };
-
     const handleCancel = async (
-        order: Parameters<
-            NonNullable<
-                React.ComponentProps<
-                    typeof OrderInspector
-                >["onShip"]
-            >
-        >[0],
+        order: Order,
     ) => {
         await updateOrderStatus(
             order.id,
@@ -142,13 +109,7 @@ export default function AdminOrdersPage() {
     };
 
     const handleComplete = async (
-        order: Parameters<
-            NonNullable<
-                React.ComponentProps<
-                    typeof OrderInspector
-                >["onShip"]
-            >
-        >[0],
+        order: Order,
     ) => {
         await updateOrderStatus(
             order.id,
@@ -192,9 +153,6 @@ export default function AdminOrdersPage() {
                             onReset={
                                 handleReset
                             }
-                            onShip={
-                                handleShip
-                            }
                             onCancel={
                                 handleCancel
                             }
@@ -208,7 +166,6 @@ export default function AdminOrdersPage() {
                     <aside className="min-w-0">
                         <OrderInspector
                             order={selectedOrder}
-                            onShip={handleShip}
                             onCancel={handleCancel}
                             onComplete={
                                 handleComplete
