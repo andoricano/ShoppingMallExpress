@@ -11,6 +11,7 @@ export interface DashboardCardProps {
   mainText: string;
   subText?: string;
   thumbnails?: string[];
+  detailItems?: string[];
   href: string;                // 이동할 페이지 라우트 경로
   onClick?: () => void;
 }
@@ -23,6 +24,7 @@ export const DashboardCard: React.FC<DashboardCardProps> = ({
   mainText,
   subText,
   thumbnails = [],
+  detailItems = [],
   href,
   onClick,
 }) => {
@@ -99,6 +101,14 @@ export const DashboardCard: React.FC<DashboardCardProps> = ({
                   border: '1px solid #dee2e6',
                 }}
               />
+            ))}
+          </div>
+        ) : null}
+
+        {detailItems.length > 0 ? (
+          <div style={{ marginBottom: '8px', fontSize: '11px', color: '#495057' }}>
+            {detailItems.slice(0, 3).map((item) => (
+              <div key={item}>{item}</div>
             ))}
           </div>
         ) : null}
