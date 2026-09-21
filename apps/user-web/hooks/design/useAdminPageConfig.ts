@@ -171,6 +171,11 @@ export function useAdminPageConfig() {
                     result.data as PageConfig;
 
                 setConfig(savedConfig);
+                setOriginalConfig(
+                    structuredClone(savedConfig),
+                );
+                setIsDirty(false);
+                setIsMock(false);
                 setSelectedEditor(null);
 
                 return savedConfig;
@@ -215,6 +220,7 @@ export function useAdminPageConfig() {
         setConfig(reset);
         setSelectedEditor(null);
         setError(null);
+        setIsDirty(false);
 
         return reset;
     }, [originalConfig]);
