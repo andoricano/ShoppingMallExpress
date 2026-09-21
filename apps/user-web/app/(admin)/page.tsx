@@ -1,11 +1,10 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React from "react";
 import { DashboardCard } from "@/component/main/DashboardCard";
 import { AdminOverviewData } from "@/types/admin";
 import { useRouter } from "next/navigation";
 
-import { useAdminAuthStore } from "@/store/useAdminAuth";
 
 // 테스트용 임시 데이터
 const MOCK_OVERVIEW_DATA: AdminOverviewData = {
@@ -46,36 +45,6 @@ const MOCK_OVERVIEW_DATA: AdminOverviewData = {
 export default function MainPage() {
   const data = MOCK_OVERVIEW_DATA;
   const router = useRouter();
-  const user = useAdminAuthStore(
-    (state) => state.user,
-  );
-
-  const authInitialized =
-    useAdminAuthStore(
-      (state) => state.authInitialized,
-    );
-
-  useEffect(() => {
-    if (
-      authInitialized &&
-      !user
-    ) {
-      router.replace("/admin-login");
-    }
-  }, [
-    authInitialized,
-    user,
-    router,
-  ]);
-
-  if (!authInitialized) {
-    return null;
-  }
-
-  if (!user) {
-    return null;
-  }
-
   return (
     <div className="mx-auto max-w-[1400px] p-4 sm:p-6 lg:p-8">
       {/* 타이틀 */}
