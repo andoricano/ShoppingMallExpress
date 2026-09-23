@@ -200,6 +200,7 @@ The finalized v2 schema, RPC, and RLS SQL set has been applied to the new Supaba
 - [x] `order_item_ware_allocations` records the internal allocation
 - [x] Order cancellation restores the exact allocated Ware stock
 - [x] Order History is derived from Order / OrderItem snapshots
+- [ ] Trusted Admin Order lifecycle transition is applied and verified
 - [ ] Refund request creation
 - [ ] Refund request does not automatically restock Ware
 - [x] Concurrent stock deduction does not oversell
@@ -210,12 +211,14 @@ The finalized v2 schema, RPC, and RLS SQL set has been applied to the new Supaba
 
 ### Runtime verification blocker
 
-The verified `create_order_from_cart` RPC creates `PENDING` orders. The
-finalized `request_refund` RPC explicitly rejects `PENDING` and `CANCELLED`
-orders, and the finalized contract provides no authorized status-transition
-RPC to create a refundable order. Refund-request, no-auto-restock, and
-populated Refund-RLS verification remain blocked; no order status was changed
-outside the confirmed contract.
+The SQL Source of Truth now defines the service-role-only
+`admin_transition_order_status(uuid, text)` RPC for the forward lifecycle
+`PENDING → PAID → PROCESSING → SHIPPED → DELIVERED`; Consumer cancellation
+remains the existing `PENDING → CANCELLED` path because it restores allocated
+Ware stock. The configured repository has no safe Supabase SQL-apply path, so
+the new order-status constraint and RPC have not been applied or runtime
+verified. Refund-request, no-auto-restock, and populated Refund-RLS
+verification remain pending until that deployment is completed.
 
 ### Verification method
 
