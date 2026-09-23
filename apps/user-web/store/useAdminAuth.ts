@@ -55,15 +55,12 @@ export const useAdminAuthStore = create<AdminAuthState>((set, get) => ({
         return;
       }
 
-      // 2. public.users 테이블에서 해당 유저의 DB 프로필 조회
+      // 2. auth.users UUID 기반 profile을 안전하게 초기화/조회
       const {
         data: profile,
         error: dbError,
       } = await supabase
-        .from("users")
-        .select("*")
-        .eq("id", session.user.id)
-        .single();
+        .rpc("ensure_current_user_profile");
 
       if (dbError || !profile) {
         set({
@@ -85,14 +82,16 @@ export const useAdminAuthStore = create<AdminAuthState>((set, get) => ({
       }
 
       // 4. UserProfile 매핑
-      const adminUser: UserProfile = {
+      const adminUser = {
         id: profile.id,
-        email: profile.email,
+        // Authentication email belongs to Supabase Auth, not user_profiles.
+        email: session.user.email,
         name: profile.name,
-        role: profile.role,
+        role: "ADMIN",
         createdAt: profile.created_at,
         updatedAt: profile.updated_at,
-      };
+        department: profile.department,
+      } as UserProfile;
 
       set({
         user: adminUser,
