@@ -1,4 +1,0 @@
-# mall/.env
-SUPABASE_URL=https://......supabase.co
-SUPABASE_SECRET_KEY=sb_publishable_....-....-zg_qA0JEsUT
-SUPABASE_SECRET_SUPER_KEY=sb_secret_FK_....-...

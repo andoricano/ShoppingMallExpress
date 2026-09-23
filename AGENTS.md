@@ -2,29 +2,27 @@
 
 ## General
 
-* Only modify code directly required by the requested task.
-* Keep the scope as small as possible.
-* Do not expand the task based on unrelated issues discovered during implementation.
-* Report unrelated issues instead of fixing them.
+* Modify only files directly required by the requested task.
+* Keep scope as small as possible.
+* Preserve all existing user changes.
+* Do not fix unrelated issues; report them instead.
+* Do not perform opportunistic refactoring.
 * Do not re-analyze the entire repository unless explicitly requested.
-* Inspect only files and code paths directly related to the current task.
-* Preserve all pre-existing user changes.
-* Prefer existing repository patterns over introducing new abstractions.
-
-For repository structure and system boundaries, refer to `ARCHITECTURE.md` when available.
+* Prefer existing repository patterns over new abstractions.
+* Refer to `ARCHITECTURE.md` for repository structure and system boundaries.
 
 ## Repository Exploration
 
+Prefer targeted inspection:
+
+* `rg`
+* directly related files
+* package-level configuration
+* existing documentation
+
 Avoid repository-wide scans unless explicitly requested.
 
-Do not generate the following by default:
-
-* full dependency graphs
-* full import graphs
-* dead-code reports
-* repository-wide architecture analysis
-
-Do not inspect generated or dependency directories unless specifically required:
+Do not inspect generated/dependency directories unless necessary:
 
 * `node_modules/`
 * `.next/`
@@ -33,238 +31,213 @@ Do not inspect generated or dependency directories unless specifically required:
 * `coverage/`
 * `.turbo/`
 
-Prefer:
+## Mall v2 Source of Truth
 
-* targeted `rg` searches
-* direct inspection of relevant files
-* existing documentation
-* package-level configuration files
+For Mall v2 work, use this priority:
 
-Do not read framework documentation from `node_modules` unless necessary to resolve a specific problem.
+1. `docs/mall1/v2/product-schema.md`
+2. `docs/mall1/v2/sql/*.sql`
+3. `docs/mall1/v2/PHASES.md`
+4. `packages/types`
+5. current application contracts
 
-## Scope Control
+Legacy `docs/api/README.md`, Inventory/SkuInventory structures, and deleted `apps/api` code must not override the confirmed Mall v2 contract.
 
-* Do not perform opportunistic refactoring.
-* Do not fix unrelated bugs, warnings, security issues, lint issues, or type errors unless they directly block the requested task.
-* Do not redesign surrounding code merely because a better design is possible.
-* Prefer the smallest valid change.
+## Mall v2 Architecture
 
-If an unrelated issue is discovered:
+Mall v2 uses:
 
-1. Leave it unchanged.
-2. Record it.
-3. Report it at completion.
+```text
+Next.js
++ Supabase
++ RLS
++ Supabase RPC
++ Next Route Handlers when a server-only boundary is required
+```
 
-Do not remove apparently unused or legacy code without confirming its references first.
+Do not restore `apps/api` or the legacy Express architecture unless explicitly requested.
 
-## API and Client Boundaries
+Choose the smallest appropriate data boundary:
 
-For client application work, use the following as the primary source of truth for public API contracts:
+* Direct Supabase + RLS for safe reads/user-owned data
+* Supabase RPC for transactional or consistency-sensitive operations
+* Next Route Handler for server-only credentials, orchestration, or external integrations
 
-1. `packages/types`
-2. `docs/api/README.md`
+Do not reproduce transactional database logic in client code.
 
-During normal client work:
+## Domain Boundaries
 
-* Do not inspect or modify `apps/api`.
-* Do not investigate controller, service, repository, or database implementation details.
-* Do not infer undocumented API behavior from unrelated code.
-* If the documented contract is missing, ambiguous, or inconsistent, report the gap instead of investigating API internals.
+Consumer commerce operates on:
 
-When API work is explicitly requested:
+* ProductPost
+* Product
+* ProductOption
+* ProductOptionValue
+* ProductVariant
+* Cart
+* Order / OrderItem
+* History
+* Refund
+* Wishlist
 
-* Modifying `apps/api` is allowed.
-* Inspect only the routes, controllers, services, repositories, and types directly related to the requested API change.
-* Update `packages/types` when the public request or response contract changes.
-* Update `docs/api/README.md` when public API behavior changes.
-* Keep implementation, shared types, and API documentation consistent.
-* Do not modify client applications unless explicitly included in the task.
+Internal-only domains include:
 
-Prefer keeping client-visible contracts independent from internal API implementation details.
+* Ware
+* Warehouse
+* `product_variant_wares`
+* `order_item_ware_allocations`
+
+Never expose Ware/Warehouse internals to Consumer applications.
+
+`apps/user-web` is the current Admin application.
+
+Privileged Admin operations must run in a trusted server context.
+
+## Shared Contracts
+
+When a shared contract changes:
+
+* update `packages/types`
+* keep application contracts consistent with the confirmed SQL/RPC contract
+* update relevant documentation when necessary
+
+Do not modify unrelated applications unless included in the task.
 
 ## Validation
 
-Run only small, targeted validation directly related to changed code.
+Run only validation directly related to changed code.
 
-Allowed by default:
+Prefer:
 
-* targeted unit tests for the changed module
-* package-level typecheck for the affected package
-* targeted lint for changed files or the affected package
-* a small number of directly related API tests
-* focused package build checks when useful to confirm the change
+* affected package typecheck
+* targeted lint
+* targeted tests
+* focused package build
 
 Do not run by default:
 
-* full repository tests
-* full monorepo typecheck
-* full monorepo lint
-* full monorepo build
-* unrelated package tests
-* end-to-end suites
+* full monorepo build/typecheck/lint
+* unrelated tests
+* E2E suites
 * browser automation
 * Docker builds
-* long-running integration suites
-* production deployment tests
+* deployment tests
 
-Validation must remain within the scope of the current task.
+If validation fails because of an unrelated existing issue, report it instead of expanding scope.
 
-If targeted validation fails because of an unrelated pre-existing issue:
+Never claim a check passed unless it was actually executed successfully.
 
-1. Do not investigate it further unless it directly blocks the requested task.
-2. Do not fix it automatically.
-3. Report it.
+## Errors
 
-Avoid repeatedly running the same validation command without a relevant code change.
+When given an error log:
 
-Never claim that code builds, passes, works, or is tested unless the corresponding validation was actually executed successfully.
+1. Start from the exact reported error.
+2. Inspect the directly related path.
+3. Apply the smallest valid fix.
+4. Run targeted validation.
+5. Leave unrelated problems unchanged.
 
-## Error Fixes
+## Documentation
 
-When the user provides an error log:
+Do not create a new `docs/changes/` document for every task.
 
-* Start from the exact reported error.
-* Inspect only the directly related code first.
-* Do not re-analyze the repository.
-* Apply the smallest valid fix.
-* Preserve behavior outside the failing path.
-* Run only targeted validation relevant to the reported failure.
+Create or update task documentation only when:
 
-Do not turn a narrow error fix into a broader cleanup or refactor.
+* explicitly requested, or
+* the change cannot be adequately represented by existing domain, phase, architecture, or API documentation.
 
-## Task Documentation
+Keep documentation concise.
 
-For meaningful feature work, refactoring, API contract changes, or architectural changes, create or update a concise document under:
-
-`docs/changes/`
-
-Do not create task documents for trivial edits or small error fixes unless documentation is specifically useful.
-
-When appropriate, include:
-
-* Goal
-* Changed areas
-* Implementation
-* Static verification
-* Executed validation
-* Not verified
-* Manual validation
-* Known risks
-
-Keep task documentation concise.
-
-Manual validation should contain exact commands and practical verification steps.
-
-Clearly distinguish between:
-
-* statically reviewed
-* actually executed and verified
-
-Do not duplicate detailed API contract documentation from `docs/api/README.md`.
-
-## Git Workflow
+## Git
 
 Before modifying files:
 
 * inspect `git status`
 * preserve pre-existing user changes
 
-During commits:
+For commits:
 
-* include only changes related to the current task
-* do not include unrelated user changes
-* commit after completing one logical task
-* prefer one commit per logical task rather than one commit per file
-* use concise commit messages describing the actual change
+* include only task-related changes
+* prefer one commit per logical task
+* use concise commit messages
 
-By default:
+Do not by default:
 
-* do not push
-* do not amend existing commits
-* do not squash
-* do not rebase
-* do not rewrite Git history
+* push
+* amend
+* squash
+* rebase
+* rewrite history
 
-Never use destructive Git commands such as:
+Never use destructive commands such as:
 
 * `git reset --hard`
 * `git clean -fd`
 * `git checkout -- .`
 * `git restore .`
 
-## CI/CD and Deployment
+Push only when explicitly authorized.
 
-Frontend applications may be connected to Vercel through Git integration.
+## Versioning
 
-For Vercel-connected applications:
+Use Semantic Versioning.
 
-* Prefer Git-based deployment over direct `vercel deploy` commands.
-* Do not manually deploy with `vercel --prod` unless explicitly requested.
-* Do not change Vercel project settings unless explicitly requested.
-* Do not modify deployment configuration unrelated to the current task.
+Current production baseline:
 
-When the user explicitly authorizes push/deployment for the current task:
+```text
+v1.0.0
+```
 
-1. Confirm the current branch.
-2. Confirm `git status`.
-3. Commit only task-related changes.
-4. Push the current branch.
-5. Allow the existing Git/Vercel integration to perform the deployment.
+Mall v2 is a breaking architectural/domain transition and targets:
 
-If a Vercel deployment fails:
+```text
+v2.0.0
+```
 
-* use the deployment/build error as the starting point
-* inspect only directly related code or configuration
-* do not re-analyze the full repository
-* apply the smallest valid fix
-* run targeted validation before another push when practical
+Use prerelease versions for meaningful Mall v2 checkpoints when version updates are requested:
 
-A failed deployment is not permission to fix unrelated repository issues.
+```text
+2.0.0-alpha.N
+2.0.0-beta.N
+2.0.0-rc.N
+2.0.0
+```
 
-Backend deployment and Cloud Run configuration should only be modified when explicitly requested.
+Do not create release tags unless explicitly requested.
 
-## Environment Variables and Secrets
+## Environment and Secrets
 
-* Never invent secrets or credentials.
-* Never expose secrets in documentation, commits, logs, or source files.
-* Do not copy secret values into tracked files.
-* Use existing environment-variable names where possible.
-* Public client variables such as `NEXT_PUBLIC_*` must never contain private credentials.
-* If a required value is unavailable, report the required variable name instead of guessing its value.
+* Never invent or expose secrets.
+* Never commit secrets.
+* `NEXT_PUBLIC_*` must contain only browser-safe values.
+* Supabase secret/service-role credentials are server-only.
+* Never instantiate a privileged Supabase client in browser code.
+* Do not print secret environment values during verification.
 
 ## Dependencies
 
 * Prefer existing dependencies.
-* Do not add, remove, or upgrade packages unless required by the requested task.
-* Do not perform dependency upgrades as unrelated cleanup.
-* If a new dependency is necessary, explain why the existing stack cannot reasonably satisfy the requirement.
+* Add/remove/upgrade packages only when required by the task.
+* Do not perform unrelated dependency upgrades.
 
-## Architecture
+## Deployment
 
-* Follow the existing architecture for ordinary implementation work.
-* Do not redesign repository architecture unless explicitly requested.
-* Use `ARCHITECTURE.md` as the high-level structure reference when available.
-* Do not duplicate architecture analysis during normal tasks.
+Prefer existing Git-based deployment flows.
 
-If the existing architecture directly blocks the requested task:
+Do not:
 
-1. Identify the exact blocker.
-2. Make the smallest necessary architectural change.
-3. Explain the reason and impact.
-4. Update `ARCHITECTURE.md` if the system boundary materially changed.
+* run production deployments unless explicitly requested
+* change Vercel/project settings without explicit instruction
+* treat a deployment failure as permission for unrelated refactoring
 
 ## Completion Report
 
 Keep completion reports concise.
 
-Include:
+Report:
 
-* what changed
-* affected areas
-* targeted validation that actually ran
-* related issues intentionally left unchanged
-* manual validation commands when needed
-* created Git commit
-* push/deployment result when push was explicitly authorized
-
-Do not provide lengthy repository explanations unless explicitly requested.
+* changed files/areas
+* validation actually executed
+* intentionally unresolved related issues
+* commit hash if created
+* push/deployment result if explicitly requested
