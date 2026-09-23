@@ -16,6 +16,7 @@
 --   - ADMIN promotion is service_role only.
 --   - client_addresses is the shipping-address Source of Truth.
 --   - Consumer ownership is always derived from auth.uid().
+--   - client_addresses is a CLIENT-only consumer domain.
 --
 -- Point is intentionally not changed here.
 -- ============================================================
@@ -144,6 +145,10 @@ create unique index client_addresses_one_default_uidx
 -- user_profiles allows only an owner read and an owner update of
 -- non-privileged profile columns. In particular, authenticated
 -- users receive no UPDATE privilege for role or department.
+--
+-- client_addresses is CLIENT-only. Ownership is always derived
+-- from auth.uid(), and ADMIN profiles cannot use Consumer address
+-- CRUD through these policies.
 -- ============================================================
 
 alter table public.user_profiles
@@ -211,6 +216,12 @@ for select
 to authenticated
 using (
     client_id = auth.uid()
+    and exists (
+        select 1
+        from public.user_profiles
+        where id = auth.uid()
+          and role = 'CLIENT'
+    )
 );
 
 
@@ -220,6 +231,12 @@ for insert
 to authenticated
 with check (
     client_id = auth.uid()
+    and exists (
+        select 1
+        from public.user_profiles
+        where id = auth.uid()
+          and role = 'CLIENT'
+    )
 );
 
 
@@ -229,9 +246,21 @@ for update
 to authenticated
 using (
     client_id = auth.uid()
+    and exists (
+        select 1
+        from public.user_profiles
+        where id = auth.uid()
+          and role = 'CLIENT'
+    )
 )
 with check (
     client_id = auth.uid()
+    and exists (
+        select 1
+        from public.user_profiles
+        where id = auth.uid()
+          and role = 'CLIENT'
+    )
 );
 
 
@@ -241,6 +270,12 @@ for delete
 to authenticated
 using (
     client_id = auth.uid()
+    and exists (
+        select 1
+        from public.user_profiles
+        where id = auth.uid()
+          and role = 'CLIENT'
+    )
 );
 
 
@@ -357,17 +392,27 @@ execute function public.set_updated_at();
 -- Default Address Handling
 --
 -- When a Client chooses a new default, clear the prior default
--- before the partial unique index is checked. A first address may
--- be created as the default. No default address is required.
+-- before the partial unique index is checked.
+--
+-- This trigger is SECURITY INVOKER so the internal UPDATE keeps
+-- the caller's RLS boundary. It also explicitly rejects attempts
+-- by an authenticated caller to act on another user's client_id.
+-- Trusted server/service-role execution is not blocked when
+-- auth.uid() is null.
 -- ============================================================
 
 create or replace function public.clear_previous_default_client_address()
 returns trigger
 language plpgsql
-security definer
+security invoker
 set search_path = pg_catalog, public
 as $$
 begin
+    if auth.uid() is not null
+       and new.client_id is distinct from auth.uid() then
+        raise exception 'Cannot modify another user''s default address';
+    end if;
+
     if new.is_default then
         update public.client_addresses
         set is_default = false
