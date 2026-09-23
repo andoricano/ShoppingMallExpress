@@ -19,12 +19,12 @@ export function AdminProductPostCard({
     return (
         <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
             <ProductPostCard
-                imageUrl={post.thumbnail.imageUrl}
-                title={post.thumbnail.title}
-                summary={post.thumbnail.summary}
-                discount={post.thumbnail.discount}
-                price={post.thumbnail.price}
-                tags={post.thumbnail.tags}
+                imageUrl={post.thumbnailUrl ?? undefined}
+                title={post.title}
+                summary={post.summary ?? undefined}
+                discount={0}
+                price={0}
+                tags={[]}
             />
 
             {/* Admin 영역 */}
@@ -32,12 +32,12 @@ export function AdminProductPostCard({
                 {/* 게시 상태 */}
                 <div className="mb-4">
                     <span
-                        className={`inline-flex items-center rounded-md border px-2.5 py-1 text-xs font-semibold ${post.isPublished
+                        className={`inline-flex items-center rounded-md border px-2.5 py-1 text-xs font-semibold ${post.status === "PUBLISHED"
                                 ? "border-emerald-200 bg-emerald-50 text-emerald-700"
                                 : "border-slate-200 bg-slate-100 text-slate-500"
                             }`}
                     >
-                        {post.isPublished
+                        {post.status === "PUBLISHED"
                             ? "게시"
                             : "비공개"}
                     </span>

@@ -19,12 +19,12 @@ export function toCategoryTreeItem(
 ): CategoryTree {
     return {
         id: category.id,
-        parentId: category.parentId,
+        parentId: null,
 
         name: category.name,
-        slug: category.slug,
+        slug: category.slug ?? "",
 
-        depth: category.depth,
+        depth: 0,
         displayOrder:
             category.displayOrder,
         isActive: category.isActive,
@@ -48,19 +48,12 @@ export function toProductPostCategoryItem(
 ): ProductPostCategory {
     return {
         id: tree.id,
-        parentId: tree.parentId,
-
         name: tree.name,
-        slug: tree.slug,
-
-        depth: tree.depth,
+        slug: tree.slug || null,
+        description: original?.description ?? null,
         displayOrder:
             tree.displayOrder,
         isActive: tree.isActive,
-
-        productPosts:
-            original?.productPosts ?? [],
-
         createdAt:
             original?.createdAt ?? "",
         updatedAt:
@@ -101,21 +94,7 @@ export function toCategoryTreeList(
             continue;
         }
 
-        if (!category.parentId) {
-            roots.push(node);
-            continue;
-        }
-
-        const parent = nodeMap.get(
-            category.parentId,
-        );
-
-        if (!parent) {
-            roots.push(node);
-            continue;
-        }
-
-        parent.children.push(node);
+        roots.push(node);
     }
 
     return roots;
@@ -220,11 +199,8 @@ export function diffProductPostCategories(
         }
 
         const changed =
-            original.parentId !==
-                current.parentId ||
             original.name !== current.name ||
             original.slug !== current.slug ||
-            original.depth !== current.depth ||
             original.displayOrder !==
                 current.displayOrder ||
             original.isActive !==

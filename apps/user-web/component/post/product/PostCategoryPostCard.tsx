@@ -29,19 +29,19 @@ export default function PostCategoryPostCard({
         >
             <div className="pointer-events-none">
                 <ProductPostCard
-                    imageUrl={post.thumbnail.imageUrl}
-                    title={post.thumbnail.title}
-                    summary={post.thumbnail.summary}
-                    discount={post.thumbnail.discount}
-                    price={post.thumbnail.price}
-                    tags={post.thumbnail.tags}
+                    imageUrl={post.thumbnailUrl ?? undefined}
+                    title={post.title}
+                    summary={post.summary ?? undefined}
+                    discount={0}
+                    price={0}
+                    tags={[]}
                 />
             </div>
 
             <div className="border-t border-slate-200 px-4 py-3">
                 <div className="flex items-center justify-between gap-3">
                     <span className="text-xs text-slate-500">
-                        {post.isPublished
+                        {post.status === "PUBLISHED"
                             ? "게시"
                             : "비공개"}
                     </span>

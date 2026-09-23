@@ -28,7 +28,7 @@ export function ProductPostEditor({
     ) => {
         onChange({
             ...post,
-            content: JSON.stringify(content),
+            content,
         });
     };
 
@@ -40,9 +40,7 @@ export function ProductPostEditor({
 
             <ProductDescriptionEditor
                 initialContent={
-                    post.content
-                        ? JSON.parse(post.content)
-                        : undefined
+                    post.content ?? undefined
                 }
                 onChange={handleDescriptionChange}
                 onImagesChange={

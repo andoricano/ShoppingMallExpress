@@ -70,7 +70,6 @@ export default function PostCategoryEditor({
 
         const categoryPost: ProductPostCategoryItem = {
             id: post.id,
-            thumbnail: post.thumbnail,
         };
 
         togglePostInCategory(

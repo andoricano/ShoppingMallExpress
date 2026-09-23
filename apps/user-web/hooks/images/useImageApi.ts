@@ -2,8 +2,6 @@
 
 import { useCallback } from "react";
 
-import { API_ENDPOINTS } from "@mall/constants";
-import { fetchAdminApi } from "@/lib/api/admin";
 
 export interface ImageUploadResult {
     path: string;
@@ -27,8 +25,8 @@ export function useImageApi() {
                 );
             }
 
-            const response = await fetchAdminApi(
-                API_ENDPOINTS.IMAGES.UPLOAD_URL,
+            const response = await fetch(
+                "/api/admin/images/upload-url",
                 {
                     method: "POST",
                     headers: {

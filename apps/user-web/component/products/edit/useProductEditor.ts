@@ -14,11 +14,10 @@ interface UseProductEditorParams {
 const DEFAULT_PRODUCT: Product = {
     id: "",
     name: "",
-    mainImageUrl: "1111111111",
     imageUrls: [],
-    description: "",
-    price: 0,
-    inventoryId: "",
+    description: null,
+    isActive: true,
+    meta: {},
     createdAt: "",
     updatedAt: "",
 };
@@ -59,35 +58,19 @@ export function useProductEditor({
     const descriptionContent = useMemo<
         JSONContent | undefined
     >(() => {
-        if (!form.description) {
-            return undefined;
-        }
-
-        try {
-            return JSON.parse(
-                form.description,
-            ) as JSONContent;
-        } catch {
-            return undefined;
-        }
+        if (!form.description) return undefined;
+        try { return JSON.parse(form.description) as JSONContent; } catch { return undefined; }
     }, [form.description]);
 
     const updateDescription = (
         content: JSONContent,
     ) => {
-        updateField(
-            "description",
-            JSON.stringify(content),
-        );
+        updateField("description", JSON.stringify(content));
     };
 
     const validate = (): string | null => {
         if (!form.name.trim()) {
             return "상품명을 입력해주세요.";
-        }
-
-        if (form.price < 0) {
-            return "가격은 0 이상이어야 합니다.";
         }
 
         return null;

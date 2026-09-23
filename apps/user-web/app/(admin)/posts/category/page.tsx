@@ -116,27 +116,13 @@ export default function CategoryPage() {
             // CREATE
             // ------------------------------------------
 
-            const created =
-                [...changes.created].sort(
-                    (a, b) =>
-                        a.depth - b.depth,
-                );
+            const created = changes.created;
 
             for (const category of created) {
-                const parentId =
-                    category.parentId
-                        ? createdIdMap.get(
-                            category.parentId,
-                        ) ??
-                        category.parentId
-                        : null;
-
                 const result =
                     await createCategory({
-                        parentId,
                         name: category.name,
-                        slug: category.slug,
-                        depth: category.depth,
+                        slug: category.slug ?? undefined,
                         displayOrder:
                             category.displayOrder,
                         isActive:
@@ -159,22 +145,12 @@ export default function CategoryPage() {
             // ------------------------------------------
 
             for (const category of changes.updated) {
-                const parentId =
-                    category.parentId
-                        ? createdIdMap.get(
-                            category.parentId,
-                        ) ??
-                        category.parentId
-                        : null;
-
                 const result =
                     await updateCategory(
                         category.id,
                         {
-                            parentId,
                             name: category.name,
-                            slug: category.slug,
-                            depth: category.depth,
+                            slug: category.slug ?? undefined,
                             displayOrder:
                                 category.displayOrder,
                             isActive:
@@ -192,11 +168,7 @@ export default function CategoryPage() {
             // DELETE
             // ------------------------------------------
 
-            const deleted =
-                [...changes.deleted].sort(
-                    (a, b) =>
-                        b.depth - a.depth,
-                );
+            const deleted = changes.deleted;
 
             const deletedIds = new Set(
                 changes.deleted.map(

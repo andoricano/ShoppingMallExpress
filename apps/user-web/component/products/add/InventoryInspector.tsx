@@ -3,11 +3,11 @@
 "use client";
 
 import React from "react";
-import type { SkuInventory } from "@mall/types";
+import type { Ware } from "@mall/types";
 
 interface InventoryInspectorProps {
-    inventory: SkuInventory | null;
-    onRegister: (inventory: SkuInventory) => void;
+    inventory: Ware | null;
+    onRegister: (inventory: Ware) => void;
 }
 
 export const InventoryInspector: React.FC<InventoryInspectorProps> = ({
@@ -65,7 +65,7 @@ export const InventoryInspector: React.FC<InventoryInspectorProps> = ({
                         SKU 코드
                     </p>
                     <p className="mt-1 text-sm font-semibold text-slate-700">
-                        {inventory.skuCode}
+                        {inventory.wareCode ?? inventory.name}
                     </p>
                 </div>
 

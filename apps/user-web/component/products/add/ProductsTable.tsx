@@ -49,11 +49,11 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
                                 </th>
 
                                 <th className="px-4 py-3">
-                                    가격
+                                    상태
                                 </th>
 
                                 <th className="px-4 py-3">
-                                    Inventory
+                                    Variant
                                 </th>
 
                                 <th className="px-4 py-3 text-right">
@@ -80,13 +80,12 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
                                         </td>
 
                                         <td className="px-4 py-3 font-semibold text-slate-700">
-                                            {product.price.toLocaleString()}
-                                            원
+                                            {product.isActive ? "판매 중" : "비활성"}
                                         </td>
 
                                         <td className="px-4 py-3">
                                             <span className="font-mono text-xs text-slate-500">
-                                                {product.inventoryId}
+                                                {product.id}
                                             </span>
                                         </td>
 

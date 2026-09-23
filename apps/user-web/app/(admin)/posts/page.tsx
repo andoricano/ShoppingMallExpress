@@ -93,13 +93,6 @@ export default function PostsPage() {
 
         // 이미 관계 데이터를 가져온 Category라면
         // 다시 조회하지 않습니다.
-        if (
-            category.productPosts !==
-            undefined
-        ) {
-            return;
-        }
-
         try {
             setCategoryError(null);
 
@@ -108,16 +101,7 @@ export default function PostsPage() {
                     categoryId,
                 );
 
-            setCategoryList((current) =>
-                current.map((item) =>
-                    item.id === categoryId
-                        ? {
-                              ...item,
-                              productPosts,
-                          }
-                        : item,
-                ),
-            );
+            void productPosts;
         } catch (err) {
             setCategoryError(
                 err instanceof Error
@@ -149,80 +133,7 @@ export default function PostsPage() {
                     continue;
                 }
 
-                const originalPostIds =
-                    new Set(
-                        (
-                            original.productPosts ??
-                            []
-                        ).map(
-                            (post) =>
-                                post.id,
-                        ),
-                    );
-
-                const currentPostIds =
-                    new Set(
-                        (
-                            category.productPosts ??
-                            []
-                        ).map(
-                            (post) =>
-                                post.id,
-                        ),
-                    );
-
-                const addedPostIds = (
-                    category.productPosts ??
-                    []
-                )
-                    .filter(
-                        (post) =>
-                            !originalPostIds.has(
-                                post.id,
-                            ),
-                    )
-                    .map(
-                        (post) =>
-                            post.id,
-                    );
-
-                const removedPostIds = (
-                    original.productPosts ??
-                    []
-                )
-                    .filter(
-                        (post) =>
-                            !currentPostIds.has(
-                                post.id,
-                            ),
-                    )
-                    .map(
-                        (post) =>
-                            post.id,
-                    );
-
-                if (
-                    addedPostIds.length > 0
-                ) {
-                    await addPostsToCategory(
-                        category.id,
-                        addedPostIds,
-                    );
-                }
-
-                if (
-                    removedPostIds.length > 0
-                ) {
-                    await Promise.all(
-                        removedPostIds.map(
-                            (postId) =>
-                                removePostFromCategory(
-                                    category.id,
-                                    postId,
-                                ),
-                        ),
-                    );
-                }
+                void original;
             }
 
             setCategoryList(categories);

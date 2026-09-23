@@ -110,16 +110,6 @@ export default function CategoryTab({
                                                 }
                                             </p>
 
-                                            <p className="text-xs text-slate-400">
-                                                depth:{" "}
-                                                {
-                                                    original.depth
-                                                }
-                                                {" · "}
-                                                parent:{" "}
-                                                {original.parentId ??
-                                                    "ROOT"}
-                                            </p>
                                         </div>
 
                                         {/* 수정 후 */}

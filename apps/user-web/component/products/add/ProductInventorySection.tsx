@@ -3,7 +3,7 @@
 "use client";
 
 import { useEffect } from "react";
-import type { SkuInventory } from "@mall/types";
+import type { Ware } from "@mall/types";
 
 import { useProductAdd } from "@/hooks/products/useProductAdd";
 
@@ -12,7 +12,7 @@ import { InventoryList } from "./InventoryList";
 import { InventoryInspector } from "./InventoryInspector";
 
 interface ProductInventorySectionProps {
-    onRegister: (inventory: SkuInventory) => void;
+    onRegister: (inventory: Ware) => void;
 }
 
 export function ProductInventorySection({

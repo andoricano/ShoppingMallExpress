@@ -4,7 +4,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import type { SkuInventory } from "@mall/types";
+import type { Ware } from "@mall/types";
 
 import { AdminMenuItem } from "@/component/common/AdminMenu";
 import { ProductAdminHeader } from "@/component/products/ProductAdminHeader";
@@ -58,12 +58,12 @@ export default function ProductPostAddPage() {
     // ==========================================
 
     const handleRegisterProduct = (
-        inventory: SkuInventory,
+        inventory: Ware,
     ) => {
         setSelectedInventoryId(inventory.id);
 
         setProductForm({
-            name: inventory.skuCode,
+            name: inventory.name,
             price: 0,
             description: "",
         });
@@ -85,12 +85,10 @@ export default function ProductPostAddPage() {
 
             name: productForm.name.trim(),
 
-            mainImageUrl: "",
             imageUrls: [],
             description: productForm.description,
-
-            price: productForm.price,
-            inventoryId: selectedInventoryId,
+            isActive: true,
+            meta: {},
 
             createdAt: "",
             updatedAt: "",

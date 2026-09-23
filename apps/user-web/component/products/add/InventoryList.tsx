@@ -3,13 +3,13 @@
 "use client";
 
 import React from "react";
-import type { SkuInventory } from "@mall/types";
+import type { Ware } from "@mall/types";
 
 interface InventoryListProps {
-    items: SkuInventory[];
+    items: Ware[];
     selectedId?: string;
     isLoading?: boolean;
-    onSelect: (inventory: SkuInventory) => void;
+    onSelect: (inventory: Ware) => void;
 }
 
 export const InventoryList: React.FC<InventoryListProps> = ({
@@ -58,7 +58,7 @@ export const InventoryList: React.FC<InventoryListProps> = ({
                                                 : "text-slate-700"
                                                 }`}
                                         >
-                                            {inventory.skuCode}
+                                            {inventory.wareCode ?? inventory.name}
                                         </span>
 
                                         <span className="text-xs font-semibold text-emerald-600">
