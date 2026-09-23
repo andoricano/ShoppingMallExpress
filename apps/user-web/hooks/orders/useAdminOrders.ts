@@ -5,18 +5,6 @@
 import { useCallback, useState } from "react";
 
 import type { Order } from "@mall/types";
-import { API_ENDPOINTS } from "@mall/constants";
-import { fetchAdminApi } from "@/lib/api/admin";
-
-export interface UpdateOrderStatusInput {
-    status: Order["status"];
-
-    delivery?: {
-        carrier: string;
-        trackingNumber: string;
-        shippedAt?: string;
-    };
-}
 
 export function useAdminOrders() {
     const [orderList, setOrderList] = useState<Order[]>([]);
@@ -39,9 +27,7 @@ export function useAdminOrders() {
             setError(null);
 
             try {
-                const res = await fetchAdminApi(
-                    API_ENDPOINTS.ORDERS.BASE,
-                );
+                const res = await fetch("/api/admin/orders");
 
                 if (!res.ok) {
                     const result = await res
@@ -83,11 +69,7 @@ export function useAdminOrders() {
             setError(null);
 
             try {
-                const res = await fetchAdminApi(
-                    API_ENDPOINTS.ORDERS.BY_ID(
-                        orderId,
-                    ),
-                );
+                const res = await fetch(`/api/admin/orders/${orderId}`);
 
                 if (!res.ok) {
                     const result =
@@ -135,26 +117,21 @@ export function useAdminOrders() {
         useCallback(
             async (
                 orderId: string,
-                data: UpdateOrderStatusInput,
+                nextStatus: Order["status"],
             ) => {
                 setLoading(true);
                 setError(null);
 
                 try {
                     const res =
-                        await fetchAdminApi(
-                            API_ENDPOINTS.ORDERS.BY_ID(
-                                orderId,
-                            ),
+                        await fetch(`/api/admin/orders/${orderId}`,
                             {
                                 method: "PATCH",
                                 headers: {
                                     "Content-Type":
                                         "application/json",
                                 },
-                                body: JSON.stringify(
-                                    data,
-                                ),
+                                body: JSON.stringify({ nextStatus }),
                             },
                         );
 

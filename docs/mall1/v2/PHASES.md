@@ -281,7 +281,7 @@ Primary domains:
 
 ## Phase 6 — Supabase Access Migration
 
-**Status:** NOT STARTED
+**Status:** IN PROGRESS
 
 **Owner:** Codex
 
@@ -314,6 +314,15 @@ Remove or retire legacy API assumptions that no longer apply after removal of `a
 * [ ] Privileged operations run only in trusted server contexts.
 * [ ] Consumer paths never expose Ware/Warehouse internals.
 * [ ] No required application path depends on the removed Express API.
+
+### `apps/user-web` migration progress
+
+* [x] Admin Route Handlers authenticate the request and verify `user_profiles.role = 'ADMIN'` before service-role access.
+* [x] Ware/Warehouse reads and Ware metadata/stock mutations use the server-only boundary and confirmed warehouse RPCs.
+* [x] Admin Order reads and lifecycle transitions use the server-only boundary and `admin_transition_order_status()`.
+* [x] Admin Refund reads use the server-only boundary; no unconfirmed refund mutation is exposed.
+* [ ] Product/ProductPost/Option/Variant management is migrated from legacy Express and Inventory assumptions.
+* [ ] All remaining user-web routes are migrated from legacy Express endpoint constants.
 
 ## Phase 7 — Client / Admin Migration
 

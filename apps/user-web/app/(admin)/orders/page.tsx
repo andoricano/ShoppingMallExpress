@@ -95,27 +95,13 @@ export default function AdminOrdersPage() {
         await fetchOrder(order.id);
     };
 
-    const handleCancel = async (
+    const handleTransition = async (
         order: Order,
+        nextStatus: OrderStatus,
     ) => {
         await updateOrderStatus(
             order.id,
-            {
-                status: "CANCELLED",
-            },
-        );
-
-        await fetchOrders();
-    };
-
-    const handleComplete = async (
-        order: Order,
-    ) => {
-        await updateOrderStatus(
-            order.id,
-            {
-                status: "COMPLETED",
-            },
+            nextStatus,
         );
 
         await fetchOrders();
@@ -153,9 +139,6 @@ export default function AdminOrdersPage() {
                             onReset={
                                 handleReset
                             }
-                            onCancel={
-                                handleCancel
-                            }
                             onDetail={
                                 handleDetail
                             }
@@ -166,10 +149,7 @@ export default function AdminOrdersPage() {
                     <aside className="min-w-0">
                         <OrderInspector
                             order={selectedOrder}
-                            onCancel={handleCancel}
-                            onComplete={
-                                handleComplete
-                            }
+                            onTransition={handleTransition}
                         />
                     </aside>
                 </div>

@@ -2,7 +2,7 @@
 
 "use client";
 
-import type { Order } from "@mall/types";
+import type { Order, OrderStatus } from "@mall/types";
 
 import { OrderInspectorController } from "./OrderInspectorController";
 import { OrderInspectorHeader } from "./OrderInspectorHeader";
@@ -12,14 +12,12 @@ import { OrderInspectorShipping } from "./OrderInspectorShipping";
 interface OrderInspectorProps {
     order: Order | null;
 
-    onCancel?: (order: Order) => void;
-    onComplete?: (order: Order) => void;
+    onTransition?: (order: Order, nextStatus: OrderStatus) => void;
 }
 
 export function OrderInspector({
     order,
-    onCancel,
-    onComplete,
+    onTransition,
 }: OrderInspectorProps) {
     if (!order) {
         return (
@@ -56,8 +54,7 @@ export function OrderInspector({
 
             <OrderInspectorController
                 order={order}
-                onCancel={onCancel}
-                onComplete={onComplete}
+                onTransition={onTransition}
             />
         </aside>
     );

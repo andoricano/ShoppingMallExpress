@@ -1,16 +1,15 @@
 "use client";
 
 import React from "react";
-import type { SkuInventory } from "@mall/types";
+import type { Ware } from "@mall/types";
 import { InventoryActionButton } from "./InventoryActionButton";
 
 interface InventoryTableProps {
-  items: SkuInventory[];
+  items: Ware[];
   isLoading?: boolean;
-  onEdit?: (inventory: SkuInventory) => void;
-  onEditStock?: (inventory: SkuInventory) => void;
-  onToggleStatus?: (skuId: string) => void;
-  onDelete?: (skuId: string) => void;
+  onEdit?: (ware: Ware) => void;
+  onEditStock?: (ware: Ware) => void;
+  onToggleStatus?: (wareId: string) => void;
 }
 
 export const InventoryTable: React.FC<InventoryTableProps> = ({
@@ -19,7 +18,6 @@ export const InventoryTable: React.FC<InventoryTableProps> = ({
   onEdit,
   onEditStock,
   onToggleStatus,
-  onDelete,
 }) => {
   return (
     <div className="w-full overflow-x-auto border border-slate-200 rounded-xl bg-white shadow-sm">
@@ -36,7 +34,7 @@ export const InventoryTable: React.FC<InventoryTableProps> = ({
         <thead>
           <tr className="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-600">
             <th className="p-3 px-4">재고 ID</th>
-            <th className="p-3 px-4">SKU 코드</th>
+            <th className="p-3 px-4">Ware 코드</th>
             <th className="p-3 px-4">메타 정보</th>
             <th className="p-3 px-4">재고 수량</th>
             <th className="p-3 px-4">상태</th>
@@ -77,7 +75,7 @@ export const InventoryTable: React.FC<InventoryTableProps> = ({
 
                 <td className="p-3 px-4">
                   <span className="font-semibold text-slate-700">
-                    {item.skuCode}
+                    {item.wareCode ?? item.name}
                   </span>
                 </td>
 
@@ -150,14 +148,6 @@ export const InventoryTable: React.FC<InventoryTableProps> = ({
                       </InventoryActionButton>
                     )}
 
-                    {!item.isActive && onDelete && (
-                      <InventoryActionButton
-                        onClick={() => onDelete(item.id)}
-                        variant="danger"
-                      >
-                        삭제
-                      </InventoryActionButton>
-                    )}
                   </div>
                 </td>
               </tr>

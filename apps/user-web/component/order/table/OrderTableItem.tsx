@@ -7,7 +7,6 @@ import type { Order } from "@mall/types";
 interface OrderTableItemProps {
     order: Order;
 
-    onCancel?: (order: Order) => void;
     onDetail?: (order: Order) => void;
 }
 
@@ -16,8 +15,10 @@ const ORDER_STATUS_LABEL: Record<
     string
 > = {
     PENDING: "대기중",
-    SHIPPING: "배송중",
-    COMPLETED: "완료",
+    PAID: "결제 완료",
+    PROCESSING: "처리중",
+    SHIPPED: "출고됨",
+    DELIVERED: "배송 완료",
     CANCELLED: "취소",
 };
 
@@ -27,9 +28,13 @@ const ORDER_STATUS_CLASS: Record<
 > = {
     PENDING:
         "bg-amber-50 text-amber-700 border-amber-200",
-    SHIPPING:
+    PAID:
         "bg-blue-50 text-blue-700 border-blue-200",
-    COMPLETED:
+    PROCESSING:
+        "bg-violet-50 text-violet-700 border-violet-200",
+    SHIPPED:
+        "bg-cyan-50 text-cyan-700 border-cyan-200",
+    DELIVERED:
         "bg-emerald-50 text-emerald-700 border-emerald-200",
     CANCELLED:
         "bg-slate-100 text-slate-500 border-slate-200",
@@ -37,7 +42,6 @@ const ORDER_STATUS_CLASS: Record<
 
 export function OrderTableItem({
     order,
-    onCancel,
     onDetail,
 }: OrderTableItemProps) {
     const items = Array.isArray(
@@ -53,10 +57,10 @@ export function OrderTableItem({
 
     if (items.length === 1) {
         itemSummary =
-            firstItem?.productName ??
+            firstItem?.productNameSnapshot ??
             "상품 정보 없음";
     } else if (items.length > 1) {
-        itemSummary = `${firstItem?.productName ??
+        itemSummary = `${firstItem?.productNameSnapshot ??
             "상품"
             } 외 ${items.length - 1}개`;
     }
@@ -85,7 +89,7 @@ export function OrderTableItem({
 
                 <span className="shrink-0 text-sm font-bold text-slate-900">
                     {(
-                        order.totalPrice ??
+                        order.totalAmount ??
                         0
                     ).toLocaleString()}
                     원
@@ -129,32 +133,6 @@ export function OrderTableItem({
                 </span>
 
                 <div className="flex shrink-0 items-center gap-1.5">
-                    {order.status ===
-                        "PENDING" && (
-                            <>
-                                <button
-                                    type="button"
-                                    disabled
-                                    title="배송 정보 입력 기능이 구현되면 출고할 수 있습니다."
-                                    className="cursor-not-allowed rounded-md bg-slate-300 px-2.5 py-1.5 text-[11px] font-semibold text-white"
-                                >
-                                    출고 준비 중
-                                </button>
-
-                                <button
-                                    type="button"
-                                    onClick={() =>
-                                        onCancel?.(
-                                            order,
-                                        )
-                                    }
-                                    className="rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-slate-600 transition-colors hover:bg-slate-50"
-                                >
-                                    취소
-                                </button>
-                            </>
-                        )}
-
                     <button
                         type="button"
                         onClick={() =>

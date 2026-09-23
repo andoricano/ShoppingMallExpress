@@ -2,35 +2,25 @@
 
 "use client";
 
-import type { Order } from "@mall/types";
+import type { Order, OrderStatus } from "@mall/types";
 
 interface OrderInspectorControllerProps {
     order: Order;
 
-    onCancel?: (order: Order) => void;
-    onComplete?: (order: Order) => void;
+    onTransition?: (order: Order, nextStatus: OrderStatus) => void;
 }
 
 export function OrderInspectorController({
     order,
-    onCancel,
-    onComplete,
+    onTransition,
 }: OrderInspectorControllerProps) {
-    const handleCancel = () => {
-        const confirmed = window.confirm(
-            "이 주문을 취소하시겠습니까?",
-        );
-
-        if (!confirmed) {
-            return;
-        }
-
-        onCancel?.(order);
+    const nextStatus: Partial<Record<OrderStatus, OrderStatus>> = {
+        PENDING: "PAID",
+        PAID: "PROCESSING",
+        PROCESSING: "SHIPPED",
+        SHIPPED: "DELIVERED",
     };
-
-    const handleComplete = () => {
-        onComplete?.(order);
-    };
+    const next = nextStatus[order.status];
 
     return (
         <section className="px-5 py-4">
@@ -38,38 +28,22 @@ export function OrderInspectorController({
                 주문 처리
             </h3>
 
-            {order.status === "PENDING" && (
+            {next && (
                 <div className="flex gap-2">
                     <button
                         type="button"
-                        disabled
-                        title="배송 정보 입력 기능이 구현되면 출고할 수 있습니다."
-                        className="flex-1 cursor-not-allowed rounded-lg bg-slate-300 px-4 py-2.5 text-sm font-semibold text-white"
+                        onClick={() => onTransition?.(order, next)}
+                        className="flex-1 rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-slate-700"
                     >
-                        출고 준비 중
-                    </button>
-
-                    <button
-                        type="button"
-                        onClick={handleCancel}
-                        className="flex-1 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50"
-                    >
-                        취소
+                        {next === "PAID" && "결제 완료 처리"}
+                        {next === "PROCESSING" && "처리 시작"}
+                        {next === "SHIPPED" && "출고 처리"}
+                        {next === "DELIVERED" && "배송 완료 처리"}
                     </button>
                 </div>
             )}
 
-            {order.status === "SHIPPING" && (
-                <button
-                    type="button"
-                    onClick={handleComplete}
-                    className="w-full rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-slate-700"
-                >
-                    배송 완료
-                </button>
-            )}
-
-            {order.status === "COMPLETED" && (
+            {order.status === "DELIVERED" && (
                 <div className="rounded-lg bg-emerald-50 px-4 py-3 text-center text-sm text-emerald-700">
                     배송 완료된 주문입니다.
                 </div>
@@ -79,6 +53,12 @@ export function OrderInspectorController({
                 <div className="rounded-lg bg-slate-50 px-4 py-3 text-center text-sm text-slate-500">
                     취소된 주문입니다.
                 </div>
+            )}
+
+            {order.status === "PENDING" && (
+                <p className="mt-3 text-xs text-slate-400">
+                    취소는 주문 소유자의 Consumer 취소 RPC에서만 처리됩니다.
+                </p>
             )}
         </section>
     );

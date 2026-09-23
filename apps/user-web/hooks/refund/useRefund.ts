@@ -8,11 +8,7 @@ import {
 } from "react";
 
 
-import {
-    API_ENDPOINTS,
-} from "@mall/constants";
 import { RefundRequest } from "@mall/types";
-import { fetchAdminApi } from "@/lib/api/admin";
 
 export function useRefund() {
     const [
@@ -40,10 +36,7 @@ export function useRefund() {
             setError(null);
 
             try {
-                const res =
-                    await fetchAdminApi(
-                        API_ENDPOINTS.REFUNDS.BASE,
-                    );
+                const res = await fetch("/api/admin/refunds");
 
                 if (!res.ok) {
                     const result =
@@ -90,71 +83,11 @@ export function useRefund() {
         },
         [],
     );
-    // ==========================================
-    // 환불 요청 처리
-    // ==========================================
-
-    const processRefund = useCallback(
-        async (
-            refundId: string,
-            status:
-                | "APPROVED"
-                | "REJECTED",
-        ) => {
-            setLoading(true);
-            setError(null);
-
-            try {
-                const res =
-                    await fetchAdminApi(
-                        API_ENDPOINTS.REFUNDS.BY_ID(
-                            refundId,
-                        ),
-                        {
-                            method: "PATCH",
-                            headers: {
-                                "Content-Type":
-                                    "application/json",
-                            },
-                            body: JSON.stringify({
-                                status,
-                            }),
-                        },
-                    );
-
-                const result =
-                    await res
-                        .json()
-                        .catch(() => null);
-
-                if (!res.ok) {
-                    throw new Error(
-                        result?.message ||
-                        "환불 요청 처리에 실패했습니다.",
-                    );
-                }
-
-                return true;
-            } catch (err) {
-                setError(
-                    err instanceof Error
-                        ? err.message
-                        : "환불 요청 처리에 실패했습니다.",
-                );
-
-                return false;
-            } finally {
-                setLoading(false);
-            }
-        },
-        [],
-    );
     return {
         refundList,
         loading,
         error,
 
         fetchRefunds,
-        processRefund
     };
 }

@@ -21,12 +21,20 @@ const filterItems: FilterItem[] = [
         label: "대기중",
     },
     {
-        status: "SHIPPING",
-        label: "배송중",
+        status: "PAID",
+        label: "결제 완료",
     },
     {
-        status: "COMPLETED",
-        label: "완료",
+        status: "PROCESSING",
+        label: "처리중",
+    },
+    {
+        status: "SHIPPED",
+        label: "출고됨",
+    },
+    {
+        status: "DELIVERED",
+        label: "배송 완료",
     },
     {
         status: "CANCELLED",

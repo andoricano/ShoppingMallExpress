@@ -20,7 +20,6 @@ interface OrderListContentProps {
     onSearch: (search: string) => void;
     onReset: () => void;
 
-    onCancel?: (order: Order) => void;
     onDetail?: (order: Order) => void;
 }
 
@@ -34,7 +33,6 @@ export function OrderListContent({
     onSearch,
     onReset,
 
-    onCancel,
     onDetail,
 }: OrderListContentProps) {
     return (
@@ -49,7 +47,6 @@ export function OrderListContent({
             <OrderTable
                 orders={orders}
                 loading={loading}
-                onCancel={onCancel}
                 onDetail={onDetail}
             />
         </section>

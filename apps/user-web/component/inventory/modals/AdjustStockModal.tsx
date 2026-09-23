@@ -7,18 +7,18 @@ import { StockQtyInput } from "../../modal/StockQtyInput";
 
 interface AdjustStockModalProps {
   isOpen: boolean;
-  skuId: string;
+  wareId: string;
   currentQty: number;
   onClose: () => void;
   onSubmit: (
-    skuId: string,
+    wareId: string,
     adjustmentQty: number
   ) => Promise<void>;
 }
 
 export const AdjustStockModal: React.FC<AdjustStockModalProps> = ({
   isOpen,
-  skuId,
+  wareId,
   currentQty,
   onClose,
   onSubmit,
@@ -30,7 +30,7 @@ export const AdjustStockModal: React.FC<AdjustStockModalProps> = ({
     if (isOpen) {
       setAdjustQty(0);
     }
-  }, [isOpen, skuId]);
+  }, [isOpen, wareId]);
 
   const isNegativeStock = currentQty + adjustQty < 0;
 
@@ -49,7 +49,7 @@ export const AdjustStockModal: React.FC<AdjustStockModalProps> = ({
 
     try {
       setSubmitting(true);
-      await onSubmit(skuId, adjustQty);
+      await onSubmit(wareId, adjustQty);
       onClose();
     } catch (err: unknown) {
       const message =
@@ -68,7 +68,7 @@ export const AdjustStockModal: React.FC<AdjustStockModalProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       title="재고 수동 조정"
-      description="선택한 SKU의 재고 수량을 조정합니다."
+      description="선택한 Ware의 재고 수량을 조정합니다."
       maxWidth="md"
       onSubmit={handleSubmit}
       submitText="조정 적용"
@@ -80,8 +80,8 @@ export const AdjustStockModal: React.FC<AdjustStockModalProps> = ({
         <SummaryCard
           items={[
             {
-              label: "대상 SKU",
-              value: skuId,
+              label: "대상 Ware",
+              value: wareId,
               isMono: true,
             },
             {

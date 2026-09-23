@@ -12,7 +12,6 @@ interface OrderTableProps {
 
     loading?: boolean;
 
-    onCancel?: (order: Order) => void;
     onDetail?: (order: Order) => void;
 }
 
@@ -21,7 +20,6 @@ export const OrderTable: React.FC<
 > = ({
     orders,
     loading = false,
-    onCancel,
     onDetail,
 }) => {
         return (
@@ -59,7 +57,6 @@ export const OrderTable: React.FC<
                             >
                                 <OrderTableItem
                                     order={order}
-                                    onCancel={onCancel}
                                     onDetail={onDetail}
                                 />
                             </div>

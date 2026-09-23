@@ -1,87 +1,72 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { useAdminInventory } from "@/hooks/useAdminInventory";
+import {
+  useAdminWare,
+  type CreateWareInput,
+  type UpdateWareInput,
+} from "@/hooks/useAdminInventory";
 import { InventoryHeader } from "@/component/inventory/InventoryHeader";
 import { InventorySearchToolbar } from "@/component/inventory/InventorySearchToolbar";
 import { InventoryTable } from "@/component/inventory/InventoryTable";
 import { AddInventoryModal } from "@/component/inventory/modals/AddInventoryModal";
 import { EditInventoryModal } from "@/component/inventory/modals/EditInventoryModal";
 import { AdjustStockModal } from "@/component/inventory/modals/AdjustStockModal";
-import type {
-  CreateInventoryInput,
-  SkuInventory,
-} from "@mall/types";
+import type { Ware } from "@mall/types";
 
 interface AdjustTarget {
-  skuId: string;
+  wareId: string;
   currentQty: number;
 }
 
 export default function AdminInventoryPage() {
   const {
-    inventoryList,
+    wareList,
+    warehouseList,
     loading,
     error,
-    fetchInventoryList,
-    createInventoryItem,
-    updateInventoryItem,
-    adjustStock,
-    toggleInventoryStatus,
-    deleteInventoryItem,
-  } = useAdminInventory();
+    fetchWareList,
+    fetchWarehouseList,
+    createWare,
+    updateWare,
+    adjustWareStock,
+  } = useAdminWare();
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [editTarget, setEditTarget] = useState<SkuInventory | null>(null);
+  const [editTarget, setEditTarget] = useState<Ware | null>(null);
   const [adjustTargetSku, setAdjustTargetSku] =
     useState<AdjustTarget | null>(null);
 
   // 초기 재고 목록 조회
   useEffect(() => {
-    fetchInventoryList();
-  }, [fetchInventoryList]);
+    void fetchWareList();
+    void fetchWarehouseList();
+  }, [fetchWareList, fetchWarehouseList]);
 
   // 신규 재고 등록
-  const handleCreateInventory = async (
-    data: CreateInventoryInput
+  const handleCreateWare = async (
+    data: CreateWareInput
   ) => {
-    await createInventoryItem(data);
+    await createWare(data);
     setIsAddModalOpen(false);
   };
 
   // 재고 정보 수정
-  const handleUpdateInventory = async (
+  const handleUpdateWare = async (
     id: string,
-    payload: {
-      skuCode: string;
-      isActive: boolean;
-      meta?: Record<string, unknown>;
-    }
+    payload: UpdateWareInput
   ) => {
-    await updateInventoryItem(id, payload);
+    await updateWare(id, payload);
     setEditTarget(null);
   };
 
   // 재고 수량 조정
   const handleAdjustStock = async (
-    skuId: string,
+    wareId: string,
     adjustmentQty: number
   ) => {
-    await adjustStock(skuId, adjustmentQty);
+    await adjustWareStock(wareId, adjustmentQty);
     setAdjustTargetSku(null);
-  };
-
-  // 재고 삭제
-  const handleDeleteInventory = async (id: string) => {
-    const confirmed = window.confirm(
-      "비활성화된 재고를 삭제하시겠습니까?"
-    );
-
-    if (!confirmed) {
-      return;
-    }
-
-    await deleteInventoryItem(id);
   };
 
   return (
@@ -100,41 +85,46 @@ export default function AdminInventoryPage() {
 
         <div className="space-y-4">
           <InventorySearchToolbar
-            onSearch={fetchInventoryList}
-            onReset={fetchInventoryList}
+            onSearch={fetchWareList}
+            onReset={fetchWareList}
           />
 
           <InventoryTable
-            items={inventoryList}
+            items={wareList}
             isLoading={loading}
             onEdit={setEditTarget}
             onEditStock={(inventory) =>
               setAdjustTargetSku({
-                skuId: inventory.id,
+                wareId: inventory.id,
                 currentQty: inventory.currentStock,
               })
             }
-            onToggleStatus={toggleInventoryStatus}
-            onDelete={handleDeleteInventory}
+            onToggleStatus={(wareId) => {
+              const ware = wareList.find((item) => item.id === wareId);
+              if (ware) {
+                void updateWare(wareId, { isActive: !ware.isActive });
+              }
+            }}
           />
         </div>
 
         <AddInventoryModal
           isOpen={isAddModalOpen}
           onClose={() => setIsAddModalOpen(false)}
-          onSubmit={handleCreateInventory}
+          warehouses={warehouseList}
+          onSubmit={handleCreateWare}
         />
 
         <EditInventoryModal
           isOpen={!!editTarget}
-          inventory={editTarget}
+          ware={editTarget}
           onClose={() => setEditTarget(null)}
-          onSubmit={handleUpdateInventory}
+          onSubmit={handleUpdateWare}
         />
 
         <AdjustStockModal
           isOpen={!!adjustTargetSku}
-          skuId={adjustTargetSku?.skuId ?? ""}
+          wareId={adjustTargetSku?.wareId ?? ""}
           currentQty={adjustTargetSku?.currentQty ?? 0}
           onClose={() => setAdjustTargetSku(null)}
           onSubmit={handleAdjustStock}

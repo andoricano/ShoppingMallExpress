@@ -1,22 +1,27 @@
 "use client";
 
 import React from "react";
-import type { CreateInventoryInput } from "@mall/types";
+import type { Warehouse } from "@mall/types";
+import type { CreateWareInput } from "@/hooks/useAdminInventory";
 import { ModalLabelInput } from "@/component/modal/ModalLabelInput";
 import { ModalFrame } from "@/component/modal/ModalFrame";
 
 interface AddInventoryModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: CreateInventoryInput) => Promise<void>;
+  warehouses: Warehouse[];
+  onSubmit: (data: CreateWareInput) => Promise<void>;
 }
 
 export const AddInventoryModal: React.FC<AddInventoryModalProps> = ({
   isOpen,
   onClose,
+  warehouses,
   onSubmit,
 }) => {
-  const [skuCode, setSkuCode] = React.useState("");
+  const [warehouseId, setWarehouseId] = React.useState("");
+  const [name, setName] = React.useState("");
+  const [wareCode, setWareCode] = React.useState("");
   const [currentStock, setCurrentStock] = React.useState("0");
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
@@ -24,11 +29,11 @@ export const AddInventoryModal: React.FC<AddInventoryModalProps> = ({
   const handleSubmit = async () => {
     setError(null);
 
-    const trimmedSkuCode = skuCode.trim();
+    const trimmedName = name.trim();
     const stock = Number(currentStock);
 
-    if (!trimmedSkuCode) {
-      setError("SKU 코드를 입력해주세요.");
+    if (!warehouseId || !trimmedName) {
+      setError("Warehouse와 Ware 이름을 입력해주세요.");
       return;
     }
 
@@ -41,12 +46,15 @@ export const AddInventoryModal: React.FC<AddInventoryModalProps> = ({
 
     try {
       await onSubmit({
-        skuCode: trimmedSkuCode,
+        warehouseId,
+        name: trimmedName,
+        wareCode: wareCode.trim() || undefined,
         currentStock: stock,
-        isActive: true,
       });
 
-      setSkuCode("");
+      setWarehouseId("");
+      setName("");
+      setWareCode("");
       setCurrentStock("0");
       onClose();
     } catch (error) {
@@ -64,8 +72,8 @@ export const AddInventoryModal: React.FC<AddInventoryModalProps> = ({
     <ModalFrame
       isOpen={isOpen}
       onClose={onClose}
-      title="신규 SKU 재고 등록"
-      description="SKU의 기본 재고 정보를 등록합니다."
+      title="신규 Ware 등록"
+      description="Warehouse에 독립 재고 단위를 등록합니다."
       maxWidth="md"
       onSubmit={handleSubmit}
       submitText="재고 등록"
@@ -80,11 +88,39 @@ export const AddInventoryModal: React.FC<AddInventoryModalProps> = ({
         )}
 
         <ModalLabelInput
-          label="SKU 코드"
-          value={skuCode}
-          onChange={setSkuCode}
-          placeholder="예: NIKE-W-250-BLK"
+          label="Ware 이름"
+          value={name}
+          onChange={setName}
+          placeholder="예: Black M 재고"
           required
+          disabled={isSubmitting}
+          multiline={false}
+        />
+
+        <div className="space-y-1.5">
+          <label className="block text-xs font-semibold text-slate-600">
+            Warehouse <span className="text-rose-500">*</span>
+          </label>
+          <select
+            value={warehouseId}
+            onChange={(event) => setWarehouseId(event.target.value)}
+            disabled={isSubmitting}
+            className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+          >
+            <option value="">Warehouse 선택</option>
+            {warehouses.map((warehouse) => (
+              <option key={warehouse.id} value={warehouse.id}>
+                {warehouse.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <ModalLabelInput
+          label="Ware 코드"
+          value={wareCode}
+          onChange={setWareCode}
+          placeholder="예: NIKE-W-250-BLK"
           disabled={isSubmitting}
           multiline={false}
         />

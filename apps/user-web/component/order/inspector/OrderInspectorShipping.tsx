@@ -12,7 +12,11 @@ export function OrderInspectorShipping({
     order,
 }: OrderInspectorShippingProps) {
     const shippingAddress = order.shippingAddress;
-    const delivery = order.delivery;
+    const address = shippingAddress ?? {};
+    const value = (key: string) => {
+        const candidate = address[key];
+        return typeof candidate === "string" ? candidate : undefined;
+    };
 
     return (
         <section className="border-b border-slate-200 px-5 py-4">
@@ -28,7 +32,7 @@ export function OrderInspectorShipping({
                             수령인
                         </span>
                         <span className="text-slate-700">
-                            {shippingAddress?.recipient ||
+                            {value("recipientName") ?? value("recipient") ??
                                 "정보 없음"}
                         </span>
                     </div>
@@ -38,7 +42,7 @@ export function OrderInspectorShipping({
                             연락처
                         </span>
                         <span className="text-slate-700">
-                            {shippingAddress?.phone ||
+                            {value("phone") ||
                                 "정보 없음"}
                         </span>
                     </div>
@@ -49,20 +53,20 @@ export function OrderInspectorShipping({
                         </span>
 
                         <div className="text-slate-700">
-                            {shippingAddress?.postalCode && (
+                            {(value("zonecode") ?? value("postalCode")) && (
                                 <p className="mb-0.5 text-xs text-slate-400">
-                                    ({shippingAddress.postalCode})
+                                    ({value("zonecode") ?? value("postalCode")})
                                 </p>
                             )}
 
                             <p>
-                                {shippingAddress?.address ||
+                                {value("address") ||
                                     "주소 정보 없음"}
                             </p>
 
-                            {shippingAddress?.detailAddress && (
+                            {(value("addressDetail") ?? value("detailAddress")) && (
                                 <p>
-                                    {shippingAddress.detailAddress}
+                                    {value("addressDetail") ?? value("detailAddress")}
                                 </p>
                             )}
                         </div>
@@ -70,55 +74,9 @@ export function OrderInspectorShipping({
                 </div>
             </div>
 
-            {/* 배송 정보 */}
-            <div className="mt-6">
-                <h3 className="mb-3 text-sm font-semibold text-slate-800">
-                    배송 정보
-                </h3>
-
-                {delivery ? (
-                    <div className="space-y-2 rounded-lg bg-slate-50 p-3 text-sm">
-                        <div className="flex items-center">
-                            <span className="w-20 shrink-0 text-xs text-slate-400">
-                                택배사
-                            </span>
-                            <span className="text-slate-700">
-                                {delivery.carrier ||
-                                    "-"}
-                            </span>
-                        </div>
-
-                        <div className="flex items-center">
-                            <span className="w-20 shrink-0 text-xs text-slate-400">
-                                운송장
-                            </span>
-                            <span className="font-mono text-xs text-slate-700">
-                                {delivery.trackingNumber ||
-                                    "-"}
-                            </span>
-                        </div>
-
-                        <div className="flex items-center">
-                            <span className="w-20 shrink-0 text-xs text-slate-400">
-                                출고일시
-                            </span>
-                            <span className="text-xs text-slate-700">
-                                {delivery.shippedAt
-                                    ? new Date(
-                                        delivery.shippedAt,
-                                    ).toLocaleString(
-                                        "ko-KR",
-                                    )
-                                    : "-"}
-                            </span>
-                        </div>
-                    </div>
-                ) : (
-                    <div className="rounded-lg bg-slate-50 px-3 py-5 text-center text-xs text-slate-400">
-                        아직 출고되지 않았습니다.
-                    </div>
-                )}
-            </div>
+            <p className="mt-4 text-xs text-slate-400">
+                운송장 정보는 현재 확정된 Mall v2 Order 계약에 포함되지 않습니다.
+            </p>
         </section>
     );
 }

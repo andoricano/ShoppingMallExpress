@@ -43,13 +43,13 @@ export const InventorySearchToolbar: React.FC<InventorySearchToolbarProps> = ({
                 onSubmit={handleSearch}
                 className="flex flex-wrap items-center gap-3"
             >
-                {/* SKU 검색 */}
+                {/* Ware 검색 */}
                 <div className="flex-1 min-w-[220px]">
                     <input
                         type="text"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        placeholder="SKU 코드 검색..."
+                        placeholder="Ware 코드 또는 이름 검색..."
                         className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                     />
                 </div>

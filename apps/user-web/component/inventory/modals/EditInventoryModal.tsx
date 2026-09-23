@@ -1,64 +1,63 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import type { SkuInventory } from "@mall/types";
+import type { Ware } from "@mall/types";
+import type { UpdateWareInput } from "@/hooks/useAdminInventory";
 import { ModalFrame } from "../../modal/ModalFrame";
 import { ModalLabelInput } from "../../modal/ModalLabelInput";
 
 interface EditInventoryModalProps {
   isOpen: boolean;
-  inventory: SkuInventory | null;
+  ware: Ware | null;
   onClose: () => void;
   onSubmit: (
     id: string,
-    payload: {
-      skuCode: string;
-      isActive: boolean;
-      meta?: Record<string, unknown>;
-    }
+    payload: UpdateWareInput
   ) => Promise<void>;
 }
 
 export const EditInventoryModal: React.FC<EditInventoryModalProps> = ({
   isOpen,
-  inventory,
+  ware,
   onClose,
   onSubmit,
 }) => {
-  const [skuCode, setSkuCode] = useState("");
+  const [name, setName] = useState("");
+  const [wareCode, setWareCode] = useState("");
   const [isActive, setIsActive] = useState(true);
   const [meta, setMeta] = useState("{}");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!isOpen || !inventory) {
+    if (!isOpen || !ware) {
       return;
     }
 
-    setSkuCode(inventory.skuCode);
-    setIsActive(inventory.isActive);
+    setName(ware.name);
+    setWareCode(ware.wareCode ?? "");
+    setIsActive(ware.isActive);
     setMeta(
-      inventory.meta
-        ? JSON.stringify(inventory.meta, null, 2)
+      ware.meta
+        ? JSON.stringify(ware.meta, null, 2)
         : "{}"
     );
     setError(null);
-  }, [isOpen, inventory]);
+  }, [isOpen, ware]);
 
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
 
-    if (!inventory) {
+    if (!ware) {
       return;
     }
 
     setError(null);
 
-    const trimmedSkuCode = skuCode.trim();
+    const trimmedName = name.trim();
 
-    if (!trimmedSkuCode) {
-      setError("SKU 코드를 입력해주세요.");
+    if (!trimmedName) {
+      setError("Ware 이름을 입력해주세요.");
       return;
     }
 
@@ -86,8 +85,9 @@ export const EditInventoryModal: React.FC<EditInventoryModalProps> = ({
     try {
       setSubmitting(true);
 
-      await onSubmit(inventory.id, {
-        skuCode: trimmedSkuCode,
+      await onSubmit(ware.id, {
+        name: trimmedName,
+        wareCode: wareCode.trim() || null,
         isActive,
         meta: parsedMeta,
       });
@@ -109,7 +109,7 @@ export const EditInventoryModal: React.FC<EditInventoryModalProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       title="재고 정보 수정"
-      description="SKU 코드, 메타 정보 및 활성 상태를 수정합니다."
+      description="Ware 정보, 메타 정보 및 활성 상태를 수정합니다."
       maxWidth="md"
       onSubmit={handleSubmit}
       submitText="수정 적용"
@@ -130,18 +130,27 @@ export const EditInventoryModal: React.FC<EditInventoryModalProps> = ({
 
           <input
             type="text"
-            value={inventory?.id ?? ""}
+            value={ware?.id ?? ""}
             disabled
             className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg bg-slate-100 text-slate-400"
           />
         </div>
 
         <ModalLabelInput
-          label="SKU 코드"
-          value={skuCode}
-          onChange={setSkuCode}
-          placeholder="예: NIKE-W-250-BLK"
+          label="Ware 이름"
+          value={name}
+          onChange={setName}
+          placeholder="예: Black M 재고"
           required
+          disabled={submitting}
+          multiline={false}
+        />
+
+        <ModalLabelInput
+          label="Ware 코드"
+          value={wareCode}
+          onChange={setWareCode}
+          placeholder="예: NIKE-W-250-BLK"
           disabled={submitting}
           multiline={false}
         />

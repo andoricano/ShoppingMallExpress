@@ -1,300 +1,194 @@
-import { useState, useCallback } from "react";
-import type { SkuInventory } from "@mall/types";
-import { API_ENDPOINTS } from "@mall/constants";
-import { fetchAdminApi } from "@/lib/api/admin";
+"use client";
 
-// ==========================================
-// Types
-// ==========================================
-interface InventoryQuery {
+import { useCallback, useState } from "react";
+
+import type { Ware, Warehouse } from "@mall/types";
+
+export interface WareQuery {
     search?: string;
     isActive?: boolean;
 }
 
-interface CreateInventoryPayload {
-    skuCode: string;
+export interface CreateWareInput {
+    warehouseId: string;
+    name: string;
+    wareCode?: string;
+    wareType?: string;
     currentStock?: number;
+    meta?: Record<string, unknown>;
+}
+
+export interface UpdateWareInput {
+    name?: string;
+    wareCode?: string | null;
+    wareType?: string;
     isActive?: boolean;
     meta?: Record<string, unknown>;
 }
 
-interface UpdateInventoryPayload {
-    skuCode?: string;
-    isActive?: boolean;
-    meta?: Record<string, unknown>;
+async function adminRequest<T>(
+    input: RequestInfo | URL,
+    init?: RequestInit,
+): Promise<T> {
+    const response = await fetch(input, init);
+    const payload = await response.json().catch(() => null) as {
+        data?: T;
+        message?: string;
+    } | null;
+
+    if (!response.ok) {
+        throw new Error(payload?.message ?? "Admin request failed.");
+    }
+
+    return payload?.data as T;
 }
 
-// ==========================================
-// Hook
-// ==========================================
-
-export function useAdminInventory() {
-    const [inventoryList, setInventoryList] = useState<SkuInventory[]>([]);
-    const [loading, setLoading] = useState<boolean>(false);
+/**
+ * Admin-only Ware access. Browser requests are authorized by the Next Route
+ * Handler; stock and metadata mutations are delegated to v2 warehouse RPCs.
+ */
+export function useAdminWare() {
+    const [wareList, setWareList] = useState<Ware[]>([]);
+    const [warehouseList, setWarehouseList] = useState<Warehouse[]>([]);
+    const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    // ==========================================
-    // 1. SKU 재고 조회
-    // ==========================================
-    const fetchInventoryList = useCallback(
-        async (params?: InventoryQuery) => {
-            setLoading(true);
-            setError(null);
+    const fetchWareList = useCallback(async (params?: WareQuery) => {
+        setLoading(true);
+        setError(null);
 
-            try {
-                const query = new URLSearchParams();
+        try {
+            const query = new URLSearchParams();
 
-                if (params?.search?.trim()) {
-                    query.set("search", params.search.trim());
-                }
-
-                if (params?.isActive !== undefined) {
-                    query.set("isActive", String(params.isActive));
-                }
-
-                const queryString = query.toString();
-
-                const url = queryString
-                    ? `${API_ENDPOINTS.INVENTORY.BASE}?${queryString}`
-                    : API_ENDPOINTS.INVENTORY.BASE;
-
-                const res = await fetchAdminApi(url);
-
-                if (!res.ok) {
-                    throw new Error("재고 목록을 불러오지 못했습니다.");
-                }
-
-                const resData = await res.json();
-
-                setInventoryList(
-                    Array.isArray(resData.data) ? resData.data : []
-                );
-            } catch (err) {
-                setError(
-                    err instanceof Error
-                        ? err.message
-                        : "알 수 없는 에러"
-                );
-                setInventoryList([]);
-            } finally {
-                setLoading(false);
+            if (params?.search?.trim()) {
+                query.set("search", params.search.trim());
             }
-        },
-        []
-    );
 
-    // ==========================================
-    // 2. SKU 재고 등록
-    // ==========================================
-
-    const createInventoryItem = useCallback(
-        async (payload: CreateInventoryPayload) => {
-            setLoading(true);
-            setError(null);
-
-            try {
-                const res = await fetchAdminApi(
-                    API_ENDPOINTS.INVENTORY.BASE,
-                    {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json",
-                        },
-                        body: JSON.stringify(payload),
-                    }
-                );
-
-                if (!res.ok) {
-                    throw new Error("신규 재고 등록에 실패했습니다.");
-                }
-
-                await fetchInventoryList();
-            } catch (err) {
-                setError(
-                    err instanceof Error
-                        ? err.message
-                        : "알 수 없는 에러"
-                );
-                throw err;
-            } finally {
-                setLoading(false);
+            if (params?.isActive !== undefined) {
+                query.set("isActive", String(params.isActive));
             }
-        },
-        [fetchInventoryList]
-    );
 
-    // ==========================================
-    // 3. 재고 수동 조정
-    // ==========================================
+            const suffix = query.size > 0 ? `?${query}` : "";
+            const wares = await adminRequest<Ware[]>(
+                `/api/admin/wares${suffix}`,
+            );
 
-    const adjustStock = useCallback(
-        async (skuId: string, adjustmentQty: number) => {
-            setLoading(true);
-            setError(null);
+            setWareList(wares ?? []);
+        } catch (requestError) {
+            setError(
+                requestError instanceof Error
+                    ? requestError.message
+                    : "Ware 목록을 불러오지 못했습니다.",
+            );
+            setWareList([]);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
 
-            try {
-                const res = await fetchAdminApi(
-                    API_ENDPOINTS.INVENTORY.STOCK(skuId),
-                    {
-                        method: "PATCH",
-                        headers: {
-                            "Content-Type": "application/json",
-                        },
-                        body: JSON.stringify({
-                            adjustmentQty,
-                        }),
-                    }
-                );
+    const fetchWarehouseList = useCallback(async () => {
+        try {
+            const warehouses = await adminRequest<Warehouse[]>(
+                "/api/admin/warehouses",
+            );
+            setWarehouseList(warehouses ?? []);
+        } catch (requestError) {
+            setError(
+                requestError instanceof Error
+                    ? requestError.message
+                    : "Warehouse 목록을 불러오지 못했습니다.",
+            );
+            setWarehouseList([]);
+        }
+    }, []);
 
-                if (!res.ok) {
-                    throw new Error("재고 조정에 실패했습니다.");
-                }
+    const createWare = useCallback(async (input: CreateWareInput) => {
+        setLoading(true);
+        setError(null);
 
-                await fetchInventoryList();
-            } catch (err) {
-                setError(
-                    err instanceof Error
-                        ? err.message
-                        : "알 수 없는 에러"
-                );
-                throw err;
-            } finally {
-                setLoading(false);
-            }
-        },
-        [fetchInventoryList]
-    );
+        try {
+            await adminRequest<string>("/api/admin/wares", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(input),
+            });
+            await fetchWareList();
+        } catch (requestError) {
+            setError(
+                requestError instanceof Error
+                    ? requestError.message
+                    : "Ware 생성에 실패했습니다.",
+            );
+            throw requestError;
+        } finally {
+            setLoading(false);
+        }
+    }, [fetchWareList]);
 
-    // ==========================================
-    // 4. SKU 정보 수정
-    // ==========================================
+    const updateWare = useCallback(async (
+        wareId: string,
+        input: UpdateWareInput,
+    ) => {
+        setLoading(true);
+        setError(null);
 
-    const updateInventoryItem = useCallback(
-        async (
-            skuId: string,
-            payload: UpdateInventoryPayload
-        ) => {
-            setLoading(true);
-            setError(null);
+        try {
+            await adminRequest<null>(`/api/admin/wares/${wareId}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ action: "update", ...input }),
+            });
+            await fetchWareList();
+        } catch (requestError) {
+            setError(
+                requestError instanceof Error
+                    ? requestError.message
+                    : "Ware 수정에 실패했습니다.",
+            );
+            throw requestError;
+        } finally {
+            setLoading(false);
+        }
+    }, [fetchWareList]);
 
-            try {
-                const res = await fetchAdminApi(
-                    API_ENDPOINTS.INVENTORY.BY_ID(skuId),
-                    {
-                        method: "PATCH",
-                        headers: {
-                            "Content-Type": "application/json",
-                        },
-                        body: JSON.stringify(payload),
-                    }
-                );
+    const adjustWareStock = useCallback(async (
+        wareId: string,
+        adjustment: number,
+    ) => {
+        setLoading(true);
+        setError(null);
 
-                if (!res.ok) {
-                    throw new Error("재고 정보 수정에 실패했습니다.");
-                }
-
-                await fetchInventoryList();
-            } catch (err) {
-                setError(
-                    err instanceof Error
-                        ? err.message
-                        : "알 수 없는 에러"
-                );
-                throw err;
-            } finally {
-                setLoading(false);
-            }
-        },
-        [fetchInventoryList]
-    );
-
-    // ==========================================
-    // 5. SKU 활성 / 비활성
-    // ==========================================
-
-    const toggleInventoryStatus = useCallback(
-        async (skuId: string) => {
-            setLoading(true);
-            setError(null);
-
-            try {
-                const res = await fetchAdminApi(
-                    API_ENDPOINTS.INVENTORY.STATUS(skuId),
-                    {
-                        method: "PATCH",
-                    }
-                );
-
-                if (!res.ok) {
-                    throw new Error(
-                        "재고 활성 상태 변경에 실패했습니다."
-                    );
-                }
-
-                await fetchInventoryList();
-            } catch (err) {
-                setError(
-                    err instanceof Error
-                        ? err.message
-                        : "알 수 없는 에러"
-                );
-                throw err;
-            } finally {
-                setLoading(false);
-            }
-        },
-        [fetchInventoryList]
-    );
-
-    // ==========================================
-    // 6. 비활성 SKU 삭제
-    // ==========================================
-
-    const deleteInventoryItem = useCallback(
-        async (skuId: string) => {
-            setLoading(true);
-            setError(null);
-
-            try {
-                const res = await fetchAdminApi(
-                    API_ENDPOINTS.INVENTORY.BY_ID(skuId),
-                    {
-                        method: "DELETE",
-                    }
-                );
-
-                if (!res.ok) {
-                    const data = await res.json().catch(() => null);
-
-                    throw new Error(
-                        data?.message || "재고 삭제에 실패했습니다."
-                    );
-                }
-
-                await fetchInventoryList();
-            } catch (err) {
-                setError(
-                    err instanceof Error
-                        ? err.message
-                        : "알 수 없는 에러"
-                );
-                throw err;
-            } finally {
-                setLoading(false);
-            }
-        },
-        [fetchInventoryList]
-    );
+        try {
+            await adminRequest<number>(`/api/admin/wares/${wareId}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    action: "adjust-stock",
+                    adjustment,
+                }),
+            });
+            await fetchWareList();
+        } catch (requestError) {
+            setError(
+                requestError instanceof Error
+                    ? requestError.message
+                    : "Ware 재고 조정에 실패했습니다.",
+            );
+            throw requestError;
+        } finally {
+            setLoading(false);
+        }
+    }, [fetchWareList]);
 
     return {
-        inventoryList,
+        wareList,
+        warehouseList,
         loading,
         error,
-        fetchInventoryList,
-        createInventoryItem,
-        adjustStock,
-        updateInventoryItem,
-        toggleInventoryStatus,
-        deleteInventoryItem,
+        fetchWareList,
+        fetchWarehouseList,
+        createWare,
+        updateWare,
+        adjustWareStock,
     };
 }

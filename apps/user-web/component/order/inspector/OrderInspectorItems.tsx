@@ -41,13 +41,13 @@ export function OrderInspectorItems({
                             <div className="flex items-start justify-between gap-3">
                                 <div className="min-w-0 flex-1">
                                     <p className="truncate text-sm font-semibold text-slate-800">
-                                        {item.productName ||
+                                        {item.productNameSnapshot ||
                                             "상품 정보 없음"}
                                     </p>
 
                                     <p className="mt-1 text-xs text-slate-400">
-                                        SKU:{" "}
-                                        {item.skuCode ||
+                                        Variant:{" "}
+                                        {item.variantLabelSnapshot ||
                                             "-"}
                                     </p>
                                 </div>
@@ -65,7 +65,7 @@ export function OrderInspectorItems({
 
                                 <span className="text-sm font-semibold text-slate-800">
                                     {(
-                                        item.price ??
+                                        item.unitPrice ??
                                         0
                                     ).toLocaleString()}
                                     원
