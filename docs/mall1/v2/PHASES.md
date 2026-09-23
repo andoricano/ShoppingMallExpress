@@ -241,137 +241,164 @@ Do not expose secret values during verification.
 - [x] RLS ownership and internal-only boundaries are verified with populated test data.
 - [x] No unresolved mismatch remains between the repository SQL Source of Truth and the actual Supabase project.
 
-## Phase 5 — Shared Types Migration
+## Phase 5 — Auth and Shared Contract Foundation
 
 **Status:** NOT STARTED
-**Owner:** Codex
 
-### Primary type candidates
+**Owner:** Codex + User
 
-- Product
-- ProductOption
-- ProductOptionValue
-- ProductVariant
-- Ware
-- Warehouse
-- Cart
-- CartItem / CartEntry
-- Order / OrderItem
-- History
-- Refund
-- Wishlist
+### Auth
+
+* Google OAuth through Supabase Auth
+* Next.js auth callback/session handling
+* authenticated/unauthenticated application state
+* server/client Supabase boundaries
+* authenticated user identity compatible with existing RLS
+
+Google Cloud and Supabase provider configuration may be performed manually by the User.
+
+### Shared Types
+
+Primary domains:
+
+* Product / ProductPost
+* ProductOption / ProductOptionValue
+* ProductVariant
+* Ware / Warehouse
+* Cart / CartItem
+* Order / OrderItem
+* History
+* Refund
+* Wishlist
 
 ### Completion criteria
 
-- [ ] Shared types match the confirmed v2 DB contract.
-- [ ] Consumer shared types do not expose Ware, Warehouse, `wareId`, or `warehouseId`.
-- [ ] Legacy Inventory/SkuInventory-centered contracts are removed or explicitly deprecated according to the confirmed contract.
+* [ ] Google login/logout/session flow works locally against the actual Supabase project.
+* [ ] Authenticated user identity works with existing RLS boundaries.
+* [ ] Shared types match the confirmed v2 DB/RPC contract.
+* [ ] Consumer types do not expose Ware/Warehouse internals.
+* [ ] Legacy Inventory/SkuInventory contracts are removed or explicitly deprecated.
 
-## Phase 6 — API Contract Migration
+## Phase 6 — Supabase Access Migration
 
 **Status:** NOT STARTED
+
 **Owner:** Codex
 
-### Primary targets
+### Scope
 
-- ProductPost APIs
-- Product APIs
-- Ware/Admin stock APIs
-- Cart APIs
-- Order APIs
-- History APIs
-- Refund APIs
-- Admin Overview API
+Classify and migrate application data access to:
 
-### Required verification
+* Direct Supabase + RLS
+* Supabase RPC
+* Next Route Handlers where server-only execution is required
 
-- Classify APIs as retainable, requiring change, or retirement/replacement candidates.
-- Update `docs/api/README.md` to match the implemented API contract.
-- Verify that Consumer APIs expose Product/ProductVariant availability only and do not expose Ware/Warehouse internals.
+Cover:
+
+* Product / ProductPost
+* Cart
+* Order
+* History
+* Refund
+* Wishlist
+* Admin Product/Variant
+* Ware/Warehouse management
+* Admin order operations
+
+Remove or retire legacy API assumptions that no longer apply after removal of `apps/api`.
 
 ### Completion criteria
 
-- [ ] API requests and responses match v2 shared types and the confirmed DB contract.
-- [ ] Consumer API contracts do not expose Ware or Warehouse structures.
+* [ ] Application data access matches the confirmed v2 contract.
+* [ ] Transactional operations use the confirmed RPC boundaries.
+* [ ] Privileged operations run only in trusted server contexts.
+* [ ] Consumer paths never expose Ware/Warehouse internals.
+* [ ] No required application path depends on the removed Express API.
 
 ## Phase 7 — Client / Admin Migration
 
 **Status:** NOT STARTED
+
 **Owner:** Codex
 
-### Consumer scope
+### Consumer
 
-- ProductPost lookup
-- Product selection
-- Option selection
-- ProductVariant selection
-- Cart
-- Order
-- Out-of-stock and low-stock display
+* authentication state
+* ProductPost/Product lookup
+* Option and ProductVariant selection
+* Cart
+* Order
+* History
+* Refund/cancel
+* stock availability display
 
-### Admin scope
+### Admin
 
-- Product management
-- ProductOption and ProductOptionValue management
-- ProductVariant management
-- Ware management
-- Warehouse management
-- Sales Variant ↔ Ware connection management
+* Product management
+* ProductOption / ProductOptionValue
+* ProductVariant
+* Ware / Warehouse
+* Variant ↔ Ware connections
+* order management
 
 ### Completion criteria
 
-- [ ] Consumer uses Product/ProductVariant purchase flows only.
-- [ ] Admin uses the confirmed internal Ware/Warehouse management flows.
-- [ ] Legacy Inventory-centric UI is removed or explicitly deprecated according to the confirmed contract.
+* [ ] Consumer uses Product/ProductVariant purchase flows only.
+* [ ] Admin uses the confirmed internal inventory flows.
+* [ ] Legacy Inventory-centric UI and obsolete API usage are removed or explicitly deprecated.
 
 ## Phase 8 — End-to-End Verification
 
 **Status:** NOT STARTED
+
 **Owner:** Codex + User
 
 ### Representative flow
 
 ```text
-Product creation
+Google Login
+→ Product creation
 → Option/Value creation
 → Variant creation
 → Ware connection
 → ProductPost connection
-→ Client lookup
+→ Consumer lookup
 → Variant selection
 → Cart
 → Order
 → Ware stock deduction
 → History
 → Refund/Cancel
-→ Ware stock and order-history verification
+→ stock/order verification
 ```
 
 ### Verify
 
-- [ ] Type check
-- [ ] Build
-- [ ] Relevant tests
-- [ ] Actual Supabase integration
+* [ ] targeted typecheck/tests
+* [ ] production-relevant builds
+* [ ] actual Supabase integration
+* [ ] authentication and RLS
+* [ ] Git push and Vercel deployment
+* [ ] deployed Google Auth flow
+* [ ] deployed core Mall flow
 
 ### Completion criteria
 
-- [ ] The core Mall flow works on the confirmed v2 structure.
-- [ ] The Consumer flow never exposes Ware or Warehouse internals.
+* [ ] Core Mall v2 flow works against the actual Supabase project.
+* [ ] Auth and user-owned RLS work correctly.
+* [ ] Consumer paths never expose Ware/Warehouse internals.
+* [ ] Vercel deployment operates with the intended production architecture.
 
 # Working Rules
 
-- `product-schema.md` is the latest Source of Truth for the Mall v2 product, sales, and inventory domain.
-- Use actual Dashboard and SQL results to determine Supabase state.
-- Do not infer DB structures that are absent from the repository.
-- Codex must not implement Client or API changes before the DB contract is finalized.
-- Do not start large-scale work in a subsequent phase before the preceding phase is complete.
-- Record changed files, test results, and remaining risks at the completion of every phase.
-- Do not run migration, commit, or push unless the user explicitly requests it.
-- Ware/Warehouse remain internal inventory-domain concepts and must not appear in Consumer contracts.
+* `product-schema.md` and confirmed SQL are the Mall v2 domain Source of Truth.
+* Use actual Supabase results for database behavior; do not infer unknown DB state.
+* Ware/Warehouse are internal and must never appear in Consumer contracts.
+* Complete phases in order unless a dependency requires a small prerequisite change.
+* Follow `AGENTS.md` for scope, validation, Git, push, and deployment behavior.
+* Record changed areas, validation results, and remaining related issues when completing a phase.
 
-## Open Verification and Implementation Items
+## Remaining Work
 
-- Complete Phase 2 catalog-level inspection for deployed PK/FK, constraints, indexes, triggers, and RLS policies.
-- Complete Phase 4 populated-data, mutation, RLS-ownership, and concurrency verification.
-- Migrate repository shared types, API boundaries, and Client/Admin applications in Phases 5–7.
+* Finish any still-required catalog-level Supabase inspection.
+* Complete Phases 5–8.
