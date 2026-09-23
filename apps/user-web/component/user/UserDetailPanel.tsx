@@ -98,8 +98,7 @@ export const UserDetailPanel: React.FC<UserDetailPanelProps> = ({
           </div>
 
           <div>
-            <div style={{ fontSize: '12px', color: '#868e96' }}>이메일 / 이름</div>
-            <div style={{ fontWeight: 500 }}>{user.email}</div>
+            <div style={{ fontSize: '12px', color: '#868e96' }}>이름</div>
             <div style={{ color: '#495057' }}>{user.name || '이름 미설정'}</div>
           </div>
 

@@ -320,7 +320,8 @@ Remove or retire legacy API assumptions that no longer apply after removal of `a
 * [x] Admin Route Handlers authenticate the request and verify `user_profiles.role = 'ADMIN'` before service-role access.
 * [x] Ware/Warehouse reads and Ware metadata/stock mutations use the server-only boundary and confirmed warehouse RPCs.
 * [x] Admin Order reads and lifecycle transitions use the server-only boundary and `admin_transition_order_status()`.
-* [x] Admin Refund reads use the server-only boundary; no unconfirmed refund mutation is exposed.
+* [x] Admin Refund reads and `APPROVED`/`REJECTED` transitions use the server-only boundary and `admin_transition_refund_status()`.
+* [x] Admin User reads and CLIENT-to-ADMIN promotion use the server-only boundary and `promote_user_to_admin()`.
 * [ ] Product/ProductPost/Option/Variant management is migrated from legacy Express and Inventory assumptions.
 * [ ] All remaining user-web routes are migrated from legacy Express endpoint constants.
 

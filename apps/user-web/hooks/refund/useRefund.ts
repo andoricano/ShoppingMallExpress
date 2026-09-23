@@ -83,11 +83,49 @@ export function useRefund() {
         },
         [],
     );
+
+    const processRefund = useCallback(async (
+        refundId: string,
+        status: "APPROVED" | "REJECTED",
+    ) => {
+        setLoading(true);
+        setError(null);
+
+        try {
+            const response = await fetch(`/api/admin/refunds/${refundId}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ status }),
+            });
+            const payload = await response.json().catch(() => null) as {
+                message?: string;
+            } | null;
+
+            if (!response.ok) {
+                throw new Error(
+                    payload?.message ?? "환불 요청 처리에 실패했습니다.",
+                );
+            }
+
+            await fetchRefunds();
+            return true;
+        } catch (requestError) {
+            setError(
+                requestError instanceof Error
+                    ? requestError.message
+                    : "환불 요청 처리에 실패했습니다.",
+            );
+            return false;
+        } finally {
+            setLoading(false);
+        }
+    }, [fetchRefunds]);
     return {
         refundList,
         loading,
         error,
 
         fetchRefunds,
+        processRefund,
     };
 }

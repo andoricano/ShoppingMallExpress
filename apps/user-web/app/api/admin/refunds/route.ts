@@ -56,8 +56,9 @@ function toRefundRequest(row: RefundRequestRow): RefundRequest {
 }
 
 /**
- * The finalized SQL has no Admin refund-decision RPC. This route intentionally
- * exposes only the internal Admin read model and does not mutate refunds.
+ * This route intentionally exposes only the internal Admin refund read model.
+ * Status mutation is isolated in the dynamic route and delegates to the
+ * service-role-only admin_transition_refund_status() RPC.
  */
 export async function GET() {
     try {

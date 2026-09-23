@@ -25,9 +25,7 @@ export function AdminAuthStatus() {
 
                 <div className="mt-1 space-y-0.5 text-sm text-slate-500">
                     {isLoggedIn ? (
-                        <>
-                            <p>이메일: {user.email}</p>
-                        </>
+                        <p>Supabase Auth 계정</p>
                     ) : (
                         <p>로그인되어 있지 않습니다.</p>
                     )}

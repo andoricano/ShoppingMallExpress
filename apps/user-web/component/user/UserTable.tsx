@@ -50,7 +50,7 @@ export const UserTable: React.FC<UserTableProps> = ({
               color: '#495057',
             }}
           >
-            <th style={{ padding: '12px 16px' }}>이름 / 이메일</th>
+            <th style={{ padding: '12px 16px' }}>이름</th>
             <th style={{ padding: '12px 16px' }}>역할 (Role)</th>
             <th style={{ padding: '12px 16px' }}>연락처</th>
             <th style={{ padding: '12px 16px' }}>온보딩 상태</th>
@@ -113,9 +113,6 @@ export const UserTable: React.FC<UserTableProps> = ({
                   >
                     <div style={{ fontWeight: 600, color: '#212529' }}>
                       {user.name || '이름 없음'}
-                    </div>
-                    <div style={{ fontSize: '12px', color: '#868e96' }}>
-                      {user.email}
                     </div>
                   </td>
 

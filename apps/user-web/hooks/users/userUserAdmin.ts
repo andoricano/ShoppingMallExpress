@@ -3,8 +3,6 @@
 import { useCallback, useState } from "react";
 
 import type { UserProfile } from "@mall/types";
-import { API_ENDPOINTS } from "@mall/constants";
-import { fetchAdminApi } from "@/lib/api/admin";
 
 export function useUserAdmin() {
     const [users, setUsers] =
@@ -26,9 +24,7 @@ export function useUserAdmin() {
             setError(null);
 
             try {
-                const res = await fetchAdminApi(
-                    API_ENDPOINTS.USERS.BASE,
-                );
+                const res = await fetch("/api/admin/users");
 
                 const result =
                     await res

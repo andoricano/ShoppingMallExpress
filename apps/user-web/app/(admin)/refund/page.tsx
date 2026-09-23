@@ -2,7 +2,7 @@
 
 import { useRefund } from "@/hooks/refund/useRefund";
 import type { RefundRequest } from "@mall/types";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 const REFUND_STATUS_LABEL: Record<
     RefundRequest["status"],
@@ -21,11 +21,32 @@ export default function RefundPage() {
         loading,
         error,
         fetchRefunds,
+        processRefund,
     } = useRefund();
+
+    const [processingId, setProcessingId] = useState<string | null>(null);
 
     useEffect(() => {
         fetchRefunds();
     }, [fetchRefunds]);
+
+    const handleProcessRefund = async (
+        refund: RefundRequest,
+        status: "APPROVED" | "REJECTED",
+    ) => {
+        if (!window.confirm(
+            `이 환불 요청을 ${status === "APPROVED" ? "승인" : "거절"}하시겠습니까?`,
+        )) {
+            return;
+        }
+
+        setProcessingId(refund.id);
+        try {
+            await processRefund(refund.id, status);
+        } finally {
+            setProcessingId(null);
+        }
+    };
 
     return (
         <div className="min-h-screen bg-slate-50/50 p-6 md:p-8">
@@ -60,6 +81,9 @@ export default function RefundPage() {
                                     환불 요청이 없습니다.
                                 </div>
                             ) : refundList.map((refund) => {
+                                const isProcessing = processingId === refund.id;
+                                const canProcess = refund.status === "REQUESTED";
+
                                 return (
                                     <article
                                         key={refund.id}
@@ -85,7 +109,26 @@ export default function RefundPage() {
                                                 <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-700">
                                                     {REFUND_STATUS_LABEL[refund.status]}
                                                 </span>
-
+                                                {canProcess && (
+                                                    <>
+                                                        <button
+                                                            type="button"
+                                                            disabled={isProcessing}
+                                                            onClick={() => void handleProcessRefund(refund, "APPROVED")}
+                                                            className="rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50"
+                                                        >
+                                                            승인
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            disabled={isProcessing}
+                                                            onClick={() => void handleProcessRefund(refund, "REJECTED")}
+                                                            className="rounded-lg border border-rose-200 bg-white px-3 py-2 text-sm font-semibold text-rose-700 disabled:opacity-50"
+                                                        >
+                                                            거절
+                                                        </button>
+                                                    </>
+                                                )}
                                             </div>
                                         </div>
                                     </article>

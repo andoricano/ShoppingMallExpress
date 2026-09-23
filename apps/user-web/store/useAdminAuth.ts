@@ -85,7 +85,6 @@ export const useAdminAuthStore = create<AdminAuthState>((set, get) => ({
       const adminUser = {
         id: profile.id,
         // Authentication email belongs to Supabase Auth, not user_profiles.
-        email: session.user.email,
         name: profile.name,
         role: "ADMIN",
         createdAt: profile.created_at,

@@ -1,7 +1,5 @@
 import { RoleFilterValue, UserSearchFilterState } from "@/component/user/UserSearchToolbar";
-import { API_ENDPOINTS } from "@mall/constants";
 import { useAdminAuthStore } from "@/store/useAdminAuth";
-import { fetchAdminApi } from "@/lib/api/admin";
 import { OnboardedFilterValue } from "@/types/useManagement";
 import { UserProfile, UserRole } from "@mall/types";
 import { useState, useMemo, useCallback } from "react";
@@ -61,7 +59,6 @@ export function useUserManagement({
       const matchesKeyword =
         !keywordLower ||
         (u.name && u.name.toLowerCase().includes(keywordLower)) ||
-        u.email.toLowerCase().includes(keywordLower) ||
         (u.role === "CLIENT" && u.phone && u.phone.includes(keywordLower));
 
       // Role 필터
@@ -117,69 +114,41 @@ export function useUserManagement({
           return;
         }
 
-        const nextUser: UserProfile = newRole === "CLIENT"
-          ? {
-              id: targetUser.id,
-              email: targetUser.email,
-              name: targetUser.name,
-              role: "CLIENT",
-              createdAt: targetUser.createdAt,
-              updatedAt: targetUser.updatedAt,
-              isOnboarded: false,
-            }
-          : {
-              id: targetUser.id,
-              email: targetUser.email,
-              name: targetUser.name,
-              role: "ADMIN",
-              createdAt: targetUser.createdAt,
-              updatedAt: targetUser.updatedAt,
-              department: targetUser.role === "ADMIN"
-                ? targetUser.department
-                : undefined,
-            };
+        if (newRole !== "ADMIN") {
+          throw new Error("User role demotion is not part of the confirmed contract.");
+        }
 
-        const res = await fetchAdminApi(
-          API_ENDPOINTS.USERS.BASE,
+        const res = await fetch(
+          `/api/admin/users/${targetUser.id}`,
           {
-            method: "PUT",
+            method: "PATCH",
             headers: {
               "Content-Type": "application/json",
             },
-            body: JSON.stringify({
-              users: [nextUser],
-            }),
+            body: JSON.stringify({ role: "ADMIN" }),
           },
         );
 
         const result: {
-          data?: UserProfile[];
+          data?: UserProfile;
           message?: string;
         } | null = await res.json().catch(() => null);
 
-        if (!res.ok || !Array.isArray(result?.data)) {
+        if (!res.ok || !result?.data) {
           throw new Error(
             result?.message ||
             "회원 역할 변경에 실패했습니다.",
           );
         }
 
-        const savedUser = result.data.find(
-          (user) => user.id === targetUserId,
-        );
-
-        if (!savedUser) {
-          throw new Error("변경된 회원 정보를 찾을 수 없습니다.");
-        }
-
         const nextUsers = users.map((user) =>
           user.id === targetUserId
-            ? savedUser
+            ? result.data as UserProfile
             : user,
         );
 
         onUsersChange(nextUsers);
-        setSelectedUser(savedUser);
+        setSelectedUser(result.data);
       } catch (error) {
         setActionError(
           error instanceof Error
