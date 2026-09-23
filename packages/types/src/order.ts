@@ -1,82 +1,59 @@
-// @/types/order.ts
+import type { JsonObject } from "./product.js";
 
-/**
- * 주문 상태
- */
 export type OrderStatus =
     | "PENDING"
-    | "SHIPPING"
-    | "COMPLETED"
+    | "PAID"
+    | "PROCESSING"
+    | "SHIPPED"
+    | "DELIVERED"
     | "CANCELLED";
 
 /**
- * 주문 배송지
+ * Order shipping data is an immutable JSON snapshot. Its field-level input
+ * contract is owned by the Order RPC, not by the User profile type.
  */
-export interface OrderShippingAddress {
-    name: string;
-    recipient: string;
-    phone: string;
+export type OrderShippingAddress = JsonObject | null;
+export type OrderShippingAddressInput = JsonObject;
 
-    postalCode: string;
-    address: string;
-    detailAddress?: string;
+/** Immutable order-time Product/ProductVariant snapshot. */
+export interface OrderItem {
+    id: string;
+    orderId: string;
+    productId: string;
+    productVariantId: string;
+    quantity: number;
+    unitPrice: number;
+    lineTotal: number;
+    productNameSnapshot: string;
+    variantLabelSnapshot: string | null;
+    optionSnapshot: JsonObject;
+    imageUrlSnapshot: string | null;
+    createdAt: string;
 }
 
-/** 주문 생성·수정 요청에 공통으로 사용하는 배송지 입력 */
-export interface OrderShippingAddressInput
-    extends Omit<
-        OrderShippingAddress,
-        "name"
-    > {
-    name?: string;
+export interface Order {
+    id: string;
+    clientId: string;
+    orderNumber: string | null;
+    status: OrderStatus;
+    shippingAddress: OrderShippingAddress;
+    subtotal: number;
+    discountAmount: number;
+    shippingAmount: number;
+    totalAmount: number;
+    paymentReference: string | null;
+    orderedAt: string;
+    createdAt: string;
+    updatedAt: string;
+    items: OrderItem[];
 }
 
 /**
- * 주문 배송 정보
+ * @deprecated Delivery fields are not part of the finalized Mall v2 Order
+ * table/RPC contract. Use Order.status and immutable snapshots instead.
  */
 export interface OrderDelivery {
     carrier: string;
     trackingNumber: string;
     shippedAt: string;
-}
-
-/**
- * 주문 상품
- *
- * 주문 당시 Product / Inventory 정보를 Snapshot으로 보존합니다.
- */
-export interface OrderItem {
-    id: string;
-    orderId: string;
-
-    productId: string;
-    inventoryId: string;
-
-    productName: string;
-    skuCode: string;
-
-    price: number;
-    quantity: number;
-
-    inventoryMeta?: Record<string, unknown>;
-}
-
-/**
- * 주문
- */
-export interface Order {
-    id: string;
-
-    clientId: string;
-    paymentId: string;
-
-    status: OrderStatus;
-    totalPrice: number;
-
-    shippingAddress: OrderShippingAddress;
-    delivery: OrderDelivery | null;
-
-    items: OrderItem[];
-
-    createdAt: string;
 }

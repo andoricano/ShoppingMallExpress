@@ -1,13 +1,40 @@
-// @/types/history.ts
-
+import type { JsonObject } from "./product.js";
 import type { OrderStatus } from "./order.js";
 
+/** Consumer history is derived from Order and immutable OrderItem snapshots. */
+export interface ClientHistoryItem {
+    id: string;
+    orderNumber: string | null;
+    status: OrderStatus;
+    shippingAddress: JsonObject | null;
+    subtotal: number;
+    discountAmount: number;
+    shippingAmount: number;
+    totalAmount: number;
+    orderedAt: string;
+    items: ClientHistoryOrderItem[];
+}
 
-export type HistoryActorType =
-    | "CLIENT"
-    | "ADMIN"
-    | "SYSTEM";
+export interface ClientHistoryOrderItem {
+    id: string;
+    productId: string;
+    productVariantId: string;
+    productName: string;
+    variantLabel: string | null;
+    options: JsonObject;
+    imageUrl: string | null;
+    unitPrice: number;
+    quantity: number;
+    lineTotal: number;
+}
 
+/** @deprecated No standalone History table exists in Mall v2. */
+export type HistoryActorType = "CLIENT" | "ADMIN" | "SYSTEM";
+
+/**
+ * @deprecated Legacy audit-log target type. `INVENTORY` is not a Mall v2
+ * consumer domain; use Order-derived ClientHistoryItem for consumer history.
+ */
 export type HistoryTargetType =
     | "ORDER"
     | "ORDER_ITEM"
@@ -15,6 +42,7 @@ export type HistoryTargetType =
     | "INVENTORY"
     | "USER";
 
+/** @deprecated No standalone History table exists in Mall v2. */
 export type HistoryAction =
     | "ORDER_CREATED"
     | "ORDER_SHIPPED"
@@ -25,48 +53,14 @@ export type HistoryAction =
     | "USER_UPDATED"
     | "USER_ROLE_CHANGED";
 
-export type HistoryMetadata =
-    Record<string, unknown>;
-
+/** @deprecated No standalone History table exists in Mall v2. */
 export interface History {
     id: string;
-
     actorType: HistoryActorType;
     actorId: string | null;
-
     targetType: HistoryTargetType;
     targetId: string;
-
     action: HistoryAction;
-
-    metadata: HistoryMetadata | null;
-
+    metadata: JsonObject | null;
     createdAt: string;
-}
-
-export interface ClientHistoryItem {
-    id: string;
-    action: HistoryAction;
-    createdAt: string;
-
-    order: {
-        id: string;
-        status: OrderStatus;
-        totalPrice: number;
-        createdAt: string;
-
-        items: {
-            id: string;
-            productId: string;
-            productName: string;
-            price: number;
-            quantity: number;
-
-            product: {
-                id: string;
-                name: string;
-                mainImageUrl: string;
-            };
-        }[];
-    };
 }

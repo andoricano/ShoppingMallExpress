@@ -1,29 +1,70 @@
-/**
- * SKU 단위 재고
- */
-export interface SkuInventory {
+import type { JsonObject } from "./product.js";
+
+/** Internal Admin/trusted-server type. Never include in Consumer payloads. */
+export interface Warehouse {
     id: string;
-
-    /** SKU 코드 */
-    skuCode: string;
-
-    /** 현재 재고 수량 */
-    currentStock: number;
-
-    /** SKU 활성 상태 */
+    name: string;
+    code: string | null;
+    description: string | null;
     isActive: boolean;
-
-    /** SKU를 구분하기 위한 사용자 정의 속성 */
-    meta?: Record<string, unknown>;
-
+    meta: JsonObject;
     createdAt: string;
     updatedAt: string;
 }
 
-/** 재고 생성 API 요청 */
+/** Internal Admin/trusted-server type. Never include in Consumer payloads. */
+export interface Ware {
+    id: string;
+    warehouseId: string;
+    wareCode: string | null;
+    name: string;
+    wareType: string;
+    currentStock: number;
+    reservedStock: number;
+    isActive: boolean;
+    meta: JsonObject;
+    createdAt: string;
+    updatedAt: string;
+}
+
+/** Internal relation only. Consumer contracts must not expose either ID. */
+export interface ProductVariantWare {
+    id: string;
+    productVariantId: string;
+    wareId: string;
+    createdAt: string;
+}
+
+/**
+ * Internal order-fulfilment record. It is intentionally absent from Consumer
+ * Order and Refund contracts.
+ */
+export interface OrderItemWareAllocation {
+    id: string;
+    orderItemId: string;
+    wareId: string;
+    quantity: number;
+    createdAt: string;
+}
+
+/**
+ * @deprecated Legacy Inventory/SKU contract. Mall v2 uses Ware internally
+ * and ProductVariant as the sellable unit. Do not use in new code.
+ */
+export interface SkuInventory {
+    id: string;
+    skuCode: string;
+    currentStock: number;
+    isActive: boolean;
+    meta?: JsonObject;
+    createdAt: string;
+    updatedAt: string;
+}
+
+/** @deprecated Use trusted Ware management contracts in Phase 6+. */
 export interface CreateInventoryInput {
     skuCode: string;
     currentStock?: number;
     isActive?: boolean;
-    meta?: Record<string, unknown>;
+    meta?: JsonObject;
 }

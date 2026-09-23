@@ -1,41 +1,68 @@
-// @/types/productPost.ts
+import type { JsonObject, ProductDetail } from "./product.js";
 
+export type ProductPostStatus = "DRAFT" | "PUBLISHED";
+
+/** ProductPost content metadata; not a Product price or inventory contract. */
+export interface ProductPost {
+    id: string;
+    title: string;
+    slug: string | null;
+    summary: string | null;
+    content: JsonObject;
+    thumbnailUrl: string | null;
+    status: ProductPostStatus;
+    publishedAt: string | null;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface ProductPostProduct {
+    id: string;
+    productPostId: string;
+    productId: string;
+    displayOrder: number;
+    createdAt: string;
+}
+
+/** Consumer-safe ProductPost list payload. */
+export interface ProductPostSummary {
+    id: string;
+    title: string;
+    slug: string | null;
+    summary: string | null;
+    thumbnailUrl: string | null;
+    publishedAt: string | null;
+}
+
+/** Consumer-safe payload returned by get_product_post_detail(). */
+export interface ProductPostDetail {
+    id: string;
+    title: string;
+    slug: string | null;
+    summary: string | null;
+    content: JsonObject;
+    thumbnailUrl: string | null;
+    publishedAt: string | null;
+    categories: ProductPostCategorySummary[];
+    products: ProductDetail[];
+}
+
+export interface ProductPostCategorySummary {
+    id: string;
+    name: string;
+    slug: string | null;
+    description: string | null;
+}
+
+/**
+ * @deprecated Mall v2 ProductPosts use thumbnailUrl and do not own price,
+ * discount, tags, or inventory presentation.
+ */
 export interface ThumbnailInfo {
     imageUrl: string;
     title: string;
     summary?: string;
-
-    // 할인 적용 후 최종 판매 가격
-    // (discountPrice 의미로 사용)
     discount: number;
-
     price: number;
     tags: string[];
-}
-/**
- * 상품 게시물
- */
-export interface ProductPost {
-    id: string;
-
-    title: string;
-
-    thumbnail: ThumbnailInfo;
-
-    imageUrls: string[];
-
-    content: string;
-
-    productIds: string[];
-
-    isPublished: boolean;
-
-    viewCount: number;
-
-    publishedAt?: string;
-
-    metadata?: Record<string, unknown>;
-
-    createdAt: string;
-    updatedAt: string;
 }

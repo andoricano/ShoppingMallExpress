@@ -1,30 +1,30 @@
-// @/types/refund.ts
-
-import type { Order } from "./order.js";
-
-/**
- * 환불 요청 상태
- */
 export type RefundStatus =
     | "REQUESTED"
     | "APPROVED"
     | "REJECTED"
-    | "COMPLETED";
+    | "COMPLETED"
+    | "CANCELLED";
 
-/**
- * 환불 요청
- *
- * 기존 Order를 기준으로 환불 처리에 필요한 정보를 관리합니다.
- */
+/** Refund remains rooted in Order and never exposes Ware allocation details. */
 export interface RefundRequest {
     id: string;
-
-    order: Order | null;
-
+    orderId: string;
+    clientId: string;
     status: RefundStatus;
-
-    reason?: string;
-
+    reason: string | null;
+    requestedAmount: number | null;
+    requestedAt: string;
+    processedAt: string | null;
     createdAt: string;
-    processedAt?: string;
+    updatedAt: string;
+    items?: RefundItem[];
+}
+
+export interface RefundItem {
+    id: string;
+    refundRequestId: string;
+    orderItemId: string;
+    quantity: number;
+    refundAmount: number;
+    createdAt: string;
 }

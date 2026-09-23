@@ -1,42 +1,29 @@
-// @/types/category.ts
-
-import type { ThumbnailInfo } from "./productPost.js";
-
-export interface ProductPostCategoryItem {
-    id: string;
-    thumbnail: ThumbnailInfo;
-}
-
 export interface ProductPostCategory {
     id: string;
-
-    parentId: string | null;
-
     name: string;
-    slug: string;
-
-    depth: number;
+    slug: string | null;
+    description: string | null;
     displayOrder: number;
-
     isActive: boolean;
-
-    productPosts?: ProductPostCategoryItem[];
-
     createdAt: string;
     updatedAt: string;
 }
 
-export interface ClientCategory {
+export interface ProductPostCategoryLink {
     id: string;
-
-    parentId: string | null;
-
-    name: string;
-    slug: string;
-
-    depth: number;
+    productPostId: string;
+    categoryId: string;
     displayOrder: number;
-
     createdAt: string;
-    updatedAt: string;
 }
+
+/**
+ * @deprecated Mall v2 categories are flat ProductPost classification records.
+ * parentId, depth, and embedded thumbnail fields are legacy UI concerns.
+ */
+export interface ProductPostCategoryItem {
+    id: string;
+}
+
+/** @deprecated Use ProductPostCategory. */
+export interface ClientCategory extends ProductPostCategory {}

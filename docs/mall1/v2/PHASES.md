@@ -243,7 +243,7 @@ Do not expose secret values during verification.
 
 ## Phase 5 — Auth and Shared Contract Foundation
 
-**Status:** NOT STARTED
+**Status:** COMPLETE
 
 **Owner:** Codex + User
 
@@ -273,11 +273,11 @@ Primary domains:
 
 ### Completion criteria
 
-* [ ] Google login/logout/session flow works locally against the actual Supabase project.
-* [ ] Authenticated user identity works with existing RLS boundaries.
-* [ ] Shared types match the confirmed v2 DB/RPC contract.
-* [ ] Consumer types do not expose Ware/Warehouse internals.
-* [ ] Legacy Inventory/SkuInventory contracts are removed or explicitly deprecated.
+* [x] Google login/logout/session flow works in the verified production flow against the actual Supabase project.
+* [x] Authenticated user identity works with existing RLS boundaries.
+* [x] Shared types match the confirmed v2 DB/RPC contract.
+* [x] Consumer types do not expose Ware/Warehouse internals.
+* [x] Legacy Inventory/SkuInventory contracts are removed or explicitly deprecated.
 
 ## Phase 6 — Supabase Access Migration
 
@@ -401,4 +401,4 @@ Google Login
 ## Remaining Work
 
 * Finish any still-required catalog-level Supabase inspection.
-* Complete Phases 5–8.
+* Complete Phases 6–8.
