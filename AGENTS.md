@@ -2,27 +2,14 @@
 
 ## General
 
-* Modify only files directly required by the requested task.
-* Keep scope as small as possible.
-* Preserve all existing user changes.
-* Do not fix unrelated issues; report them instead.
-* Do not perform opportunistic refactoring.
-* Do not re-analyze the entire repository unless explicitly requested.
-* Prefer existing repository patterns over new abstractions.
-* Refer to `ARCHITECTURE.md` for repository structure and system boundaries.
+* Modify only files required by the requested task.
+* Keep scope minimal and preserve existing user changes.
+* Do not fix or refactor unrelated issues; report them instead.
+* Prefer existing repository patterns.
+* Do not scan the entire repository unless required.
+* Refer to `ARCHITECTURE.md` for repository structure and boundaries.
 
-## Repository Exploration
-
-Prefer targeted inspection:
-
-* `rg`
-* directly related files
-* package-level configuration
-* existing documentation
-
-Avoid repository-wide scans unless explicitly requested.
-
-Do not inspect generated/dependency directories unless necessary:
+Avoid generated/dependency directories unless necessary:
 
 * `node_modules/`
 * `.next/`
@@ -33,7 +20,7 @@ Do not inspect generated/dependency directories unless necessary:
 
 ## Mall v2 Source of Truth
 
-For Mall v2 work, use this priority:
+Use this priority:
 
 1. `docs/mall1/v2/product-schema.md`
 2. `docs/mall1/v2/sql/*.sql`
@@ -41,9 +28,9 @@ For Mall v2 work, use this priority:
 4. `packages/types`
 5. current application contracts
 
-Legacy `docs/api/README.md`, Inventory/SkuInventory structures, and deleted `apps/api` code must not override the confirmed Mall v2 contract.
+Legacy API docs, Inventory/SkuInventory structures, and deleted `apps/api` code must not override Mall v2.
 
-## Mall v2 Architecture
+## Architecture
 
 Mall v2 uses:
 
@@ -52,33 +39,22 @@ Next.js
 + Supabase
 + RLS
 + Supabase RPC
-+ Next Route Handlers when a server-only boundary is required
++ Next Route Handlers when server-only execution is required
 ```
 
-Do not restore `apps/api` or the legacy Express architecture unless explicitly requested.
+Do not restore the legacy Express architecture.
 
-Choose the smallest appropriate data boundary:
+Use:
 
-* Direct Supabase + RLS for safe reads/user-owned data
-* Supabase RPC for transactional or consistency-sensitive operations
-* Next Route Handler for server-only credentials, orchestration, or external integrations
+* Direct Supabase + RLS for safe/user-owned data
+* Supabase RPC for transactional operations
+* Next Route Handlers for privileged credentials, orchestration, or external integrations
 
-Do not reproduce transactional database logic in client code.
+Do not move transactional database logic into client code.
 
 ## Domain Boundaries
 
-Consumer commerce operates on:
-
-* ProductPost
-* Product
-* ProductOption
-* ProductOptionValue
-* ProductVariant
-* Cart
-* Order / OrderItem
-* History
-* Refund
-* Wishlist
+Consumer domains include Product/Post, Option/Variant, Cart, Order, History, Refund, and Wishlist.
 
 Internal-only domains include:
 
@@ -89,155 +65,83 @@ Internal-only domains include:
 
 Never expose Ware/Warehouse internals to Consumer applications.
 
-`apps/user-web` is the current Admin application.
+`apps/user-web` is the Admin application.
 
-Privileged Admin operations must run in a trusted server context.
+Privileged operations must run in a trusted server context.
 
 ## Shared Contracts
 
-When a shared contract changes:
+When contracts change:
 
 * update `packages/types`
-* keep application contracts consistent with the confirmed SQL/RPC contract
-* update relevant documentation when necessary
+* keep applications aligned with the confirmed SQL/RPC contract
+* update relevant existing documentation when needed
 
-Do not modify unrelated applications unless included in the task.
+Do not modify unrelated applications.
 
 ## Validation
 
-Run only validation directly related to changed code.
+Run validation related to changed code only.
 
-Prefer:
+Prefer targeted typecheck, lint, tests, and package builds.
 
-* affected package typecheck
-* targeted lint
-* targeted tests
-* focused package build
+Do not run full monorepo validation, E2E, browser automation, or Docker builds unless required.
 
-Do not run by default:
+Never claim a check passed unless it actually ran successfully.
 
-* full monorepo build/typecheck/lint
-* unrelated tests
-* E2E suites
-* browser automation
-* Docker builds
-* deployment tests
+## Git and Deployment
 
-If validation fails because of an unrelated existing issue, report it instead of expanding scope.
+Before modifying files, inspect `git status` and preserve existing changes.
 
-Never claim a check passed unless it was actually executed successfully.
+For completed tasks:
 
-## Errors
+* commit only task-related changes
+* use a concise commit message
+* push the commit to the current branch
+* use the existing Git-based Vercel deployment flow
 
-When given an error log:
+Do not amend, squash, rebase, rewrite history, or create tags unless explicitly requested.
 
-1. Start from the exact reported error.
-2. Inspect the directly related path.
-3. Apply the smallest valid fix.
-4. Run targeted validation.
-5. Leave unrelated problems unchanged.
+Never use destructive repository-wide commands such as:
 
-## Documentation
+```text
+git reset --hard
+git clean -fd
+git checkout -- .
+git restore .
+```
 
-Do not create a new `docs/changes/` document for every task.
-
-Create or update task documentation only when:
-
-* explicitly requested, or
-* the change cannot be adequately represented by existing domain, phase, architecture, or API documentation.
-
-Keep documentation concise.
-
-## Git
-
-Before modifying files:
-
-* inspect `git status`
-* preserve pre-existing user changes
-
-For commits:
-
-* include only task-related changes
-* prefer one commit per logical task
-* use concise commit messages
-
-Do not by default:
-
-* push
-* amend
-* squash
-* rebase
-* rewrite history
-
-Never use destructive commands such as:
-
-* `git reset --hard`
-* `git clean -fd`
-* `git checkout -- .`
-* `git restore .`
-
-Push only when explicitly authorized.
+Do not manually trigger or modify production deployment settings unless required by the task.
 
 ## Versioning
 
 Use Semantic Versioning.
 
-Current production baseline:
+* Production baseline: `v1.0.0`
+* Mall v2 target: `v2.0.0`
 
-```text
-v1.0.0
-```
+Change versions or create release tags only when explicitly requested.
 
-Mall v2 is a breaking architectural/domain transition and targets:
+## Secrets
 
-```text
-v2.0.0
-```
-
-Use prerelease versions for meaningful Mall v2 checkpoints when version updates are requested:
-
-```text
-2.0.0-alpha.N
-2.0.0-beta.N
-2.0.0-rc.N
-2.0.0
-```
-
-Do not create release tags unless explicitly requested.
-
-## Environment and Secrets
-
-* Never invent or expose secrets.
-* Never commit secrets.
+* Never invent, expose, or commit secrets.
 * `NEXT_PUBLIC_*` must contain only browser-safe values.
-* Supabase secret/service-role credentials are server-only.
-* Never instantiate a privileged Supabase client in browser code.
-* Do not print secret environment values during verification.
+* Supabase privileged credentials are server-only.
+* Never create a privileged Supabase client in browser code.
+* Do not print secrets during validation.
 
 ## Dependencies
 
-* Prefer existing dependencies.
-* Add/remove/upgrade packages only when required by the task.
-* Do not perform unrelated dependency upgrades.
+Use existing dependencies where possible.
 
-## Deployment
+Add, remove, or upgrade packages only when required.
 
-Prefer existing Git-based deployment flows.
+## Completion
 
-Do not:
+Keep the final report concise:
 
-* run production deployments unless explicitly requested
-* change Vercel/project settings without explicit instruction
-* treat a deployment failure as permission for unrelated refactoring
-
-## Completion Report
-
-Keep completion reports concise.
-
-Report:
-
-* changed files/areas
-* validation actually executed
-* intentionally unresolved related issues
-* commit hash if created
-* push/deployment result if explicitly requested
+* changed areas
+* validation performed
+* unresolved related issues
+* commit hash
+* push/deployment result

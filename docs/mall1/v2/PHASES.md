@@ -162,7 +162,7 @@ Codex does not generate SQL for this phase unless explicitly requested. SQL is d
 
 ## Phase 4 — Supabase Apply and DB Verification
 
-**Status:** IN PROGRESS
+**Status:** COMPLETE
 **Owner:** User + ChatGPT
 
 ### Verified deployment and read-only checks
@@ -200,25 +200,25 @@ The finalized v2 schema, RPC, and RLS SQL set has been applied to the new Supaba
 - [x] `order_item_ware_allocations` records the internal allocation
 - [x] Order cancellation restores the exact allocated Ware stock
 - [x] Order History is derived from Order / OrderItem snapshots
-- [ ] Trusted Admin Order lifecycle transition is applied and verified
-- [ ] Refund request creation
-- [ ] Refund request does not automatically restock Ware
+- [x] Trusted Admin Order lifecycle transition is applied and verified
+- [x] Refund request creation
+- [x] Refund request does not automatically restock Ware
 - [x] Concurrent stock deduction does not oversell
 - [x] Authenticated user-owned Cart access is scoped correctly by RLS
 - [x] Authenticated user-owned Order access is scoped correctly by RLS
 - [x] Authenticated user-owned Wishlist access is scoped correctly by RLS
-- [ ] Authenticated user-owned Refund access is scoped correctly by RLS
+- [x] Authenticated user-owned Refund access is scoped correctly by RLS
 
-### Runtime verification blocker
+### Runtime verification result
 
-The SQL Source of Truth now defines the service-role-only
+The actual Supabase project exposes the service-role-only
 `admin_transition_order_status(uuid, text)` RPC for the forward lifecycle
 `PENDING → PAID → PROCESSING → SHIPPED → DELIVERED`; Consumer cancellation
 remains the existing `PENDING → CANCELLED` path because it restores allocated
-Ware stock. The configured repository has no safe Supabase SQL-apply path, so
-the new order-status constraint and RPC have not been applied or runtime
-verified. Refund-request, no-auto-restock, and populated Refund-RLS
-verification remain pending until that deployment is completed.
+Ware stock. The actual lifecycle, invalid-transition rejection, delivered
+Refund creation, immutable refund amount, no automatic Ware restock, and
+Refund RLS ownership boundary were verified with temporary data and two
+authenticated users. All temporary rows and users were removed after the run.
 
 ### Verification method
 
@@ -234,12 +234,12 @@ Do not expose secret values during verification.
 
 ### Completion criteria
 
-- [ ] Core DB constraints and relations behave according to the finalized SQL contract.
+- [x] Core DB constraints and relations behave according to the finalized SQL contract.
 - [x] Core Product / Cart / Order / Warehouse RPC behavior is verified with populated data.
-- [ ] Stock deduction, allocation, cancellation restoration, and refund handling behavior is verified.
+- [x] Stock deduction, allocation, cancellation restoration, and refund handling behavior is verified.
 - [x] Consumer-facing populated results do not reveal Ware or Warehouse internals.
-- [ ] RLS ownership and internal-only boundaries are verified with populated test data.
-- [ ] No unresolved mismatch remains between the repository SQL Source of Truth and the actual Supabase project.
+- [x] RLS ownership and internal-only boundaries are verified with populated test data.
+- [x] No unresolved mismatch remains between the repository SQL Source of Truth and the actual Supabase project.
 
 ## Phase 5 — Shared Types Migration
 
