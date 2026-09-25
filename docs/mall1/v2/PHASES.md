@@ -366,7 +366,7 @@ Final audit (base `e88e4fc`): `client-web`, `client-pwa`, and `user-web` typeche
 
 ## Phase 7 — Client / Admin Migration
 
-**Status:** NOT STARTED
+**Status:** IN PROGRESS
 
 Owner: Codex + Claude
 
@@ -392,9 +392,19 @@ Owner: Codex + Claude
 
 ### Completion criteria
 
-* [ ] Consumer uses Product/ProductVariant purchase flows only.
-* [ ] Admin uses the confirmed internal inventory flows.
+* [x] Consumer uses Product/ProductVariant purchase flows only.
+* [x] Admin uses the confirmed internal inventory flows.
 * [ ] Legacy Inventory-centric UI and obsolete API usage are removed or explicitly deprecated.
+
+### Progress
+
+* [x] Removed unused legacy types from `packages/types`: `SkuInventory`, `CreateInventoryInput`, `ThumbnailInfo`, `ClientCategory`, `History`/`HistoryActorType`/`HistoryTargetType`/`HistoryAction`, `OrderDelivery`, and the Express Point contract (`Point`, `PointTransaction`, `PointReservation` and their enums). `ClientProfile` no longer carries `point` or the never-populated `address` (ClientAddress is the shipping-address Source of Truth).
+* [x] `ProductPostCategoryItem` was replaced by `Pick<ProductPost, "id">` in the user-web category-post routes/hooks.
+* [x] `@mall/tiptap` `ProductPostCard` no longer takes `price`/`discount`/`tags` (ProductPost has no price); user-web callers no longer pass placeholder `0` prices. The unused legacy `ProductPreview`/`ProductGallery` and user-web `types/admin.ts` were removed.
+* [x] `@mall/constants` `API_ENDPOINTS`, `DB_TABLES`/`DB_COLUMNS` (`inventory_items`), and `CLIENT_ORDER_*` were removed; no application imported them. Only `PAGE_CONFIG_KEYS` remains (page-config contract undecided). No app depends on `@mall/constants`; `client-pwa` no longer depends on `@mall/tiptap`.
+* [x] client-web profile reads/updates use direct Supabase + RLS on `user_profiles` (`user_profiles_owner_select`/`_owner_update`; `name`/`phone` column grants) instead of the undefined `get_my_profile`/`update_my_profile` RPCs. No DB change.
+* [ ] user-web Ware management still uses Inventory naming (`/inventory` route, `component/inventory/*`, `useAdminInventory`, `ProductInventorySection`, `AdminDashboardInventoryAlert`); it already uses the Ware/Warehouse contracts.
+* [ ] `@mall/mall-page-viewer` `ProductCardData` keeps optional `price`/`discount`/`tags` and `DISCOUNT` card types for the page-config design mock; Consumer pages pass ProductPost cards without price. Depends on the undecided page-config contract.
 
 ## Phase 8 — End-to-End Verification
 

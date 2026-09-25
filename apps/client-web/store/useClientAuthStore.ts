@@ -4,7 +4,7 @@
 
 import { create } from "zustand";
 
-import type { ClientProfile, Point } from "@mall/types";
+import type { ClientProfile } from "@mall/types";
 import { authProfile } from "@/lib/authClient";
 
 
@@ -22,10 +22,6 @@ interface ClientAuthState {
         name: string,
         phone: string,
     ) => Promise<void>;
-
-    updatePoint: (
-        point: Point,
-    ) => void;
 
     signOut: () => Promise<void>;
     clearAuth: () => void;
@@ -170,11 +166,6 @@ export const useClientAuthStore =
             }
         },
         // ==========================================
-        // Point 갱신
-        // ==========================================
-
-
-        // ==========================================
         // Client Profile 수정
         // ==========================================
 
@@ -222,19 +213,6 @@ export const useClientAuthStore =
             }
         },
 
-        
-        updatePoint: (
-            point,
-        ) => {
-            set((state) => ({
-                user: state.user
-                    ? {
-                        ...state.user,
-                        point,
-                    }
-                    : null,
-            }));
-        },
         // ==========================================
         // Logout
         // ==========================================

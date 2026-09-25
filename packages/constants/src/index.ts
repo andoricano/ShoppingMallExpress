@@ -1,6 +1,3 @@
 // packages/constants/src/index.ts
 
-export * from './db';
-export * from './clientDb';
-export * from './api';
-export * from './configConstant'
+export * from './configConstant';

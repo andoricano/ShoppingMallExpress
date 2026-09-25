@@ -22,9 +22,6 @@ export function AdminProductPostCard({
                 imageUrl={post.thumbnailUrl ?? undefined}
                 title={post.title}
                 summary={post.summary ?? undefined}
-                discount={0}
-                price={0}
-                tags={[]}
             />
 
             {/* Admin 영역 */}

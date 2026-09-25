@@ -53,16 +53,3 @@ export interface ProductPostCategorySummary {
     slug: string | null;
     description: string | null;
 }
-
-/**
- * @deprecated Mall v2 ProductPosts use thumbnailUrl and do not own price,
- * discount, tags, or inventory presentation.
- */
-export interface ThumbnailInfo {
-    imageUrl: string;
-    title: string;
-    summary?: string;
-    discount: number;
-    price: number;
-    tags: string[];
-}

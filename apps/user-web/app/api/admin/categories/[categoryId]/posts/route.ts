@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import type { ProductPostCategoryItem } from "@mall/types";
+import type { ProductPost } from "@mall/types";
 
 import {
     AdminBadRequestError,
@@ -25,7 +25,7 @@ export async function GET(_request: NextRequest, context: RouteContext) {
             throw error;
         }
 
-        const items: ProductPostCategoryItem[] = (
+        const items: Pick<ProductPost, "id">[] = (
             data as { product_post_id: string }[]
         ).map((row) => ({ id: row.product_post_id }));
 

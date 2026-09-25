@@ -48,15 +48,9 @@ importers:
 
   apps/client-pwa:
     dependencies:
-      '@mall/constants':
-        specifier: workspace:*
-        version: link:../../packages/constants
       '@mall/mall-page-viewer':
         specifier: workspace:*
         version: link:../../packages/mall-page-viewer
-      '@mall/tiptap':
-        specifier: workspace:*
-        version: link:../../packages/tiptap
       '@mall/types':
         specifier: workspace:*
         version: link:../../packages/types
@@ -106,9 +100,6 @@ importers:
 
   apps/client-web:
     dependencies:
-      '@mall/constants':
-        specifier: workspace:*
-        version: link:../../packages/constants
       '@mall/mall-page-viewer':
         specifier: workspace:*
         version: link:../../packages/mall-page-viewer
@@ -213,9 +204,6 @@ importers:
       '@mall/category-tree':
         specifier: workspace:*
         version: link:../../packages/category-tree
-      '@mall/constants':
-        specifier: workspace:*
-        version: link:../../packages/constants
       '@mall/mall-page-viewer':
         specifier: workspace:*
         version: link:../../packages/mall-page-viewer

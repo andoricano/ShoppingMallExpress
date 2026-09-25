@@ -1,5 +1,3 @@
-import type { Point } from "./point.js";
-
 export type UserRole =
     | "CLIENT"
     | "ADMIN";
@@ -19,15 +17,7 @@ export interface ClientProfile
     recipientName?: string;
     phone?: string;
 
-    /** @deprecated ClientAddress is the shipping-address Source of Truth. */
-    address?: {
-        zonecode: string;
-        address: string;
-        detail: string;
-    };
-
     isOnboarded: boolean;
-    point?: Point;
 }
 
 export interface AdminProfile

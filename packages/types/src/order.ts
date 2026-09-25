@@ -47,13 +47,3 @@ export interface Order {
     updatedAt: string;
     items: OrderItem[];
 }
-
-/**
- * @deprecated Delivery fields are not part of the finalized Mall v2 Order
- * table/RPC contract. Use Order.status and immutable snapshots instead.
- */
-export interface OrderDelivery {
-    carrier: string;
-    trackingNumber: string;
-    shippedAt: string;
-}

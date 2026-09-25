@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback } from "react";
-import type { ProductPostCategory, ProductPostCategoryItem } from "@mall/types";
+import type { ProductPost, ProductPostCategory } from "@mall/types";
 
 type CategoryInput = Partial<Pick<ProductPostCategory, "name" | "slug" | "displayOrder" | "isActive">>;
 
@@ -17,7 +17,7 @@ export function usePostCategoryApi() {
     const createCategory = useCallback((data: CategoryInput) => request<ProductPostCategory>("/api/admin/categories", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }), []);
     const updateCategory = useCallback((id: string, data: CategoryInput) => request<ProductPostCategory>(`/api/admin/categories/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }), []);
     const deleteCategory = useCallback((id: string) => request<ProductPostCategory>(`/api/admin/categories/${id}`, { method: "DELETE" }), []);
-    const fetchPostsByCategory = useCallback((id: string) => request<ProductPostCategoryItem[]>(`/api/admin/categories/${id}/posts`), []);
+    const fetchPostsByCategory = useCallback((id: string) => request<Pick<ProductPost, "id">[]>(`/api/admin/categories/${id}/posts`), []);
     const addPostsToCategory = useCallback((id: string, postIds: string[]) => request<void>(`/api/admin/categories/${id}/posts`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ postIds }) }), []);
     const removePostFromCategory = useCallback((id: string, postId: string) => request<void>(`/api/admin/categories/${id}/posts/${postId}`, { method: "DELETE" }), []);
     return { fetchCategories, createCategory, updateCategory, deleteCategory, fetchPostsByCategory, addPostsToCategory, removePostFromCategory };

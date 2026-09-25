@@ -132,18 +132,6 @@ export const UserDetailPanel: React.FC<UserDetailPanelProps> = ({
               </div>
 
               <div>
-                <div style={{ fontSize: '12px', color: '#868e96' }}>배송지 주소</div>
-                {user.address ? (
-                  <div style={{ lineHeight: '1.4' }}>
-                    [{user.address.zonecode}] {user.address.address}<br />
-                    {user.address.detail}
-                  </div>
-                ) : (
-                  <div style={{ color: '#adb5bd' }}>등록된 배송지 없음</div>
-                )}
-              </div>
-
-              <div>
                 <div style={{ fontSize: '12px', color: '#868e96' }}>온보딩 상태</div>
                 <div style={{ fontWeight: 500, color: user.isOnboarded ? '#2b8a3e' : '#f59f00' }}>
                   {user.isOnboarded ? '완료' : '미완료 (이탈)'}

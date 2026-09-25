@@ -46,25 +46,3 @@ export interface OrderItemWareAllocation {
     quantity: number;
     createdAt: string;
 }
-
-/**
- * @deprecated Legacy Inventory/SKU contract. Mall v2 uses Ware internally
- * and ProductVariant as the sellable unit. Do not use in new code.
- */
-export interface SkuInventory {
-    id: string;
-    skuCode: string;
-    currentStock: number;
-    isActive: boolean;
-    meta?: JsonObject;
-    createdAt: string;
-    updatedAt: string;
-}
-
-/** @deprecated Use trusted Ware management contracts in Phase 6+. */
-export interface CreateInventoryInput {
-    skuCode: string;
-    currentStock?: number;
-    isActive?: boolean;
-    meta?: JsonObject;
-}

@@ -7,7 +7,6 @@ import { useMemo } from "react";
 import type {
     ProductPost,
     ProductPostCategory,
-    ProductPostCategoryItem,
 } from "@mall/types";
 import type { CategoryTree } from "@mall/category-tree";
 
@@ -68,7 +67,7 @@ export default function PostCategoryEditor({
             return;
         }
 
-        const categoryPost: ProductPostCategoryItem = {
+        const categoryPost: Pick<ProductPost, "id"> = {
             id: post.id,
         };
 

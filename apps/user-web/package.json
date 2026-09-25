@@ -9,7 +9,6 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@mall/constants": "workspace:*",
     "@mall/types": "workspace:*",
     "@mall/tiptap": "workspace:*",
     "@mall/mall-page-viewer": "workspace:*",
