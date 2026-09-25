@@ -1,6 +1,5 @@
 import "server-only";
 
-import type { SupabaseClient } from "@supabase/supabase-js";
 import type {
     JsonObject,
     Product,
@@ -164,66 +163,4 @@ export function parseIdList(value: unknown, field: string): string[] {
     }
 
     return Array.from(new Set(value as string[]));
-}
-
-/**
- * Rejects Product ids that are not persisted Products so the N:N link write
- * fails with a clear 400 instead of a foreign-key violation.
- */
-export async function assertProductsExist(
-    supabase: SupabaseClient,
-    productIds: string[],
-) {
-    if (productIds.length === 0) {
-        return;
-    }
-
-    const { data, error } = await supabase
-        .from("products")
-        .select("id")
-        .in("id", productIds);
-
-    if (error) {
-        throw error;
-    }
-
-    if ((data ?? []).length !== productIds.length) {
-        throw new AdminBadRequestError(
-            "productIds contains a Product that does not exist.",
-        );
-    }
-}
-
-/** Replaces the ordered ProductPost ↔ Product links. */
-export async function replaceProductPostProducts(
-    supabase: SupabaseClient,
-    productPostId: string,
-    productIds: string[],
-) {
-    const { error: deleteError } = await supabase
-        .from("product_post_products")
-        .delete()
-        .eq("product_post_id", productPostId);
-
-    if (deleteError) {
-        throw deleteError;
-    }
-
-    if (productIds.length === 0) {
-        return;
-    }
-
-    const { error: insertError } = await supabase
-        .from("product_post_products")
-        .insert(
-            productIds.map((productId, index) => ({
-                product_post_id: productPostId,
-                product_id: productId,
-                display_order: index,
-            })),
-        );
-
-    if (insertError) {
-        throw insertError;
-    }
 }

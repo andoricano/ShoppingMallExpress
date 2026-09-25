@@ -19,6 +19,7 @@ with privileged(signature) as (
         ('public.admin_transition_order_status(uuid, text)'),
         ('public.admin_transition_refund_status(uuid, text)'),
         ('public.admin_create_product(jsonb, jsonb, jsonb)'),
+        ('public.admin_save_product_post(uuid, jsonb, uuid[])'),
         ('public.create_warehouse(text, text, text, jsonb)'),
         ('public.update_warehouse(uuid, text, text, text, boolean, jsonb)'),
         ('public.create_ware(uuid, text, text, text, bigint, jsonb)'),
@@ -77,12 +78,14 @@ do $$
 declare
     v_signature text;
     v_failures text[] := array[]::text[];
+    v_checked integer := 0;
 begin
     foreach v_signature in array array[
         'public.promote_user_to_admin(uuid, text)',
         'public.admin_transition_order_status(uuid, text)',
         'public.admin_transition_refund_status(uuid, text)',
         'public.admin_create_product(jsonb, jsonb, jsonb)',
+        'public.admin_save_product_post(uuid, jsonb, uuid[])',
         'public.create_warehouse(text, text, text, jsonb)',
         'public.update_warehouse(uuid, text, text, text, boolean, jsonb)',
         'public.create_ware(uuid, text, text, text, bigint, jsonb)',
@@ -100,6 +103,8 @@ begin
         'public.validate_product_variant_configuration(uuid)'
     ]
     loop
+        v_checked := v_checked + 1;
+
         if has_function_privilege('anon', v_signature, 'execute')
            or has_function_privilege('authenticated', v_signature, 'execute')
            or not has_function_privilege('service_role', v_signature, 'execute') then
@@ -111,6 +116,6 @@ begin
         raise exception 'Privileged RPC grant check FAILED: %', v_failures;
     end if;
 
-    raise notice 'Privileged RPC grant check PASSED (% functions)', 19;
+    raise notice 'Privileged RPC grant check PASSED (% functions)', v_checked;
 end;
 $$;

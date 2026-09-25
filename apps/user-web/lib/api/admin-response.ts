@@ -33,6 +33,18 @@ export function adminErrorResponse(error: unknown) {
     // RPC RAISE EXCEPTION / check constraint: invalid admin input.
     const code = getDatabaseErrorCode(error);
 
+    // RPC RAISE ... USING ERRCODE = 'P0002': target record not found.
+    if (code === "P0002") {
+        return NextResponse.json(
+            {
+                message: typeof error === "object" && error !== null && "message" in error
+                    ? String((error as { message: unknown }).message)
+                    : "Not found.",
+            },
+            { status: 404 },
+        );
+    }
+
     if (code === "P0001" || code === "23514") {
         return NextResponse.json(
             {

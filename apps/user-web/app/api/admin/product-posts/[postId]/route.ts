@@ -10,9 +10,7 @@ import {
     type ProductPostInput,
     type ProductPostRow,
     type ProductRow,
-    assertProductsExist,
     parseIdList,
-    replaceProductPostProducts,
     toProduct,
     toProductPost,
     toProductPostPatch,
@@ -78,29 +76,16 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
 
         const supabase = await requireAdminServiceClient();
 
-        if (productIds) {
-            await assertProductsExist(supabase, productIds);
-        }
-
-        const query = Object.keys(patch).length > 0
-            ? supabase.from("product_posts").update(patch)
-            : supabase.from("product_posts").update({ updated_at: new Date().toISOString() });
-
-        const { data, error } = await query
-            .eq("id", postId)
-            .select(PRODUCT_POST_COLUMNS)
-            .maybeSingle();
+        // Patch + optional link replacement run in one transaction.
+        // Missing ProductPost raises P0002 (404).
+        const { data, error } = await supabase.rpc("admin_save_product_post", {
+            p_product_post_id: postId,
+            p_post: patch,
+            p_product_ids: productIds ?? null,
+        });
 
         if (error) {
             throw error;
-        }
-
-        if (!data) {
-            throw new AdminNotFoundError("ProductPost not found.");
-        }
-
-        if (productIds) {
-            await replaceProductPostProducts(supabase, postId, productIds);
         }
 
         return NextResponse.json({ data: toProductPost(data as ProductPostRow) });

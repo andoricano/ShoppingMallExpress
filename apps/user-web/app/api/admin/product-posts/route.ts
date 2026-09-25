@@ -8,10 +8,8 @@ import {
     PRODUCT_POST_COLUMNS,
     type ProductPostInput,
     type ProductPostRow,
-    assertProductsExist,
     isProductPostStatus,
     parseIdList,
-    replaceProductPostProducts,
     toProductPost,
     toProductPostPatch,
 } from "@/lib/admin/productPost";
@@ -63,28 +61,21 @@ export async function POST(request: NextRequest) {
             : parseIdList(body.productIds, "productIds");
 
         const supabase = await requireAdminServiceClient();
-        await assertProductsExist(supabase, productIds);
 
-        const { data, error } = await supabase
-            .from("product_posts")
-            .insert(patch)
-            .select(PRODUCT_POST_COLUMNS)
-            .single();
+        // ProductPost + ordered product_post_products are written in one
+        // transaction; unknown productIds, duplicate slugs, and invalid
+        // status fail without leaving a partial ProductPost.
+        const { data, error } = await supabase.rpc("admin_save_product_post", {
+            p_product_post_id: null,
+            p_post: patch,
+            p_product_ids: productIds,
+        });
 
         if (error) {
             throw error;
         }
 
         const post = data as ProductPostRow;
-
-        try {
-            await replaceProductPostProducts(supabase, post.id, productIds);
-        } catch (linkError) {
-            // No product-post save RPC exists in the confirmed contract, so
-            // compensate to avoid leaving a post without its requested links.
-            await supabase.from("product_posts").delete().eq("id", post.id);
-            throw linkError;
-        }
 
         return NextResponse.json(
             { data: toProductPost(post) },
