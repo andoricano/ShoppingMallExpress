@@ -10,6 +10,7 @@ import {
     AdminBadRequestError,
     adminErrorResponse,
 } from "@/lib/api/admin-response";
+import { parseProductImageUrls } from "@/lib/admin/product";
 import {
     PRODUCT_COLUMNS,
     type ProductRow,
@@ -43,6 +44,10 @@ function validateBody(body: AdminProductCreateBody) {
 
     if (body.options !== undefined && !Array.isArray(body.options)) {
         throw new AdminBadRequestError("options must be an array.");
+    }
+
+    if (body.imageUrls !== undefined) {
+        parseProductImageUrls(body.imageUrls);
     }
 
     return body.variants;

@@ -12,7 +12,7 @@ import {
 
 
 /** Storage folder under the `images` bucket; see the upload-url route. */
-export type ImageUploadPurpose = "thumbnail" | "content";
+export type ImageUploadPurpose = "thumbnail" | "content" | "product";
 
 export interface ImageUploadResult {
     path: string;
@@ -145,8 +145,45 @@ export function useImageApi() {
         [uploadImage],
     );
 
+    // previewUrl → public URL of Product images already uploaded by this hook
+    // instance, so a retry after a failed save never re-uploads a file.
+    const uploadedProductImagesRef = useRef(new Map<string, string>());
+
+    /**
+     * Resolves an ordered Product image list to public URLs. Persisted URLs are
+     * kept as-is; items with a pending `file` are uploaded (`purpose:
+     * "product"`). Rejects if any upload fails, so callers never save a
+     * partial or temporary `image_urls` list.
+     */
+    const uploadProductImages = useCallback(
+        async (
+            items: { url: string; file?: File }[],
+        ): Promise<string[]> => {
+            const uploaded = uploadedProductImagesRef.current;
+
+            await Promise.all(
+                items
+                    .filter((item) => item.file && !uploaded.has(item.url))
+                    .map(async (item) => {
+                        const { imageUrl } = await uploadImage(
+                            item.file!,
+                            "product",
+                        );
+
+                        uploaded.set(item.url, imageUrl);
+                    }),
+            );
+
+            return items.map((item) =>
+                item.file ? uploaded.get(item.url)! : item.url,
+            );
+        },
+        [uploadImage],
+    );
+
     return {
         uploadImage,
         uploadContentImages,
+        uploadProductImages,
     };
 }

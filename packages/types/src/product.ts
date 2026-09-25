@@ -158,6 +158,8 @@ export interface ProductUpdateInput {
         name?: string;
         description?: string | null;
         isActive?: boolean;
+        /** Ordered absolute http(s) URLs; replaces the full list when present. */
+        imageUrls?: string[];
     };
     options?: {
         id?: string;

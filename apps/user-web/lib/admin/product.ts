@@ -6,7 +6,10 @@ import type {
     JsonObject,
 } from "@mall/types";
 
-import { AdminNotFoundError } from "@/lib/api/admin-response";
+import {
+    AdminBadRequestError,
+    AdminNotFoundError,
+} from "@/lib/api/admin-response";
 import {
     PRODUCT_COLUMNS,
     type ProductRow,
@@ -49,6 +52,24 @@ type VariantRow = {
  * Loads the Admin editing view of a persisted Product.
  * Only Product domain tables are read; no Ware / Warehouse data.
  */
+/**
+ * Validates Product `imageUrls` (create and update): an ordered array of
+ * absolute http(s) URLs. Temporary `blob:` previews are rejected, matching
+ * the admin_update_product() check.
+ */
+export function parseProductImageUrls(value: unknown): string[] {
+    if (
+        !Array.isArray(value)
+        || value.some((url) => typeof url !== "string" || !/^https?:\/\/\S+$/.test(url))
+    ) {
+        throw new AdminBadRequestError(
+            "imageUrls must be an array of absolute http(s) URLs.",
+        );
+    }
+
+    return value as string[];
+}
+
 export async function loadAdminProductDetail(
     supabase: SupabaseClient,
     productId: string,

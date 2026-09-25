@@ -6,7 +6,10 @@ import {
     AdminBadRequestError,
     adminErrorResponse,
 } from "@/lib/api/admin-response";
-import { loadAdminProductDetail } from "@/lib/admin/product";
+import {
+    loadAdminProductDetail,
+    parseProductImageUrls,
+} from "@/lib/admin/product";
 import { requireAdminServiceClient } from "@/lib/supabase/admin";
 
 type RouteContext = { params: Promise<{ productId: string }> };
@@ -31,6 +34,10 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
 
         if (body.product !== undefined && (typeof body.product !== "object" || body.product === null)) {
             throw new AdminBadRequestError("product must be an object.");
+        }
+
+        if (body.product?.imageUrls !== undefined) {
+            parseProductImageUrls(body.product.imageUrls);
         }
 
         if (body.options !== undefined && !Array.isArray(body.options)) {

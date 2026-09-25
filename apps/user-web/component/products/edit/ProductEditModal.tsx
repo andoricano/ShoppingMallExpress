@@ -8,6 +8,9 @@ import type {
 } from "@mall/types";
 
 import { useAdminProducts } from "@/hooks/products/useAdminProducts";
+import { useImageApi } from "@/hooks/images/useImageApi";
+
+import { ProductImagesField, type ProductImageItem } from "./ProductImagesField";
 
 interface ProductEditModalProps {
     productId: string;
@@ -48,6 +51,7 @@ interface ProductDraft {
     name: string;
     description: string;
     isActive: boolean;
+    images: ProductImageItem[];
     options: OptionDraft[];
     variants: VariantDraft[];
 }
@@ -66,6 +70,7 @@ function toDraft(detail: AdminProductDetail): ProductDraft {
         name: detail.name,
         description: detail.description ?? "",
         isActive: detail.isActive,
+        images: detail.imageUrls.map((url) => ({ url })),
         options: detail.options.map((option) => ({
             key: option.id,
             id: option.id,
@@ -110,12 +115,13 @@ function toOptionValues(draft: ProductDraft, combo: Record<string, string>) {
     return result;
 }
 
-function toUpdateInput(draft: ProductDraft): ProductUpdateInput {
+function toUpdateInput(draft: ProductDraft, imageUrls: string[]): ProductUpdateInput {
     return {
         product: {
             name: draft.name.trim(),
             description: draft.description.trim() || null,
             isActive: draft.isActive,
+            imageUrls,
         },
         options: draft.options.map((option) => ({
             ...(option.id ? { id: option.id } : {}),
@@ -147,6 +153,7 @@ function toUpdateInput(draft: ProductDraft): ProductUpdateInput {
  */
 export function ProductEditModal({ productId, onSaved, onClose }: ProductEditModalProps) {
     const { fetchProductDetail, updateProduct } = useAdminProducts();
+    const { uploadProductImages } = useImageApi();
     const [draft, setDraft] = useState<ProductDraft | null>(null);
     const [newValueText, setNewValueText] = useState<Record<string, string>>({});
     const [saving, setSaving] = useState(false);
@@ -254,7 +261,10 @@ export function ProductEditModal({ productId, onSaved, onClose }: ProductEditMod
         setError(null);
 
         try {
-            onSaved(await updateProduct(draft.id, toUpdateInput(draft)));
+            // Pending images are uploaded first; if any upload fails the
+            // Product (including image_urls) is not updated.
+            const imageUrls = await uploadProductImages(draft.images);
+            onSaved(await updateProduct(draft.id, toUpdateInput(draft, imageUrls)));
         } catch (cause) {
             setError(cause instanceof Error ? cause.message : "상품 저장에 실패했습니다.");
         } finally {
@@ -295,6 +305,12 @@ export function ProductEditModal({ productId, onSaved, onClose }: ProductEditMod
                                 판매 활성
                             </label>
                         </div>
+
+                        <ProductImagesField
+                            value={draft.images}
+                            onChange={(images) => patchDraft((current) => ({ ...current, images }))}
+                            disabled={saving}
+                        />
 
                         <div className="space-y-3">
                             <div className="flex items-center justify-between">

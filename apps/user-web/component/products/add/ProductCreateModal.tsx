@@ -4,6 +4,11 @@ import { useState } from "react";
 import type { Product, Ware } from "@mall/types";
 
 import { useAdminProductCreate } from "@/hooks/products/useAdminProductCreate";
+import { useImageApi } from "@/hooks/images/useImageApi";
+import {
+    ProductImagesField,
+    type ProductImageItem,
+} from "@/component/products/edit/ProductImagesField";
 
 import {
     ProductAddForm,
@@ -25,7 +30,10 @@ interface ProductCreateModalProps {
 export function ProductCreateModal({ ware, onCreated, onCancel }: ProductCreateModalProps) {
     const [form, setForm] = useState(() => emptyProductAddForm(ware.name));
     const [validationError, setValidationError] = useState<string | null>(null);
+    const [images, setImages] = useState<ProductImageItem[]>([]);
+    const [uploading, setUploading] = useState(false);
     const { createProduct, saving, error } = useAdminProductCreate();
+    const { uploadProductImages } = useImageApi();
 
     const handleSubmit = async () => {
         if (!form.name.trim()) {
@@ -42,10 +50,26 @@ export function ProductCreateModal({ ware, onCreated, onCancel }: ProductCreateM
 
         setValidationError(null);
 
+        // Upload pending images first; on failure nothing is created.
+        let imageUrls: string[];
+        setUploading(true);
+
+        try {
+            imageUrls = await uploadProductImages(images);
+        } catch (cause) {
+            setValidationError(
+                cause instanceof Error ? cause.message : "상품 이미지 업로드에 실패했습니다.",
+            );
+            return;
+        } finally {
+            setUploading(false);
+        }
+
         try {
             const product = await createProduct({
                 name: form.name.trim(),
                 description: form.description.trim() || null,
+                imageUrls,
                 options: toProductOptions(form),
                 variants: variants.length === 1
                     ? [{ ...variants[0]!, wareId: ware.id }]
@@ -66,9 +90,16 @@ export function ProductCreateModal({ ware, onCreated, onCancel }: ProductCreateM
                     onChange={setForm}
                     onSubmit={handleSubmit}
                     onCancel={onCancel}
-                    submitting={saving}
+                    submitting={saving || uploading}
                     error={validationError ?? error}
                     wareName={ware.name}
+                    imagesField={
+                        <ProductImagesField
+                            value={images}
+                            onChange={setImages}
+                            disabled={saving || uploading}
+                        />
+                    }
                 />
             </div>
         </div>

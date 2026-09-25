@@ -335,7 +335,8 @@ Remove or retire legacy API assumptions that no longer apply after removal of `a
   * [x] Main page config (`/api/page-config`) has no confirmed v2 table/RPC contract; the Admin design editor now works on a local `mainPageMock` copy with saving disabled. A persisted page-config contract remains undecided.
   * [x] ProductPost thumbnail upload uses `POST /api/admin/images/upload-url`: the Admin-only Route Handler issues a service-role signed upload URL for the public `images` bucket (migration `20260925110000_images_storage_bucket.sql`: JPEG/PNG/WebP, 5 MiB, no anon/authenticated write policy), and the public URL is saved to `product_posts.thumbnail_url`.
   * [x] ProductPost body (editor) images: before `admin_save_product_post`, pending `blob:` image sources still referenced by the content are uploaded through the same route (`purpose: "content"`, `product-posts/content/`) and replaced with public URLs. Already-uploaded URLs are kept; a failed upload or an unresolved `blob:` source aborts the save.
-  * [ ] Uploaded image deletion/orphan cleanup and Product `image_urls` upload are not implemented.
+  * [x] Product images: the Admin Product create/edit modals add, remove, and reorder images. Pending files upload through the same route (`purpose: "product"`, `products/images/`); persisted URLs are not re-uploaded, and a failed upload aborts the save. `admin_create_product` keeps its `imageUrls` contract; `admin_update_product` accepts `p_product.imageUrls` as an ordered replacement of absolute http(s) URLs in the same transaction (migration `20260925120000_admin_update_product_image_urls.sql`, `supabase/verification/admin_update_product_image_urls.sql`).
+  * [ ] Uploaded image deletion/orphan cleanup is not implemented.
   * [ ] `/api/master/cloudinary/ping` is called by a hard-coded path but has no Route Handler in `apps/user-web`.
 
 ## Phase 7 — Client / Admin Migration

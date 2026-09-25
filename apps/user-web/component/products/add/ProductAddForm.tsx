@@ -2,6 +2,7 @@
 
 "use client";
 
+import type { ReactNode } from "react";
 import type {
     ProductOptionCreateInput,
     ProductVariantCreateInput,
@@ -105,6 +106,8 @@ interface ProductAddFormProps {
     error?: string | null;
     /** Name of the Ware that will be linked when exactly one Variant exists. */
     wareName?: string;
+    /** Optional Product image field rendered below the description. */
+    imagesField?: ReactNode;
 }
 
 export function ProductAddForm({
@@ -115,6 +118,7 @@ export function ProductAddForm({
     submitting = false,
     error,
     wareName,
+    imagesField,
 }: ProductAddFormProps) {
     const variants = toVariantDrafts(value);
 
@@ -147,6 +151,8 @@ export function ProductAddForm({
                 onChange={(description) => onChange({ ...value, description })}
                 placeholder="상품 설명을 입력하세요."
             />
+
+            {imagesField}
 
             <div className="space-y-2">
                 <div className="flex items-center justify-between">

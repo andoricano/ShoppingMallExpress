@@ -14,6 +14,7 @@ const IMAGE_BUCKET = "images";
 const IMAGE_FOLDERS: Record<string, string> = {
     thumbnail: "product-posts/thumbnails",
     content: "product-posts/content",
+    product: "products/images",
 };
 const IMAGE_EXTENSIONS: Record<string, string> = {
     "image/jpeg": "jpg",
@@ -23,7 +24,8 @@ const IMAGE_EXTENSIONS: Record<string, string> = {
 
 /**
  * Issues a one-time signed upload URL for an Admin ProductPost thumbnail or
- * body image (`purpose`: "thumbnail" (default) | "content").
+ * body image, or a Product image
+ * (`purpose`: "thumbnail" (default) | "content" | "product").
  * The browser uploads directly to Storage with the signed token; the
  * service-role key never leaves the server.
  */
