@@ -5,6 +5,7 @@ import type { ClientProfile } from "@mall/types";
 
 interface MyProfileEditCardProps {
     profile: ClientProfile;
+    email: string | null;
     saving?: boolean;
     error?: string | null;
 
@@ -18,6 +19,7 @@ interface MyProfileEditCardProps {
 
 export function MyProfileEditCard({
     profile,
+    email,
     saving = false,
     error = null,
     onSave,
@@ -86,7 +88,7 @@ export function MyProfileEditCard({
 
                     <input
                         type="email"
-                        value={profile.email}
+                        value={email ?? ""}
                         disabled
                         className="w-full cursor-not-allowed rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-500"
                     />

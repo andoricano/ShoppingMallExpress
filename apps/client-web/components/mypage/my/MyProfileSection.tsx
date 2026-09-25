@@ -6,6 +6,7 @@ import { MyProfileCard } from "./MyProfileCard";
 import { MyProfileEditCard } from "./MyProfileEditCard";
 import { MyPageCardLayout } from "../MyPageCardLayout";
 import { useClientAuthStore } from "@/store/useClientAuthStore";
+import { authProfile } from "@/lib/authClient";
 
 export function MyProfileSection() {
     const {
@@ -25,6 +26,21 @@ export function MyProfileSection() {
         savingProfile,
         setSavingProfile,
     ] = useState(false);
+
+    // email is not stored on user_profiles; read it from the Supabase Auth session.
+    const [email, setEmail] =
+        useState<string | null>(null);
+
+    useEffect(() => {
+        authProfile
+            .getSession()
+            .then((session) =>
+                setEmail(
+                    session?.user.email ?? null,
+                ),
+            )
+            .catch(() => setEmail(null));
+    }, []);
 
     useEffect(() => {
         if (!user) {
@@ -123,6 +139,7 @@ export function MyProfileSection() {
             {isEditingProfile ? (
                 <MyProfileEditCard
                     profile={user}
+                    email={email}
                     saving={savingProfile}
                     error={error}
                     onSave={handleProfileSave}
@@ -135,6 +152,7 @@ export function MyProfileSection() {
             ) : (
                 <MyProfileCard
                     profile={user}
+                    email={email}
                 />
             )}
         </MyPageCardLayout>

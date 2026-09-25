@@ -281,7 +281,7 @@ Primary domains:
 
 ## Phase 6 — Supabase Access Migration
 
-**Status:** IN PROGRESS
+**Status:** COMPLETE (code; production migration `20260925140000_payments_and_points.sql` not yet applied)
 
 Owner: Codex + Claude
 
@@ -309,11 +309,13 @@ Remove or retire legacy API assumptions that no longer apply after removal of `a
 
 ### Completion criteria
 
-* [ ] Application data access matches the confirmed v2 contract.
-* [ ] Transactional operations use the confirmed RPC boundaries.
-* [ ] Privileged operations run only in trusted server contexts.
-* [ ] Consumer paths never expose Ware/Warehouse internals.
-* [ ] No required application path depends on the removed Express API.
+* [x] Application data access matches the confirmed v2 contract.
+* [x] Transactional operations use the confirmed RPC boundaries.
+* [x] Privileged operations run only in trusted server contexts.
+* [x] Consumer paths never expose Ware/Warehouse internals.
+* [x] No required application path depends on the removed Express API.
+
+Final audit (base `e88e4fc`): `client-web`, `client-pwa`, and `user-web` typecheck and production-build cleanly; `client-web`/`client-pwa` have no `API_BASE_URL`/`API_ENDPOINTS`/Inventory/`SkuInventory` references and no Ware/Warehouse reads; `SUPABASE_SECRET_KEY` and `PG_TEST_API_KEY` are read only in `server-only` modules imported by Route Handlers. `apps/develop-web` (internal dev/verification app) still calls the legacy Express API and is not a required application path. Open items below are undecided contracts carried forward, not Phase 6 blockers.
 
 ### `apps/user-web` migration progress
 
@@ -354,7 +356,13 @@ Remove or retire legacy API assumptions that no longer apply after removal of `a
   * Service-role-only RPCs: `create_payment(client, purpose, order, amount)` copies the Order total (a differing client amount is rejected; Order must be the caller's and `PENDING`) or enforces the top-up policy (1,000–1,000,000, units of 1,000). `complete_payment(client, payment, succeeded, callback, reason)` locks the attempt and applies side effects once: ORDER_PAYMENT → `admin_transition_order_status(order, 'PAID')` + `payment_reference = payment id`; POINT_TOPUP → ledger entry + balance credit; failure → `FAILED` only. Completed attempts are returned unchanged; `payments_order_succeeded_uidx` and `point_ledger_payment_unique` back the idempotency.
   * `apps/client-web` Route Handlers `POST /api/payments` and `POST /api/payments/[paymentId]/confirm` verify the Supabase user (cookie session or Bearer token), call the PG Test recorder server-to-server (`PG_TEST_ENDPOINT_URL`, `PG_TEST_API_KEY`, `id` = Mall payment id, `amount` = server amount), and call `complete_payment()` only after the recorder returned `201` for exactly that id/amount/outcome. A recorder error leaves the attempt `PENDING` for retry; a completed attempt is replayed without calling the recorder again.
   * UI: `/order` → `/payment?orderId=` (PG test success/failure choice) → `/success`; `PENDING` orders show "결제하기" in order history. mypage Point top-up uses the same boundary; balance/ledger are read through owner RLS. The legacy dev payment page, `paymentStore`, `useClientOrderApi`, point reservation hook, and `lib/api.ts` were removed; `apps/client-web` no longer references the Express API.
-* [ ] Spending Points on orders, refunds/cancellation of paid payments, and payment expiry are not part of the Mall v2 contract yet. "구매하기" on the ProductPost detail stays disabled (no direct-buy contract; orders are created from the Cart). The detail page's cart action still uses the legacy `useCart.addCart(productId, quantity)`, and "구매하기" stays disabled until the v2 Order flow is connected.
+* [ ] Spending Points on orders, refunds/cancellation of paid payments, and payment expiry are not part of the Mall v2 contract yet. "구매하기" on the ProductPost detail stays disabled (no direct-buy contract; orders are created from the Cart).
+
+### `apps/client-pwa` migration progress
+
+* [x] ProductPost list/detail use `list_product_posts()`/`get_product_post_detail()`; the purchase panel lists ProductVariants with price and consumer-safe `stockStatus` only.
+* [x] Cart uses `get_cart`/`add_cart_item`/`remove_cart_item`; Order uses `create_order_from_cart(p_shipping_address, null)` with ClientAddress field names and owner RLS reads of `orders`/`order_items`. Orders stay `PENDING`; payment is not offered in the PWA.
+* [x] The legacy Express `lib/api.ts` client, `/api` rewrite (`API_URL`), Inventory debug console, and `app/repo` Cloud Run client were removed.
 
 ## Phase 7 — Client / Admin Migration
 

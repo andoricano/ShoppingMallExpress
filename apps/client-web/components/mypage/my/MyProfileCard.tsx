@@ -4,10 +4,12 @@ import type { ClientProfile } from "@mall/types";
 
 interface MyProfileCardProps {
     profile: ClientProfile;
+    email: string | null;
 }
 
 export function MyProfileCard({
     profile,
+    email,
 }: MyProfileCardProps) {
     return (
         <div>
@@ -39,7 +41,8 @@ export function MyProfileCard({
                     </p>
 
                     <p className="mt-1 break-all text-sm text-slate-700">
-                        {profile.email}
+                        {email ||
+                            "이메일이 없습니다."}
                     </p>
                 </div>
 

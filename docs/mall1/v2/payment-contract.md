@@ -232,7 +232,7 @@ The currently confirmed service-router environment configuration is:
 ADMIN_EMAILS=cektjtro@gmail.com
 
 # Shared key used by the Mall/server-side caller when invoking the PG Test API.
-PG_TEST_API_KEY=2651bf7d3d6713df145be6e747d1bbd9c38ca98800c1bdb3b2102f57329660c7cd8a51a1a4153e809ebfbf5213a45c7ada511753e2f765daa55844958dccd6796e34d069fc104a1fdcce4ad8b5eb1a7c44dcb429a5b6dfd1f442bfa21fd1ca8e7aca3dfe72adab8a4e2a310707baff989accd57653a084b6ce64edb7d1942e576c509fc43a2e6a998af01e49e4a78acf638e34b3a8b83f8e5dab1c4c6457ecf
+PG_TEST_API_KEY=<PG_TEST_API_KEY>
 
 # Firebase Web SDK configuration for the admin login page.
 NEXT_PUBLIC_FIREBASE_API_KEY=AIzaSyB0U0ARK9Eu5xfap4zeTIluH_hgEeTFtEo
