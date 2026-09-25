@@ -42,6 +42,17 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
         }
 
         for (const variant of body.variants ?? []) {
+            if (!variant.id && variant.price === undefined) {
+                throw new AdminBadRequestError("A new variant requires a price.");
+            }
+
+            if (
+                variant.optionValues !== undefined
+                && (typeof variant.optionValues !== "object" || variant.optionValues === null || Array.isArray(variant.optionValues))
+            ) {
+                throw new AdminBadRequestError("optionValues must be an object.");
+            }
+
             if (
                 variant.price !== undefined
                 && (typeof variant.price !== "number" || !Number.isFinite(variant.price) || variant.price < 0)
@@ -52,8 +63,10 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
 
         const supabase = await requireAdminServiceClient();
 
-        // Product + Options/Values + Variants change in one transaction so
-        // the deferred variant-integrity triggers see only the final state.
+        // Product + Options/Values + Variants (incl. additions and combination
+        // changes) change in one transaction so the deferred variant-integrity
+        // triggers and the inactive-value / duplicate-combination policies see
+        // only the final state.
         const { error } = await supabase.rpc("admin_update_product", {
             p_product_id: productId,
             p_product: body.product ?? {},

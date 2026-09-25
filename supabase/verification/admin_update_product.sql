@@ -85,29 +85,31 @@ begin
             'id', v_size, 'name', 'Size(EU)', 'displayOrder', 1,
             'values', jsonb_build_array(
                 jsonb_build_object('id', v_s, 'value', 'Small', 'displayOrder', 1),
-                jsonb_build_object('id', v_m, 'isActive', false),
                 jsonb_build_object('value', 'L')
             ))),
         '[]');
-    insert into _results values ('option: rename/reorder, value rename/deactivate/append',
+    insert into _results values ('option: rename/reorder, value rename/append',
         (select name = 'Size(EU)' and display_order = 1 from public.product_options where id = v_size)
         and (select value = 'Small' and display_order = 1 from public.product_option_values where id = v_s)
-        and (select not is_active from public.product_option_values where id = v_m)
         and exists (select 1 from public.product_option_values
                      where product_option_id = v_size and value = 'L' and display_order = 2),
         null);
 
     -- 3. Variant sku / price / active / label
-    perform public.admin_update_product(v_product, '{}', '[]',
+    --    (value M is deactivated together with the Variant that uses it)
+    perform public.admin_update_product(v_product, '{}',
+        jsonb_build_array(jsonb_build_object('id', v_size,
+            'values', jsonb_build_array(jsonb_build_object('id', v_m, 'isActive', false)))),
         jsonb_build_array(
             jsonb_build_object('id', v_variant_s, 'skuCode', '__VERIFY-S2', 'price', 1500, 'label', 'Small'),
             jsonb_build_object('id', v_variant_m, 'isActive', false, 'skuCode', '')
         ));
-    insert into _results values ('variant: sku/price/label/isActive',
+    insert into _results values ('variant: sku/price/label/isActive (+ value deactivation)',
         (select sku_code = '__VERIFY-S2' and price = 1500 and label = 'Small' and is_active
            from public.product_variants where id = v_variant_s)
         and (select sku_code is null and not is_active
-           from public.product_variants where id = v_variant_m),
+           from public.product_variants where id = v_variant_m)
+        and (select not is_active from public.product_option_values where id = v_m),
         null);
 
     execute v_snapshot_sql into v_before using v_product;

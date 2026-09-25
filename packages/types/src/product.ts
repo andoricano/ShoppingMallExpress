@@ -148,7 +148,10 @@ export interface AdminProductDetail extends Product {
 /**
  * Admin-only input for the service-role `admin_update_product()` RPC.
  * Only present keys change; ids must belong to the Product.
- * Values without id are appended to the Option.
+ * Items without id are created: Options (with values), OptionValues, Variants.
+ * `optionValues` replaces a Variant's full combination and is keyed by
+ * ProductOption name (names as they are after this update).
+ * Active Variants may not use inactive OptionValues or share a combination.
  */
 export interface ProductUpdateInput {
     product?: {
@@ -157,7 +160,7 @@ export interface ProductUpdateInput {
         isActive?: boolean;
     };
     options?: {
-        id: string;
+        id?: string;
         name?: string;
         isRequired?: boolean;
         displayOrder?: number;
@@ -169,10 +172,11 @@ export interface ProductUpdateInput {
         }[];
     }[];
     variants?: {
-        id: string;
+        id?: string;
         skuCode?: string | null;
         label?: string | null;
         price?: number;
         isActive?: boolean;
+        optionValues?: Record<string, string>;
     }[];
 }
