@@ -283,7 +283,7 @@ Primary domains:
 
 **Status:** IN PROGRESS
 
-**Owner:** Codex
+Owner: Codex + Claude
 
 ### Scope
 
@@ -333,7 +333,7 @@ Remove or retire legacy API assumptions that no longer apply after removal of `a
 
 **Status:** NOT STARTED
 
-**Owner:** Codex
+Owner: Codex + Claude
 
 ### Consumer
 
@@ -365,7 +365,7 @@ Remove or retire legacy API assumptions that no longer apply after removal of `a
 
 **Status:** NOT STARTED
 
-**Owner:** Codex + User
+Owner: Codex + Claude + User
 
 ### Representative flow
 
