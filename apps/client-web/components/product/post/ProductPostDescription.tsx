@@ -1,15 +1,17 @@
 // component/products/post/ProductPostDescription.tsx
 
+import type { JsonObject } from "@mall/types";
 import { TiptapViewer } from "@mall/tiptap";
 
 interface ProductPostDescriptionProps {
-    description: string;
+    /** ProductPost Tiptap JSON document (`product_posts.content`). */
+    content: JsonObject;
 }
 
 export function ProductPostDescription({
-    description,
+    content,
 }: ProductPostDescriptionProps) {
-    if (!description) {
+    if (!content || Object.keys(content).length === 0) {
         return null;
     }
 
@@ -21,7 +23,7 @@ export function ProductPostDescription({
                 </h2>
 
                 <div className="rounded-xl border border-slate-200 bg-white p-6">
-                    <TiptapViewer content={description} />
+                    <TiptapViewer content={JSON.stringify(content)} />
                 </div>
             </div>
         </section>

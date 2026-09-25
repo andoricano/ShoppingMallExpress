@@ -6,15 +6,12 @@ import {
 } from "react";
 import { useParams } from "next/navigation";
 
-import type {
-    CartItem,
-} from "@mall/types";
-
 import { useProductPost } from "@/hooks/useProductPost";
 import { useWishlist } from "@/hooks/user/useWishlist";
 import { useCart } from "@/hooks/user/useCart";
 
 import { ProductPostSection } from "@/components/product/post/ProductPostSection";
+import type { ProductVariantSelection } from "@/components/product/purchase/ProductPurchase";
 
 export default function ProductDetailPage() {
     const params =
@@ -42,9 +39,9 @@ export default function ProductDetailPage() {
     } = useCart();
 
     const [
-        selectedCartItem,
-        setSelectedCartItem,
-    ] = useState<CartItem | null>(
+        selection,
+        setSelection,
+    ] = useState<ProductVariantSelection | null>(
         null,
     );
 
@@ -112,13 +109,15 @@ export default function ProductDetailPage() {
 
     const handleCartClick =
         async () => {
-            if (!selectedCartItem) {
+            if (!selection?.isAvailable) {
                 return;
             }
 
+            // Cart is migrated separately; the legacy cart hook still takes
+            // productId only (see PHASES.md Phase 6 Consumer blockers).
             await addCart(
-                selectedCartItem.product.id,
-                selectedCartItem.quantity,
+                selection.productId,
+                selection.quantity,
             );
         };
 
@@ -165,7 +164,7 @@ export default function ProductDetailPage() {
                     handleCartClick
                 }
                 onSelectionChange={
-                    setSelectedCartItem
+                    setSelection
                 }
             />
         </main>

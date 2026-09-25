@@ -339,6 +339,12 @@ Remove or retire legacy API assumptions that no longer apply after removal of `a
   * [ ] Uploaded image deletion/orphan cleanup is not implemented.
   * [ ] `/api/master/cloudinary/ping` is called by a hard-coded path but has no Route Handler in `apps/user-web`.
 
+### `apps/client-web` migration progress
+
+* [x] ProductPost list (home, `/products`, category page posts) uses the public `list_product_posts()` RPC (`p_category_id` for categories) through the browser anon client; cards use `ProductPostSummary` (`thumbnailUrl`, `title`, `summary`) and no longer read the legacy `thumbnail` price/discount/tags object.
+* [x] ProductPost detail → Product → Option/Variant uses `get_product_post_detail()` (`ProductPostDetail` with `ProductDetail[]`). The purchase panel resolves the Variant from ProductOptionValue selection and shows only Variant price and consumer-safe `stockStatus`/`isAvailable`; no stock quantity or Ware/Warehouse data is read or typed.
+* [ ] Cart, Order, Wishlist, History, Refund, Point/Payment, and the ProductPost category list (`useProductPostCategoryStore`) still call the removed Express API. The detail page's cart action still uses the legacy `useCart.addCart(productId, quantity)`, and "구매하기" stays disabled until the v2 Order flow is connected.
+
 ## Phase 7 — Client / Admin Migration
 
 **Status:** NOT STARTED

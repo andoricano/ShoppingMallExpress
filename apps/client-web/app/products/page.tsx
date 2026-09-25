@@ -55,10 +55,7 @@ export default function ProductsPage() {
                 </div>
 
                 <ProductPostList
-                    posts={postList.map((post) => ({
-                        id: post.id,
-                        thumbnail: post.thumbnail,
-                    }))}
+                    posts={postList}
                     onClick={(postId) => {
                         window.location.href =
                             `/products/${postId}`;

@@ -8,7 +8,7 @@ import {
 } from "@mall/mall-page-viewer";
 
 import type { PageConfig } from "@mall/mall-page-viewer";
-import type { ProductPost } from "@mall/types";
+import type { ProductPostSummary } from "@mall/types";
 
 import { useMainPage } from "@/hooks/useMainPage";
 import { useWishlist } from "@/hooks/user/useWishlist";
@@ -16,7 +16,7 @@ import { useClientAuthStore } from "@/store/useClientAuthStore";
 
 interface MainPageProps {
     config: PageConfig;
-    postList: ProductPost[];
+    postList: ProductPostSummary[];
     loading: boolean;
     error: string | null;
 }

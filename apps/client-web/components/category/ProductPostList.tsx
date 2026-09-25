@@ -1,7 +1,7 @@
 "use client";
 
 import type {
-    ProductPostCategoryItem,
+    ProductPostSummary,
 } from "@mall/types";
 
 import {
@@ -9,7 +9,7 @@ import {
 } from "@mall/mall-page-viewer";
 
 interface ProductPostListProps {
-    posts: ProductPostCategoryItem[];
+    posts: ProductPostSummary[];
     onClick?: (id: string) => void;
 }
 
@@ -35,17 +35,12 @@ export function ProductPostList({
                     product={{
                         id: post.id,
                         imageUrl:
-                            post.thumbnail.imageUrl,
-                        title:
-                            post.thumbnail.title,
+                            post.thumbnailUrl ??
+                            undefined,
+                        title: post.title,
                         summary:
-                            post.thumbnail.summary,
-                        discount:
-                            post.thumbnail.discount,
-                        price:
-                            post.thumbnail.price,
-                        tags:
-                            post.thumbnail.tags,
+                            post.summary ??
+                            undefined,
                     }}
                     onClick={onClick}
                 />

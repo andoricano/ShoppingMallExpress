@@ -1,32 +1,28 @@
-// hooks/useProductPost.tsx
+// hooks/useProductPost.ts
 
 "use client";
 
 import { useCallback, useState } from "react";
 import type {
-  Product,
-  ProductPost,
+  ProductDetail,
+  ProductPostDetail,
+  ProductPostSummary,
 } from "@mall/types";
-import { API_ENDPOINTS } from "@mall/constants";
-import { API_BASE_URL } from "@/lib/api";
 
+import { createClient } from "@/lib/supabase/client";
 
-interface ProductPostDetailResponse
-  extends ProductPost {
-  productPostProducts: {
-    id: string;
-    productId: string;
-    displayOrder: number;
-    products: Product;
-  }[];
-}
-
+/**
+ * Consumer ProductPost reads through the public Mall v2 RPCs
+ * (`list_product_posts`, `get_product_post_detail`). Only published
+ * ProductPosts, active Products/Variants and consumer-safe availability are
+ * returned; Ware/Warehouse data never reaches this boundary.
+ */
 export function useProductPost() {
   const [postList, setPostList] =
-    useState<ProductPost[]>([]);
+    useState<ProductPostSummary[]>([]);
 
   const [post, setPost] =
-    useState<ProductPost | null>(null);
+    useState<ProductPostDetail | null>(null);
 
   const [loading, setLoading] =
     useState(false);
@@ -35,149 +31,87 @@ export function useProductPost() {
     useState<string | null>(null);
 
   const [products, setProducts] =
-    useState<Product[]>([]);
-
+    useState<ProductDetail[]>([]);
 
   // ==========================================
-  // 1. Client 상품 게시물 목록 조회
+  // 1. 상품 게시물 목록 조회
   // ==========================================
-  const fetchPosts = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+  const fetchPosts = useCallback(
+    async (options?: {
+      categoryId?: string;
+      limit?: number;
+      offset?: number;
+    }) => {
+      setLoading(true);
+      setError(null);
 
-    try {
-      const url =
-        `${API_BASE_URL}${API_ENDPOINTS.CLIENT_PRODUCT_POSTS.BASE}`;
+      try {
+        const { data, error: rpcError } =
+          await createClient().rpc(
+            "list_product_posts",
+            {
+              p_category_id: options?.categoryId ?? null,
+              p_limit: options?.limit ?? 100,
+              p_offset: options?.offset ?? 0,
+            },
+          );
 
-      const response = await fetch(url);
+        if (rpcError) {
+          throw rpcError;
+        }
 
+        const posts = Array.isArray(data)
+          ? (data as ProductPostSummary[])
+          : [];
 
-      const result = await response
-        .json()
-        .catch(() => null);
+        setPostList(posts);
 
-        console.log("result : ",result);
-      if (!response.ok) {
-        throw new Error(
-          result?.message ||
+        return posts;
+      } catch {
+        setError(
           "상품 게시물 목록을 불러오지 못했습니다.",
         );
+        setPostList([]);
+
+        return [];
+      } finally {
+        setLoading(false);
       }
-
-      const posts = Array.isArray(result?.data)
-        ? result.data
-        : [];
-
-      console.log(
-        "[useProductPost] API result:",
-        result,
-      );
-
-      setPostList(posts);
-
-      return posts as ProductPost[];
-    } catch (err) {
-      console.error(
-        "[useProductPost] 상품 게시물 목록 조회 실패:",
-        err,
-      );
-
-      setError(
-        err instanceof Error
-          ? err.message
-          : "상품 게시물 목록 조회에 실패했습니다.",
-      );
-
-      setPostList([]);
-
-      return [];
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    },
+    [],
+  );
 
   // ==========================================
-  // 2. Client 상품 게시물 상세 조회
+  // 2. 상품 게시물 상세 조회
   // ==========================================
-
   const fetchPost = useCallback(
     async (postId: string) => {
       setLoading(true);
       setError(null);
 
       try {
-        const url =
-          `${API_BASE_URL}${API_ENDPOINTS.CLIENT_PRODUCT_POSTS.BY_ID(postId)}`;
-
-        console.log(
-          "[useProductPost] 상품 게시물 상세 요청:",
-          url,
-        );
-
-        const response = await fetch(url);
-
-        console.log(
-          "[useProductPost] detail response:",
-          response.status,
-          response.statusText,
-        );
-
-        const result = await response
-          .json()
-          .catch(() => null);
-
-        if (!response.ok) {
-          throw new Error(
-            result?.message ||
-            "상품 게시물 정보를 불러오지 못했습니다.",
+        const { data, error: rpcError } =
+          await createClient().rpc(
+            "get_product_post_detail",
+            { p_product_post_id: postId },
           );
+
+        if (rpcError) {
+          throw rpcError;
         }
 
-
+        // null: not found, unpublished, or scheduled for later.
         const postData =
-          result?.data as
-          | ProductPostDetailResponse
-          | null;
-
-        if (!postData) {
-          setPost(null);
-          setProducts([]);
-
-          return null;
-        }
-
-        const productList = [
-          ...(postData.productPostProducts ?? []),
-        ]
-          .sort(
-            (a, b) =>
-              a.displayOrder -
-              b.displayOrder,
-          )
-          .map(
-            (item) => item.products,
-          );
+          (data as ProductPostDetail | null) ?? null;
 
         setPost(postData);
-        setProducts(productList);
+        setProducts(postData?.products ?? []);
 
-        return postData as ProductPost;
-
-
-      } catch (err) {
-
-
-        console.error(
-          "[useProductPost] 상품 게시물 상세 조회 실패:",
-          err,
-        );
-
+        return postData;
+      } catch {
         setError(
-          err instanceof Error
-            ? err.message
-            : "상품 게시물 조회에 실패했습니다.",
+          "상품 게시물 정보를 불러오지 못했습니다.",
         );
-
         setPost(null);
         setProducts([]);
 
@@ -190,9 +124,8 @@ export function useProductPost() {
   );
 
   // ==========================================
-  // 3. Post 상태 초기화
+  // 3. 상태 초기화
   // ==========================================
-
   const clearPost = useCallback(() => {
     setPost(null);
     setProducts([]);

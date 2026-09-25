@@ -1,10 +1,11 @@
 "use client";
 
 import type {
-    CartItem,
-    Product,
-    ProductPost as ProductPostType,
+    ProductDetail,
+    ProductPostDetail,
 } from "@mall/types";
+
+import type { ProductVariantSelection } from "../purchase/ProductPurchase";
 
 import { ProductPostHeader } from "./ProductPostHeader";
 import { ProductPostDescription } from "./ProductPostDescription";
@@ -20,8 +21,8 @@ interface ProductReviewData {
 }
 
 interface ProductPostSectionProps {
-    post: ProductPostType;
-    products: Product[];
+    post: ProductPostDetail;
+    products: ProductDetail[];
     reviews: ProductReviewData[];
 
     isWishlisted?: boolean;
@@ -30,7 +31,7 @@ interface ProductPostSectionProps {
     onCartClick?: () => void;
 
     onSelectionChange?: (
-        item: CartItem,
+        selection: ProductVariantSelection | null,
     ) => void;
 }
 
@@ -63,7 +64,7 @@ export function ProductPostSection({
             />
 
             <ProductPostDescription
-                description={post.content}
+                content={post.content}
             />
 
             <ProductReview

@@ -57,9 +57,12 @@ export interface ProductVariantAvailability {
     stockStatus: ProductVariantStockStatus;
 }
 
-/** Product-detail RPC variant payload. Consumer-safe by design. */
+/**
+ * Product-detail RPC variant payload. Consumer-safe by design.
+ * get_product_detail() identifies the variant by `id` only.
+ */
 export interface ConsumerProductVariant
-    extends ProductVariantAvailability {
+    extends Omit<ProductVariantAvailability, "productVariantId"> {
     id: string;
     skuCode: string | null;
     label: string | null;

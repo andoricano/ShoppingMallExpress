@@ -83,7 +83,8 @@ export interface ProductCardData {
     title: string;
     summary?: string;
 
-    price: number;
+    /** Omitted for Mall v2 ProductPost cards: price belongs to ProductVariant. */
+    price?: number;
     discount?: number;
 
     tags?: string[];

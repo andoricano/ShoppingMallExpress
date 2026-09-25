@@ -10,12 +10,12 @@ import type {
 } from "@mall/mall-page-viewer";
 
 import type {
-    ProductPost,
+    ProductPostSummary,
 } from "@mall/types";
 
 interface UseMainPageProps {
     config: PageConfig;
-    postList: ProductPost[];
+    postList: ProductPostSummary[];
 }
 
 export function useMainPage({
@@ -25,33 +25,18 @@ export function useMainPage({
     const productCards =
         useMemo<ProductCardData[]>(
             () =>
+                // ProductPost cards carry no price: price belongs to
+                // ProductVariant and is shown on the detail page.
                 postList.map(
                     (post) => ({
                         id: post.id,
-
                         imageUrl:
-                            post.thumbnail
-                                .imageUrl,
-
-                        title:
-                            post.thumbnail
-                                .title,
-
+                            post.thumbnailUrl ??
+                            undefined,
+                        title: post.title,
                         summary:
-                            post.thumbnail
-                                .summary,
-
-                        price:
-                            post.thumbnail
-                                .price,
-
-                        discount:
-                            post.thumbnail
-                                .discount,
-
-                        tags:
-                            post.thumbnail
-                                .tags,
+                            post.summary ??
+                            undefined,
                     }),
                 ),
             [postList],

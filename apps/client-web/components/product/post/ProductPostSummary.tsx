@@ -1,21 +1,27 @@
 "use client";
 
 import { useState } from "react";
-import type { ProductPost } from "@mall/types";
+import type { ProductPostDetail } from "@mall/types";
 
 import { ProductGallery } from "./ProductGallery";
 
 interface ProductPostSummaryProps {
-  post: ProductPost;
+  post: ProductPostDetail;
 }
 
+/**
+ * ProductPost thumbnail followed by the linked Products' images. Price is
+ * shown per ProductVariant in the purchase panel, not on the ProductPost.
+ */
 export function ProductPostSummary({
   post,
 }: ProductPostSummaryProps) {
   const images = [
-    post.thumbnail.imageUrl,
-    ...post.imageUrls,
-  ].filter(Boolean);
+    post.thumbnailUrl,
+    ...post.products.flatMap((product) => product.imageUrls),
+  ].filter((url, index, list): url is string =>
+    Boolean(url) && list.indexOf(url) === index,
+  );
 
   const [selectedIndex, setSelectedIndex] =
     useState(0);
@@ -25,12 +31,12 @@ export function ProductPostSummary({
 
   return (
     <section>
-      {/* 선택된 게시물 이미지 */}
+      {/* 선택된 이미지 */}
       <div className="aspect-square overflow-hidden rounded-xl bg-slate-100">
         {selectedImage && (
           <img
             src={selectedImage}
-            alt={post.thumbnail.title}
+            alt={post.title}
             className="h-full w-full object-cover"
           />
         )}
@@ -50,44 +56,22 @@ export function ProductPostSummary({
           {post.title}
         </h1>
 
-        {post.thumbnail.summary && (
+        {post.summary && (
           <p className="mt-2 text-sm text-slate-500">
-            {post.thumbnail.summary}
+            {post.summary}
           </p>
         )}
 
-        {/* 가격 */}
-        <div className="mt-4">
-          {post.thumbnail.discount > 0 ? (
-            <>
-              <p className="text-sm text-slate-400 line-through">
-                {post.thumbnail.price.toLocaleString()}원
-              </p>
-
-              <p className="mt-1 text-2xl font-bold text-slate-900">
-                {post.thumbnail.discount.toLocaleString()}원
-              </p>
-            </>
-          ) : (
-            <p className="text-2xl font-bold text-slate-900">
-              {post.thumbnail.price.toLocaleString()}원
-            </p>
-          )}
-        </div>
-
-        {/* 태그 */}
-        {post.thumbnail.tags.length > 0 && (
+        {post.categories.length > 0 && (
           <div className="mt-4 flex flex-wrap gap-2">
-            {post.thumbnail.tags.map(
-              (tag) => (
-                <span
-                  key={tag}
-                  className="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-600"
-                >
-                  #{tag}
-                </span>
-              ),
-            )}
+            {post.categories.map((category) => (
+              <span
+                key={category.id}
+                className="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-600"
+              >
+                {category.name}
+              </span>
+            ))}
           </div>
         )}
       </div>

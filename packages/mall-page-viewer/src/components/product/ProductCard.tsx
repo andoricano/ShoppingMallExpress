@@ -34,7 +34,11 @@ export function ProductCard({
         onWishlistClick?.();
     };
 
+    const hasPrice =
+        typeof product.price === "number";
+
     const hasDiscount =
+        hasPrice &&
         cardType === "DISCOUNT" &&
         typeof product.discount ===
         "number" &&
@@ -103,26 +107,28 @@ export function ProductCard({
                 )}
 
                 {/* Price */}
-                <div className="mt-3">
-                    {hasDiscount ? (
-                        <>
-                            <p className="text-sm text-slate-400 line-through">
-                                {product.price.toLocaleString()}
-                                원
-                            </p>
+                {hasPrice && (
+                    <div className="mt-3">
+                        {hasDiscount ? (
+                            <>
+                                <p className="text-sm text-slate-400 line-through">
+                                    {product.price!.toLocaleString()}
+                                    원
+                                </p>
 
-                            <p className="mt-0.5 text-xl font-bold text-rose-600">
-                                {product.discount!.toLocaleString()}
+                                <p className="mt-0.5 text-xl font-bold text-rose-600">
+                                    {product.discount!.toLocaleString()}
+                                    원
+                                </p>
+                            </>
+                        ) : (
+                            <p className="text-xl font-bold text-neutral-900">
+                                {product.price!.toLocaleString()}
                                 원
                             </p>
-                        </>
-                    ) : (
-                        <p className="text-xl font-bold text-neutral-900">
-                            {product.price.toLocaleString()}
-                            원
-                        </p>
-                    )}
-                </div>
+                        )}
+                    </div>
+                )}
 
                 {/* Tags */}
                 {product.tags &&

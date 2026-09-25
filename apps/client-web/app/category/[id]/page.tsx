@@ -9,14 +9,12 @@ import {
 } from "react";
 
 import type {
-    ProductPostCategoryItem,
+    ProductPostSummary,
 } from "@mall/types";
-
-import { API_ENDPOINTS } from "@mall/constants";
 
 import { useProductPostCategories } from "@/hooks/category/useProductPostCategories";
 import { ProductPostList } from "@/components/category/ProductPostList";
-import { API_BASE_URL } from "@/lib/api";
+import { createClient } from "@/lib/supabase/client";
 
 interface PageProps {
     params: Promise<{
@@ -47,7 +45,7 @@ export default function CategoryPage({
         posts,
         setPosts,
     ] = useState<
-        ProductPostCategoryItem[]
+        ProductPostSummary[]
     >([]);
 
     const [
@@ -89,36 +87,31 @@ export default function CategoryPage({
                 setPostError(null);
 
                 try {
-                    const url =
-                        `${API_BASE_URL}${API_ENDPOINTS.CLIENT_CATEGORY.POSTS(
-                            category.id,
-                        )}`;
+                    // Published ProductPosts of an active category
+                    // through the public list_product_posts() RPC.
+                    const {
+                        data,
+                        error: rpcError,
+                    } = await createClient().rpc(
+                        "list_product_posts",
+                        {
+                            p_category_id: category.id,
+                            p_limit: 100,
+                            p_offset: 0,
+                        },
+                    );
 
-                    const response =
-                        await fetch(url);
-
-                    const result =
-                        await response
-                            .json()
-                            .catch(
-                                () => null,
-                            );
-
-                    if (!response.ok) {
+                    if (rpcError) {
                         throw new Error(
-                            result?.message ||
                             "카테고리 게시물을 불러오지 못했습니다.",
                         );
                     }
 
-                    const data =
-                        Array.isArray(
-                            result?.data,
-                        )
-                            ? (result.data as ProductPostCategoryItem[])
-                            : [];
-
-                    setPosts(data);
+                    setPosts(
+                        Array.isArray(data)
+                            ? (data as ProductPostSummary[])
+                            : [],
+                    );
                 } catch (error) {
                     console.error(
                         "[CategoryPage] 게시물 조회 실패:",

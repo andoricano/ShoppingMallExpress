@@ -370,10 +370,12 @@ export default function AdminProductSection({
                                         }
                                     </p>
 
-                                    <p className="mt-1 text-xs text-slate-400">
-                                        {product.price.toLocaleString()}
-                                        원
-                                    </p>
+                                    {typeof product.price === "number" && (
+                                        <p className="mt-1 text-xs text-slate-400">
+                                            {product.price.toLocaleString()}
+                                            원
+                                        </p>
+                                    )}
                                 </div>
 
                                 {/* Order */}

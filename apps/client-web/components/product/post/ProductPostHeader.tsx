@@ -1,18 +1,20 @@
 "use client";
 
 import type {
-    CartItem,
-    Product,
-    ProductPost,
+    ProductDetail,
+    ProductPostDetail,
 } from "@mall/types";
 
 import { ProductPostSummary } from "./ProductPostSummary";
-import { ProductPurchase } from "../purchase/ProductPurchase";
+import {
+    ProductPurchase,
+    type ProductVariantSelection,
+} from "../purchase/ProductPurchase";
 import ProductPostActions from "./ProductPostActions";
 
 interface ProductPostHeaderProps {
-    post: ProductPost;
-    products: Product[];
+    post: ProductPostDetail;
+    products: ProductDetail[];
 
     isWishlisted?: boolean;
 
@@ -20,7 +22,7 @@ interface ProductPostHeaderProps {
     onCartClick?: () => void;
 
     onSelectionChange?: (
-        item: CartItem,
+        selection: ProductVariantSelection | null,
     ) => void;
 }
 
