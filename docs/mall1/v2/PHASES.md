@@ -366,7 +366,7 @@ Final audit (base `e88e4fc`): `client-web`, `client-pwa`, and `user-web` typeche
 
 ## Phase 7 — Client / Admin Migration
 
-**Status:** IN PROGRESS
+**Status:** COMPLETE
 
 Owner: Codex + Claude
 
@@ -394,7 +394,7 @@ Owner: Codex + Claude
 
 * [x] Consumer uses Product/ProductVariant purchase flows only.
 * [x] Admin uses the confirmed internal inventory flows.
-* [ ] Legacy Inventory-centric UI and obsolete API usage are removed or explicitly deprecated.
+* [x] Legacy Inventory-centric UI and obsolete API usage are removed or explicitly deprecated (remaining items are explicitly deprecated below).
 
 ### Progress
 
@@ -403,8 +403,14 @@ Owner: Codex + Claude
 * [x] `@mall/tiptap` `ProductPostCard` no longer takes `price`/`discount`/`tags` (ProductPost has no price); user-web callers no longer pass placeholder `0` prices. The unused legacy `ProductPreview`/`ProductGallery` and user-web `types/admin.ts` were removed.
 * [x] `@mall/constants` `API_ENDPOINTS`, `DB_TABLES`/`DB_COLUMNS` (`inventory_items`), and `CLIENT_ORDER_*` were removed; no application imported them. Only `PAGE_CONFIG_KEYS` remains (page-config contract undecided). No app depends on `@mall/constants`; `client-pwa` no longer depends on `@mall/tiptap`.
 * [x] client-web profile reads/updates use direct Supabase + RLS on `user_profiles` (`user_profiles_owner_select`/`_owner_update`; `name`/`phone` column grants) instead of the undefined `get_my_profile`/`update_my_profile` RPCs. No DB change.
-* [ ] user-web Ware management still uses Inventory naming (`/inventory` route, `component/inventory/*`, `useAdminInventory`, `ProductInventorySection`, `AdminDashboardInventoryAlert`); it already uses the Ware/Warehouse contracts.
-* [ ] `@mall/mall-page-viewer` `ProductCardData` keeps optional `price`/`discount`/`tags` and `DISCOUNT` card types for the page-config design mock; Consumer pages pass ProductPost cards without price. Depends on the undecided page-config contract.
+* [x] **Deprecated (naming only):** user-web Ware management keeps Inventory naming (`/inventory` route, `component/inventory/*`, `useAdminInventory`, `ProductInventorySection`, `InventoryInspector`/`InventoryList`, and the `AdminDashboardInventoryAlert` type used by `/api/admin/overview`). Runtime use is limited to the Admin-only `/api/admin/wares` and `/api/admin/warehouses` Route Handlers and the confirmed Ware/Warehouse RPCs; no legacy Inventory/`SkuInventory` type, table, or Express endpoint is referenced. "Inventory" in these names means Ware stock. New code must use Ware/Warehouse naming; a rename is optional cleanup and not a v2 requirement.
+* [x] **Deprecated (design mock only):** `@mall/mall-page-viewer` `ProductCardData.price`/`discount`/`tags` and the `DISCOUNT` card type. They are optional and only populated by `mainPageMock` for the user-web design editor preview. client-web builds Product section cards from `ProductPostSummary` without price (`useMainPage`), client-pwa renders only the mock hero, and `ProductCard` renders price only when a number is supplied, so Consumer pages never show a mock or legacy price. Do not use these fields for real data; price belongs to ProductVariant. Removal depends on the undecided page-config contract.
+* [x] **Deprecated (no backing route):** user-web `/master` Cloudinary connection check calls `/api/master/cloudinary/ping`, which has no Route Handler (status shows "disconnected"); saving master config is a no-op. Images use the Supabase `images` Storage bucket through `/api/admin/images/upload-url`. The Cloudinary master config UI is not part of Mall v2.
+* [x] **Deprecated (outside required paths):** `apps/develop-web` still calls the legacy Express API (`NEXT_PUBLIC_API_URL`, `localhost:8080`). It is the internal development/verification app (`ARCHITECTURE.md`), is not a required Mall v2 application path, and must not be used as a contract reference.
+
+### Completion record
+
+Validated at `b4d717e` (only documentation changed afterwards): `tsc --noEmit` exit 0 and `next build` succeeded for `user-web`, `client-web`, and `client-pwa`. `eslint` reports 0 errors for `client-pwa` and 10 pre-existing `react-hooks/set-state-in-effect` errors in files not touched by Phase 7 (`user-web` 8, `client-web` 2); these are unrelated to Mall v2 contracts and are not fixed here.
 
 ## Phase 8 — End-to-End Verification
 
@@ -440,6 +446,10 @@ Google Login
 * [ ] Git push and Vercel deployment
 * [ ] deployed Google Auth flow
 * [ ] deployed core Mall flow
+
+### Open decisions
+
+* [ ] Ware stock after Refund approval is undecided. Currently `request_refund()` and `admin_transition_refund_status()` (`APPROVED`/`REJECTED`) never restock Ware, and `restock_order_item()` (service-role only) is called by no application and keeps no restock record. Only `cancel_order()` (`PENDING`) restores the exact allocated stock. Decide before Refund/stock verification; no migration until decided.
 
 ### Completion criteria
 
