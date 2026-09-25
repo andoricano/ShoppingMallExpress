@@ -4,6 +4,7 @@
 
 import { useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 import CartListSection from "@/components/cart/CartListSection";
 import CartProductsResult from "@/components/cart/CartProductsResult";
@@ -14,6 +15,8 @@ import {
 } from "@/hooks/user/useCart";
 
 export default function CartPage() {
+    const router = useRouter();
+
     const {
         cart,
         items,
@@ -92,14 +95,17 @@ export default function CartPage() {
 
                 {items.length > 0 && (
                     <>
-                        {/* Order is connected in the Order migration (create_order_from_cart). */}
+                        {/* Orders the whole server Cart (create_order_from_cart). */}
                         <CartProductsResult
                             totalPrice={totalPrice}
-                            disabled
+                            disabled={items.some((item) => !item.isAvailable)}
+                            onOrder={() => router.push("/order")}
                         />
-                        <p className="text-center text-xs text-slate-400">
-                            주문 기능은 준비 중입니다.
-                        </p>
+                        {items.some((item) => !item.isAvailable) && (
+                            <p className="text-center text-xs text-rose-600">
+                                품절 또는 판매 중지된 상품을 삭제한 뒤 주문할 수 있습니다.
+                            </p>
+                        )}
                     </>
                 )}
             </div>

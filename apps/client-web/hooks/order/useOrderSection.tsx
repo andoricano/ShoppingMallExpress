@@ -1,155 +1,221 @@
-// hooks/useOrderSection.ts
+// hooks/order/useOrderSection.tsx
 
 "use client";
 
 import {
     useCallback,
+    useEffect,
     useMemo,
     useState,
 } from "react";
 
-import type {
-    OrderShippingAddress,
-} from "@mall/types";
+import type { ClientAddress } from "@mall/types";
 
-import { useCartStore } from "@/store/cartStore";
+import { createClient } from "@/lib/supabase/client";
+import { useCart } from "@/hooks/user/useCart";
+import {
+    toOrderErrorMessage,
+    useClientOrder,
+} from "@/hooks/order/useClientOrder";
+
+/**
+ * Order shipping snapshot. Uses the ClientAddress field names (the shipping
+ * address Source of Truth); it is stored as-is in orders.shipping_address.
+ */
+export interface OrderShippingForm {
+    recipientName: string;
+    phone: string;
+    zonecode: string;
+    address: string;
+    addressDetail: string;
+}
+
+const EMPTY_SHIPPING: OrderShippingForm = {
+    recipientName: "",
+    phone: "",
+    zonecode: "",
+    address: "",
+    addressDetail: "",
+};
+
+type ClientAddressRow = {
+    id: string;
+    client_id: string;
+    label: string | null;
+    recipient_name: string;
+    phone: string;
+    zonecode: string;
+    address: string;
+    address_detail: string | null;
+    is_default: boolean;
+    created_at: string;
+    updated_at: string;
+};
+
+function toClientAddress(row: ClientAddressRow): ClientAddress {
+    return {
+        id: row.id,
+        clientId: row.client_id,
+        label: row.label,
+        recipientName: row.recipient_name,
+        phone: row.phone,
+        zonecode: row.zonecode,
+        address: row.address,
+        addressDetail: row.address_detail,
+        isDefault: row.is_default,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+    };
+}
+
+function toShippingForm(address: ClientAddress): OrderShippingForm {
+    return {
+        recipientName: address.recipientName,
+        phone: address.phone,
+        zonecode: address.zonecode,
+        address: address.address,
+        addressDetail: address.addressDetail ?? "",
+    };
+}
 
 export function useOrderSection() {
-    const items = useCartStore(
-        (state) => state.items,
-    );
+    const cartState = useCart();
+    const { items, fetchCart } = cartState;
+    const { creating, createOrderFromCart } = useClientOrder();
 
-    const [
-        selectedItemIds,
-        setSelectedItemIds,
-    ] = useState<string[]>([]);
+    const [addresses, setAddresses] =
+        useState<ClientAddress[]>([]);
+    const [selectedAddressId, setSelectedAddressId] =
+        useState<string | null>(null);
+    const [shipping, setShipping] =
+        useState<OrderShippingForm>(EMPTY_SHIPPING);
+    const [orderError, setOrderError] =
+        useState<string | null>(null);
 
-    const [
-        shippingAddress,
-        setShippingAddress,
-    ] =
-        useState<OrderShippingAddress>({
-            name: "",
-            recipient: "",
-            phone: "",
-            postalCode: "",
-            address: "",
-            detailAddress: "",
+    // Saved addresses through the owner RLS policy on client_addresses.
+    const fetchAddresses = useCallback(async () => {
+        const { data, error } = await createClient()
+            .from("client_addresses")
+            .select("id, client_id, label, recipient_name, phone, zonecode, address, address_detail, is_default, created_at, updated_at")
+            .order("is_default", { ascending: false })
+            .order("created_at", { ascending: true });
+
+        if (error) {
+            return;
+        }
+
+        const list = (data as ClientAddressRow[]).map(toClientAddress);
+        setAddresses(list);
+
+        const initial = list.find((item) => item.isDefault) ?? list[0];
+
+        if (initial) {
+            setSelectedAddressId(initial.id);
+            setShipping(toShippingForm(initial));
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchCart().then((cart) => {
+            if (cart) {
+                fetchAddresses();
+            }
         });
+    }, [fetchCart, fetchAddresses]);
 
-    const selectedItems = useMemo(
-        () =>
-            items.filter((item) =>
-                selectedItemIds.includes(
-                    item.product.id,
-                ),
-            ),
-        [items, selectedItemIds],
+    const selectAddress = useCallback(
+        (addressId: string | null) => {
+            setSelectedAddressId(addressId);
+
+            const address = addresses.find((item) => item.id === addressId);
+            setShipping(address ? toShippingForm(address) : EMPTY_SHIPPING);
+        },
+        [addresses],
     );
 
-    const productPrice = useMemo(
-        () =>
-            selectedItems.reduce(
-                (total, item) =>
-                    total +
-                    item.product.price *
-                        item.quantity,
-                0,
-            ),
-        [selectedItems],
-    );
-
-    const selectItem = useCallback(
-        (
-            productId: string,
-            selected: boolean,
-        ) => {
-            setSelectedItemIds(
-                (current) => {
-                    if (selected) {
-                        return current.includes(
-                            productId,
-                        )
-                            ? current
-                            : [
-                                  ...current,
-                                  productId,
-                              ];
-                    }
-
-                    return current.filter(
-                        (id) =>
-                            id !== productId,
-                    );
-                },
-            );
+    const updateShipping = useCallback(
+        (patch: Partial<OrderShippingForm>) => {
+            setSelectedAddressId(null);
+            setShipping((current) => ({ ...current, ...patch }));
         },
         [],
     );
 
-    const handleAddressChange =
-        useCallback(
-            (
-                address: OrderShippingAddress,
-            ) => {
-                setShippingAddress(
-                    address,
-                );
-            },
-            [],
-        );
+    // Current cart prices are an estimate; the order uses server snapshots.
+    const estimatedTotal = useMemo(
+        () =>
+            items.reduce(
+                (total, item) => total + item.price * item.quantity,
+                0,
+            ),
+        [items],
+    );
 
-    const handleQuantityChange =
-        useCallback(
-            (
-                index: number,
-                quantity: number,
-            ) => {
-                const item =
-                    items[index];
+    const unavailableItems = useMemo(
+        () => items.filter((item) => !item.isAvailable),
+        [items],
+    );
 
-                if (!item) {
-                    return;
-                }
+    const missingShipping =
+        !shipping.recipientName.trim()
+        || !shipping.phone.trim()
+        || !shipping.zonecode.trim()
+        || !shipping.address.trim();
 
-                console.log(
-                    "quantity change:",
-                    item.product.id,
-                    quantity,
-                );
-            },
-            [items],
-        );
+    const canSubmit =
+        items.length > 0
+        && unavailableItems.length === 0
+        && !missingShipping
+        && !creating;
 
-    const handleRemove =
-        useCallback(
-            (index: number) => {
-                const item =
-                    items[index];
+    /** Returns the created order id, or null when the order was rejected. */
+    const submitOrder = useCallback(async () => {
+        setOrderError(null);
 
-                if (!item) {
-                    return;
-                }
+        if (missingShipping) {
+            setOrderError("수령인, 연락처, 우편번호, 주소를 입력해 주세요.");
+            return null;
+        }
 
-                console.log(
-                    "remove order item:",
-                    item.product.id,
-                );
-            },
-            [items],
-        );
+        try {
+            const orderId = await createOrderFromCart({
+                recipientName: shipping.recipientName.trim(),
+                phone: shipping.phone.trim(),
+                zonecode: shipping.zonecode.trim(),
+                address: shipping.address.trim(),
+                addressDetail: shipping.addressDetail.trim() || null,
+            });
+
+            // create_order_from_cart() cleared the server Cart.
+            await fetchCart();
+
+            return orderId;
+        } catch (cause) {
+            setOrderError(toOrderErrorMessage(cause, items));
+
+            // The failed order rolled back; refresh availability/status.
+            await fetchCart();
+
+            return null;
+        }
+    }, [createOrderFromCart, fetchCart, items, missingShipping, shipping]);
 
     return {
-        items,
-        selectedItems,
-        selectedItemIds,
+        cart: cartState,
 
-        shippingAddress,
-        productPrice,
+        addresses,
+        selectedAddressId,
+        selectAddress,
 
-        selectItem,
-        handleQuantityChange,
-        handleRemove,
-        handleAddressChange,
+        shipping,
+        updateShipping,
+
+        estimatedTotal,
+        unavailableItems,
+
+        creating,
+        canSubmit,
+        orderError,
+        submitOrder,
     };
 }
