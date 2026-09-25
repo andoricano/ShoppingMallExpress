@@ -7,9 +7,33 @@ import type {
     ProductPostCategory,
 } from "@mall/types";
 
-import { API_ENDPOINTS } from "@mall/constants";
+import { createClient } from "@/lib/supabase/client";
 
-import { API_BASE_URL } from "@/lib/api";
+type ProductPostCategoryRow = {
+    id: string;
+    name: string;
+    slug: string | null;
+    description: string | null;
+    display_order: number;
+    is_active: boolean;
+    created_at: string;
+    updated_at: string;
+};
+
+function toProductPostCategory(
+    row: ProductPostCategoryRow,
+): ProductPostCategory {
+    return {
+        id: row.id,
+        name: row.name,
+        slug: row.slug,
+        description: row.description,
+        displayOrder: row.display_order,
+        isActive: row.is_active,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+    };
+}
 
 // 10분
 const CATEGORY_CACHE_TTL =
@@ -80,35 +104,30 @@ export const useProductPostCategoryStore =
                     });
 
                     try {
-                        const response =
-                            await fetch(
-                                `${API_BASE_URL}${API_ENDPOINTS.CLIENT_CATEGORY.BASE}`,
-                                {
-                                    method: "GET",
-                                    cache: "no-store",
-                                },
-                            );
+                        // Flat Mall v2 categories through direct
+                        // Supabase + RLS: product_post_categories_public_select
+                        // exposes active categories to anon/authenticated.
+                        const {
+                            data: rows,
+                            error: selectError,
+                        } = await createClient()
+                            .from("product_post_categories")
+                            .select(
+                                "id, name, slug, description, display_order, is_active, created_at, updated_at",
+                            )
+                            .eq("is_active", true)
+                            .order("display_order", { ascending: true })
+                            .order("created_at", { ascending: true });
 
-                        const result =
-                            await response
-                                .json()
-                                .catch(
-                                    () => null,
-                                );
-
-                        if (!response.ok) {
+                        if (selectError) {
                             throw new Error(
-                                result?.message ||
                                 "카테고리를 불러오지 못했습니다.",
                             );
                         }
 
-                        const data =
-                            Array.isArray(
-                                result?.data,
-                            )
-                                ? (result.data as ProductPostCategory[])
-                                : [];
+                        const data = (
+                            (rows ?? []) as ProductPostCategoryRow[]
+                        ).map(toProductPostCategory);
 
                         set({
                             categories: data,
@@ -155,6 +174,14 @@ export const useProductPostCategoryStore =
             }),
             {
                 name: "product-post-category-store",
+
+                // v1: flat Mall v2 categories. Cached legacy
+                // (Express) category shapes are discarded.
+                version: 1,
+                migrate: () => ({
+                    categories: [],
+                    fetchedAt: null,
+                }),
 
                 partialize: (
                     state,

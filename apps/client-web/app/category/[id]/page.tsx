@@ -61,7 +61,14 @@ export default function CategoryPage({
     const categoryName =
         CATEGORY_NAME_MAP[id] ?? id;
 
+    // `/category/[id]` accepts the category slug or id; the legacy
+    // header links (`women`, `men`) still resolve through the name map.
     const category =
+        categories.find(
+            (item) =>
+                item.slug === id ||
+                item.id === id,
+        ) ??
         categories.find(
             (item) =>
                 item.name === categoryName,

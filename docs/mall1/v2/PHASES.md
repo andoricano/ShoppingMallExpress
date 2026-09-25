@@ -343,7 +343,8 @@ Remove or retire legacy API assumptions that no longer apply after removal of `a
 
 * [x] ProductPost list (home, `/products`, category page posts) uses the public `list_product_posts()` RPC (`p_category_id` for categories) through the browser anon client; cards use `ProductPostSummary` (`thumbnailUrl`, `title`, `summary`) and no longer read the legacy `thumbnail` price/discount/tags object.
 * [x] ProductPost detail → Product → Option/Variant uses `get_product_post_detail()` (`ProductPostDetail` with `ProductDetail[]`). The purchase panel resolves the Variant from ProductOptionValue selection and shows only Variant price and consumer-safe `stockStatus`/`isAvailable`; no stock quantity or Ware/Warehouse data is read or typed.
-* [ ] Cart, Order, Wishlist, History, Refund, Point/Payment, and the ProductPost category list (`useProductPostCategoryStore`) still call the removed Express API. The detail page's cart action still uses the legacy `useCart.addCart(productId, quantity)`, and "구매하기" stays disabled until the v2 Order flow is connected.
+* [x] ProductPost categories (`useProductPostCategoryStore`) are read as flat v2 `ProductPostCategory` rows through direct Supabase + RLS (`product_post_categories_public_select`: active only). `/category/[id]` resolves the category by slug or id (legacy header links still resolve by name) and then lists posts with `list_product_posts(p_category_id)`. Cached legacy category shapes are discarded by the store's persist version.
+* [ ] Cart, Order, Wishlist, History, Refund, and Point/Payment still call the removed Express API. The detail page's cart action still uses the legacy `useCart.addCart(productId, quantity)`, and "구매하기" stays disabled until the v2 Order flow is connected.
 
 ## Phase 7 — Client / Admin Migration
 
