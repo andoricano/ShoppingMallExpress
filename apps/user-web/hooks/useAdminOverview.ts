@@ -8,13 +8,7 @@ import {
 import type {
     AdminDashboardOverview,
 } from "@mall/types";
-import {
-    API_ENDPOINTS,
-} from "@mall/constants";
 
-import {
-    createClient,
-} from "@/lib/supabase/client";
 import {
     useAdminAuthStore,
 } from "@/store/useAdminAuth";
@@ -43,25 +37,8 @@ export function useAdminOverview() {
             setForbidden(false);
 
             try {
-                const supabase = createClient();
-                const {
-                    data: { session },
-                    error: sessionError,
-                } = await supabase.auth.getSession();
-
-                if (sessionError || !session?.access_token) {
-                    await signOut();
-                    return;
-                }
-
                 const response = await fetch(
-                    API_ENDPOINTS.ADMIN_OVERVIEW.BASE,
-                    {
-                        headers: {
-                            Authorization:
-                                `Bearer ${session.access_token}`,
-                        },
-                    },
+                    "/api/admin/overview",
                 );
 
                 const result: AdminOverviewResponse | null =

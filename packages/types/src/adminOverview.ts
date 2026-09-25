@@ -1,26 +1,25 @@
 /**
- * @deprecated This legacy SKU/Inventory overview is not a Mall v2 Ware API
- * contract. A v2 Admin overview response has not been finalized.
+ * Admin-only Ware stock alert. Must never be used in Consumer contracts.
+ * `availableStock` is `current_stock - reserved_stock` of an active Ware.
  */
 export interface AdminDashboardInventoryAlert {
-    skuId: string;
-    skuCode: string;
-    currentStock: number;
+    wareId: string;
+    wareCode: string | null;
+    name: string;
+    availableStock: number;
 }
 
-/** @deprecated No finalized Mall v2 Admin overview RPC contract exists yet. */
+/** Admin dashboard aggregate returned by `GET /api/admin/overview`. */
 export interface AdminDashboardOverview {
     generatedAt: string;
 
-    pageConfig: {
-        isConfigured: boolean;
-    };
-
     orders: {
+        /** Orders in `PAID` or `PROCESSING` status. */
         pendingFulfillmentCount: number;
     };
 
     todayOrders: {
+        /** Non-cancelled orders placed today (Asia/Seoul). */
         count: number;
         totalAmount: number;
     };

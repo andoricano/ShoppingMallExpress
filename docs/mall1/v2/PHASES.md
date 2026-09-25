@@ -330,7 +330,10 @@ Remove or retire legacy API assumptions that no longer apply after removal of `a
   * [x] Adding ProductOptions/ProductOptionValues/ProductVariants to an existing Product and changing a Variant's option combination use the same `admin_update_product()` transaction (migration `20260925100000_admin_update_product_structure.sql`). Active Variants may not use inactive OptionValues or share an option combination; foreign ids and integrity violations roll back (`supabase/verification/admin_update_product_structure.sql`).
   * [ ] Product/Option/Value/Variant physical deletion policy (cart/order references, historical snapshots) is not decided; deactivation is the supported path.
   * [x] ProductPost create/update and ordered `product_post_products` replacement run in one transaction through the service-role-only `admin_save_product_post(uuid, jsonb, uuid[])` RPC (migration `20260925080000_admin_save_product_post.sql`); unknown `productIds`, duplicate slugs, invalid status, and link failures leave no partial save (`supabase/verification/admin_save_product_post.sql`).
-* [ ] All remaining user-web routes are migrated from legacy Express endpoint constants.
+* [x] All remaining user-web routes are migrated from legacy Express endpoint constants.
+  * [x] Admin Overview aggregates v2 `orders`, `refund_requests`, active `wares` (available = current − reserved), `product_posts`, and `user_profiles` through the admin-only `GET /api/admin/overview` Route Handler. No DB change was required.
+  * [x] Main page config (`/api/page-config`) has no confirmed v2 table/RPC contract; the Admin design editor now works on a local `mainPageMock` copy with saving disabled. A persisted page-config contract remains undecided.
+  * [ ] `/api/admin/images/upload-url` (image upload) and `/api/master/cloudinary/ping` are called by hard-coded paths but have no Route Handler in `apps/user-web`.
 
 ## Phase 7 — Client / Admin Migration
 

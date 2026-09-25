@@ -7,7 +7,6 @@ import {
 
 
 import { mainPageMock, type PageConfig } from "@mall/mall-page-viewer";
-import { API_ENDPOINTS } from "@mall/constants";
 
 export type DesignEditorSection =
     | "HEADER"
@@ -16,8 +15,11 @@ export type DesignEditorSection =
     | "PROMOTION"
     | "FOOTER";
 
-const PAGE_CONFIG_API =
-    `${API_ENDPOINTS.PAGE_CONFIG.BASE}/main_page`;
+// Mall v2 has no confirmed page-config table/RPC contract, and the legacy
+// Express `/api/page-config` endpoint was removed. The editor works on a local
+// copy of `mainPageMock` only; persistence stays disabled until a contract exists.
+const PAGE_CONFIG_UNSUPPORTED_MESSAGE =
+    "메인 페이지 설정 저장은 Mall v2 contract가 확정되지 않아 지원되지 않습니다.";
 
 export function useAdminPageConfig() {
     const [config, setConfig] =
@@ -35,11 +37,9 @@ export function useAdminPageConfig() {
     const [selectedEditor, setSelectedEditor] =
         useState<DesignEditorSection | null>(null);
 
-    const [loading, setLoading] =
-        useState(false);
-
-    const [saving, setSaving] =
-        useState(false);
+    // No remote load/save is performed; kept for the page contract.
+    const loading = false;
+    const saving = false;
 
     const [error, setError] =
         useState<string | null>(null);
@@ -50,81 +50,18 @@ export function useAdminPageConfig() {
     // ==========================================
     const loadConfig = useCallback(
         async () => {
-            setLoading(true);
+            const mockConfig =
+                structuredClone(mainPageMock);
+
+            setConfig(mockConfig);
+            setOriginalConfig(
+                structuredClone(mockConfig),
+            );
+            setIsMock(true);
+            setIsDirty(false);
             setError(null);
 
-            try {
-                const res = await fetch(
-                    PAGE_CONFIG_API,
-                );
-
-                const result =
-                    await res
-                        .json()
-                        .catch(() => null);
-
-                console.log(
-                    "[PageConfig] API Response:",
-                    result,
-                );
-
-                if (!res.ok) {
-                    throw new Error(
-                        result?.message ||
-                        "페이지 설정 조회에 실패했습니다.",
-                    );
-                }
-
-                const nextConfig =
-                    result?.data as
-                    | PageConfig
-                    | null;
-
-                console.log(
-                    "[PageConfig] DB Config:",
-                    nextConfig,
-                );
-
-                if (!nextConfig) {
-                    const mockConfig =
-                        structuredClone(mainPageMock);
-
-                    console.log(
-                        "[PageConfig] DB 데이터 없음 → Mock 사용:",
-                        mockConfig,
-                    );
-
-                    setConfig(mockConfig);
-                    setOriginalConfig(
-                        structuredClone(mockConfig),
-                    );
-                    setIsMock(true);
-                    setIsDirty(false);
-
-                    return mockConfig;
-                }
-
-                setConfig(nextConfig);
-                setOriginalConfig(
-                    structuredClone(nextConfig),
-                );
-                setIsMock(false);
-                setIsDirty(false);
-
-                return nextConfig;
-            } catch (err) {
-                const message =
-                    err instanceof Error
-                        ? err.message
-                        : "페이지 설정 조회에 실패했습니다.";
-
-                setError(message);
-                setIsMock(false);
-
-                return null;
-            } finally {
-                setLoading(false);
-            }
+            return mockConfig;
         },
         [],
     );
@@ -133,64 +70,13 @@ export function useAdminPageConfig() {
     // Config 저장
     // ==========================================
 
-    const saveConfig = useCallback(
-        async (
-            nextConfig: PageConfig,
-        ) => {
-            setSaving(true);
-            setError(null);
+    const saveConfig = useCallback<
+        (nextConfig: PageConfig) => Promise<PageConfig | null>
+    >(
+        async () => {
+            setError(PAGE_CONFIG_UNSUPPORTED_MESSAGE);
 
-            try {
-                const res = await fetch(
-                    PAGE_CONFIG_API,
-                    {
-                        method: "PUT",
-                        headers: {
-                            "Content-Type":
-                                "application/json",
-                        },
-                        body: JSON.stringify(
-                            nextConfig,
-                        ),
-                    },
-                );
-
-                const result =
-                    await res
-                        .json()
-                        .catch(() => null);
-
-                if (!res.ok) {
-                    throw new Error(
-                        result?.message ||
-                        "페이지 설정 저장에 실패했습니다.",
-                    );
-                }
-
-                const savedConfig =
-                    result.data as PageConfig;
-
-                setConfig(savedConfig);
-                setOriginalConfig(
-                    structuredClone(savedConfig),
-                );
-                setIsDirty(false);
-                setIsMock(false);
-                setSelectedEditor(null);
-
-                return savedConfig;
-            } catch (err) {
-                const message =
-                    err instanceof Error
-                        ? err.message
-                        : "페이지 설정 저장에 실패했습니다.";
-
-                setError(message);
-
-                throw err;
-            } finally {
-                setSaving(false);
-            }
+            return null;
         },
         [],
     );
@@ -199,7 +85,6 @@ export function useAdminPageConfig() {
         (nextConfig: PageConfig) => {
             setConfig(nextConfig);
             setIsDirty(true);
-            setIsMock(false);
         },
         [],
     );

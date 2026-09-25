@@ -52,7 +52,7 @@ export default function MainPage() {
     .slice(0, 3)
     .map(
       (alert) =>
-        `${alert.skuCode} · ${alert.currentStock}개`,
+        `${alert.wareCode ?? alert.name} · ${alert.availableStock}개`,
     );
 
   return (
@@ -77,8 +77,8 @@ export default function MainPage() {
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
         <DashboardCard
           title="스토어 디자인/레이아웃"
-          mainText={overview.pageConfig.isConfigured ? "설정됨" : "미설정"}
-          subText="메인 페이지 설정 상태"
+          mainText="메인 페이지"
+          subText="저장 기능 미지원 (Mall v2 contract 미확정)"
           href="/design"
         />
 
