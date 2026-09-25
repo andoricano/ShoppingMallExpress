@@ -48,7 +48,6 @@ Supabase RPC
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------ |
 | `apps/client-pwa`  | 고객용 Next.js PWA. ProductPost, Product, ProductVariant, Cart, Order 등 Consumer flow를 담당한다.                                |
 | `apps/client-web`  | 고객용 Next.js 웹. 상품 조회, 장바구니, 관심상품, 주문, 마이페이지, History/Refund 등의 Consumer flow를 담당한다.                                      |
-| `apps/develop-web` | 개발 및 내부 검증용 Next.js application. 신규 Supabase contract, Product/Variant/Ware 관련 개발 기능을 검증하는 데 사용할 수 있다.                   |
 | `apps/user-web`    | 현재 Admin application. Product, ProductPost, ProductOption, ProductVariant, Warehouse/Ware, Order, Refund 등의 관리 기능을 담당한다. |
 | `apps/api`         | Legacy Express API 영역. Mall v2의 기본 architecture가 아니며 현재 삭제/제거 방향이다. 명시적인 요구가 없는 한 복원하지 않는다.                              |
 

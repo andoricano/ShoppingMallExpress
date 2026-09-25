@@ -16,7 +16,7 @@ Values are managed in Vercel and must not be committed. `turbo.json` declares th
 
 ## Additional frontend projects
 
-`client-web`, `user-web`, and `develop-web` can each be connected to a separate Vercel project using this same Git repository. For each project:
+`client-web` and `user-web` can each be connected to a separate Vercel project using this same Git repository. For each project:
 
 1. Set the Vercel project root directory to its app workspace (for example, `apps/client-web`).
 2. Configure that app's required environment variables in Vercel; do not copy values into repository files.
