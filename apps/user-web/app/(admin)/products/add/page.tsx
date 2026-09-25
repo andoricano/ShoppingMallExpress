@@ -9,10 +9,7 @@ import type { Ware } from "@mall/types";
 import { AdminMenuItem } from "@/component/common/AdminMenu";
 import { ProductAdminHeader } from "@/component/products/ProductAdminHeader";
 import { ProductInventorySection } from "@/component/products/add/ProductInventorySection";
-import {
-    ProductAddForm,
-    type ProductAddFormValue,
-} from "@/component/products/add/ProductAddForm";
+import { ProductCreateModal } from "@/component/products/add/ProductCreateModal";
 import { ProductInfoSection } from "@/component/products/add/ProductInfoSection";
 import { ProductPostEditor } from "@/component/products/edit/ProductEditor";
 
@@ -40,18 +37,10 @@ export default function ProductPostAddPage() {
         setThumbnailFile,
     } = useProductPostAdd();
 
-    const [selectedInventoryId, setSelectedInventoryId] =
-        useState<string | null>(null);
-
-    const [isProductModalOpen, setIsProductModalOpen] =
-        useState(false);
-
-    const [productForm, setProductForm] =
-        useState<ProductAddFormValue>({
-            name: "",
-            price: 0,
-            description: "",
-        });
+    // Ware selected in the inventory panel; the Product itself is created
+    // through the Admin server boundary before it joins the ProductPost draft.
+    const [registerWare, setRegisterWare] =
+        useState<Ware | null>(null);
 
     // ==========================================
     // Product 등록 Modal
@@ -60,47 +49,7 @@ export default function ProductPostAddPage() {
     const handleRegisterProduct = (
         inventory: Ware,
     ) => {
-        setSelectedInventoryId(inventory.id);
-
-        setProductForm({
-            name: inventory.name,
-            price: 0,
-            description: "",
-        });
-
-        setIsProductModalOpen(true);
-    };
-
-    const handleProductSubmit = () => {
-        if (!selectedInventoryId) {
-            return;
-        }
-
-        if (!productForm.name.trim()) {
-            return;
-        }
-
-        addProduct({
-            id: crypto.randomUUID(),
-
-            name: productForm.name.trim(),
-
-            imageUrls: [],
-            description: productForm.description,
-            isActive: true,
-            meta: {},
-
-            createdAt: "",
-            updatedAt: "",
-        });
-
-        setIsProductModalOpen(false);
-        setSelectedInventoryId(null);
-    };
-
-    const handleProductCancel = () => {
-        setIsProductModalOpen(false);
-        setSelectedInventoryId(null);
+        setRegisterWare(inventory);
     };
 
     const handlePublish = async () => {
@@ -161,17 +110,15 @@ export default function ProductPostAddPage() {
                 </div>
 
                 {/* Product 등록 Modal */}
-                {isProductModalOpen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-                        <div className="w-full max-w-lg">
-                            <ProductAddForm
-                                value={productForm}
-                                onChange={setProductForm}
-                                onSubmit={handleProductSubmit}
-                                onCancel={handleProductCancel}
-                            />
-                        </div>
-                    </div>
+                {registerWare && (
+                    <ProductCreateModal
+                        ware={registerWare}
+                        onCreated={(product) => {
+                            addProduct(product);
+                            setRegisterWare(null);
+                        }}
+                        onCancel={() => setRegisterWare(null)}
+                    />
                 )}
 
                 {saving && (

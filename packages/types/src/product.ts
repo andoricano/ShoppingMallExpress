@@ -89,3 +89,41 @@ export interface ProductDetail {
     options: ConsumerProductOption[];
     variants: ConsumerProductVariant[];
 }
+
+/**
+ * Admin-only input for the service-role `admin_create_product()` RPC.
+ * Selling price belongs to ProductVariant. Ware is never part of this contract.
+ */
+export interface ProductOptionCreateInput {
+    name: string;
+    isRequired?: boolean;
+    /** Ordered OptionValue labels; display order follows array order. */
+    values: string[];
+}
+
+export interface ProductVariantCreateInput {
+    price: number;
+    skuCode?: string | null;
+    label?: string | null;
+    isActive?: boolean;
+    meta?: JsonObject;
+    /** Selected value per option, keyed by ProductOption name. */
+    optionValues?: Record<string, string>;
+}
+
+export interface ProductCreateInput {
+    name: string;
+    description?: string | null;
+    imageUrls?: string[];
+    isActive?: boolean;
+    meta?: JsonObject;
+    options?: ProductOptionCreateInput[];
+    /** At least one Variant is required. */
+    variants: ProductVariantCreateInput[];
+}
+
+/** Result of `admin_create_product()`; variantIds follow input order. */
+export interface ProductCreateResult {
+    productId: string;
+    variantIds: string[];
+}

@@ -323,6 +323,10 @@ Remove or retire legacy API assumptions that no longer apply after removal of `a
 * [x] Admin Refund reads and `APPROVED`/`REJECTED` transitions use the server-only boundary and `admin_transition_refund_status()`.
 * [x] Admin User reads and CLIENT-to-ADMIN promotion use the server-only boundary and `promote_user_to_admin()`.
 * [ ] Product/ProductPost/Option/Variant management is migrated from legacy Express and Inventory assumptions.
+  * [x] Product + ProductOption/Value + ProductVariant creation uses the service-role-only `admin_create_product(jsonb, jsonb, jsonb)` RPC (migration `20260925060000_admin_create_product.sql`) through `POST /api/admin/products`; one transaction satisfies the deferred variant-integrity triggers. Variant ↔ Ware links stay on `link_product_variant_ware()`.
+  * [x] ProductPost drafts link only persisted Products; ProductPost routes reject unknown `productIds`.
+  * [ ] Product/Option/Variant update and existing-Product selection for ProductPosts.
+  * [ ] ProductPost + `product_post_products` save is not atomic; a confirmed admin save RPC is still required.
 * [ ] All remaining user-web routes are migrated from legacy Express endpoint constants.
 
 ## Phase 7 — Client / Admin Migration

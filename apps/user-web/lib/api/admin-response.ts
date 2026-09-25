@@ -30,6 +30,20 @@ export function adminErrorResponse(error: unknown) {
         return NextResponse.json({ message: error.message }, { status: 404 });
     }
 
+    // RPC RAISE EXCEPTION / check constraint: invalid admin input.
+    const code = getDatabaseErrorCode(error);
+
+    if (code === "P0001" || code === "23514") {
+        return NextResponse.json(
+            {
+                message: typeof error === "object" && error !== null && "message" in error
+                    ? String((error as { message: unknown }).message)
+                    : "Invalid request.",
+            },
+            { status: 400 },
+        );
+    }
+
     // Postgres unique violation, e.g. duplicated ProductPost/Category slug.
     if (getDatabaseErrorCode(error) === "23505") {
         return NextResponse.json(
