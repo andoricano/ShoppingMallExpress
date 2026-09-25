@@ -12,6 +12,7 @@ interface CreateImageUploadUrlResponse {
     path: string;
     token: string;
     signedUrl: string;
+    publicUrl: string;
 }
 
 export function useImageApi() {
@@ -40,15 +41,13 @@ export function useImageApi() {
                 },
             );
 
-            const result = (await response.json()) as {
-                success?: boolean;
+            const result = (await response.json().catch(() => ({}))) as {
                 message?: string;
                 data?: CreateImageUploadUrlResponse;
             };
 
             if (
                 !response.ok ||
-                !result.success ||
                 !result.data
             ) {
                 throw new Error(
@@ -60,6 +59,7 @@ export function useImageApi() {
             const {
                 path,
                 signedUrl,
+                publicUrl,
             } = result.data;
             const uploadResponse =
                 await fetch(signedUrl, {
@@ -81,15 +81,9 @@ export function useImageApi() {
                 );
             }
 
-            const imageUrl =
-                signedUrl.split(
-                    "/storage/v1/object/upload/sign/",
-                )[0] +
-                `/storage/v1/object/public/images/${path}`;
-
             return {
                 path,
-                imageUrl,
+                imageUrl: publicUrl,
             };
         },
         [],
