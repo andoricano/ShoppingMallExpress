@@ -2,15 +2,13 @@
 
 import { useEffect, useState } from "react";
 
-import {
-    PointChargeCard,
-    type PointPaymentMethod,
-} from "./PointChargeCard";
+import type { PaymentTestResult } from "@mall/types";
+
+import { PointChargeCard } from "./PointChargeCard";
 import { PointHistoryCard } from "./PointHistoryCard";
 import { UserPointCard } from "./UserPointCard";
 
 import { usePoint } from "@/hooks/point/usePoint";
-import { useClientAuthStore } from "@/store/useClientAuthStore";
 
 const POINT_AMOUNT_OPTIONS = [
     10_000,
@@ -20,11 +18,9 @@ const POINT_AMOUNT_OPTIONS = [
 ];
 
 export function MyPointSection() {
-    const user = useClientAuthStore(
-        (state) => state.user,
-    );
 
     const {
+        balance,
         loading,
         error,
         fetchPoint,
@@ -41,10 +37,10 @@ export function MyPointSection() {
     );
 
     const [
-        paymentMethod,
-        setPaymentMethod,
-    ] = useState<PointPaymentMethod>(
-        "card",
+        testResult,
+        setTestResult,
+    ] = useState<PaymentTestResult>(
+        "SUCCESS",
     );
 
     useEffect(() => {
@@ -56,20 +52,17 @@ export function MyPointSection() {
     ]);
 
     const handleCharge = async () => {
+        // POINT_TOPUP payment; balance and ledger are reloaded afterwards.
         await chargePoint(
             selectedAmount,
+            testResult,
         );
-
-        // 충전 후 이력 갱신
-        await fetchPointTransactions();
     };
 
     return (
         <section className="space-y-6">
             <UserPointCard
-                balance={
-                    user?.point?.balance ?? 0
-                }
+                balance={balance}
             />
 
             <PointChargeCard
@@ -82,12 +75,8 @@ export function MyPointSection() {
                 onAmountChange={
                     setSelectedAmount
                 }
-                paymentMethod={
-                    paymentMethod
-                }
-                onPaymentMethodChange={
-                    setPaymentMethod
-                }
+                testResult={testResult}
+                onTestResultChange={setTestResult}
                 onCharge={handleCharge}
                 loading={loading}
                 error={error}

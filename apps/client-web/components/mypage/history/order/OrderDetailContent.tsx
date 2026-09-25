@@ -34,6 +34,7 @@ export default function OrderDetailContent({
     return (
         <div className="space-y-5">
             <OrderStatusCard
+                orderId={order.id}
                 status={order.status}
                 disabled={actionLoading}
                 onCancel={onCancel}

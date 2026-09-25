@@ -1,23 +1,19 @@
 "use client";
 
 import type {
-    PointTransaction,
-    PointTransactionType,
+    PointLedgerEntry,
+    PointLedgerType,
 } from "@mall/types";
 
 interface PointHistoryItemProps {
-    item: PointTransaction;
+    item: PointLedgerEntry;
 }
 
 const TYPE_LABEL: Record<
-    PointTransactionType,
+    PointLedgerType,
     string
 > = {
-    CHARGE: "충전",
-    USE: "사용",
-    EARN: "적립",
-    REFUND: "환불",
-    ADJUST: "조정",
+    TOPUP: "충전",
 };
 
 function formatDate(value: string) {
@@ -53,15 +49,8 @@ export function PointHistoryItem({
 
             <div className="min-w-0">
                 <p className="truncate text-sm font-medium text-slate-900">
-                    {item.reason ||
-                        TYPE_LABEL[item.type]}
+                    {TYPE_LABEL[item.type]}
                 </p>
-
-                {item.orderId && (
-                    <p className="mt-1 truncate text-xs text-slate-400">
-                        주문번호: {item.orderId}
-                    </p>
-                )}
             </div>
 
             <span
@@ -82,7 +71,7 @@ export function PointHistoryItem({
             </span>
 
             <span className="text-right text-sm text-slate-500">
-                {item.balance.toLocaleString(
+                {item.balanceAfter.toLocaleString(
                     "ko-KR",
                 )}
                 <span className="ml-0.5 text-xs">

@@ -5,303 +5,128 @@ import {
     useState,
 } from "react";
 
-import {
-    API_ENDPOINTS,
-} from "@mall/constants";
-
 import type {
-    Point,
-    PointTransaction,
+    PaymentTestResult,
+    PointLedgerEntry,
+    PointLedgerType,
 } from "@mall/types";
 
-import { API_BASE_URL } from "@/lib/api";
-import { authProfile } from "@/lib/authClient";
-import { useClientAuthStore } from "@/store/useClientAuthStore";
+import { createClient } from "@/lib/supabase/client";
+import { usePaymentApi } from "@/hooks/payment/usePaymentApi";
 
+type PointLedgerRow = {
+    id: string;
+    client_id: string;
+    type: PointLedgerType;
+    amount: number;
+    balance_after: number;
+    payment_id: string | null;
+    created_at: string;
+};
+
+function toLedgerEntry(row: PointLedgerRow): PointLedgerEntry {
+    return {
+        id: row.id,
+        clientId: row.client_id,
+        type: row.type,
+        amount: Number(row.amount),
+        balanceAfter: Number(row.balance_after),
+        paymentId: row.payment_id,
+        createdAt: row.created_at,
+    };
+}
+
+/**
+ * Point balance and ledger through the owner RLS on point_balances /
+ * point_ledger. Top-up is a POINT_TOPUP payment through the Mall payment
+ * boundary; Points are credited only by the trusted server after success.
+ */
 export function usePoint() {
-    const updatePoint =
-        useClientAuthStore(
-            (state) => state.updatePoint,
-        );
+    const payment = usePaymentApi();
 
-    const [
-        loading,
-        setLoading,
-    ] = useState(false);
+    const [balance, setBalance] = useState(0);
+    const [transactions, setTransactions] = useState<PointLedgerEntry[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
-    const [
-        error,
-        setError,
-    ] = useState<string | null>(
-        null,
+    const fetchPoint = useCallback(async () => {
+        setLoading(true);
+        setError(null);
+
+        try {
+            const supabase = createClient();
+            const {
+                data: { session },
+            } = await supabase.auth.getSession();
+
+            if (!session) {
+                throw new Error("로그인이 필요합니다.");
+            }
+
+            const { data, error: selectError } = await supabase
+                .from("point_balances")
+                .select("balance")
+                .maybeSingle();
+
+            if (selectError) {
+                throw new Error("포인트를 불러오지 못했습니다.");
+            }
+
+            // No row yet means no top-up has succeeded.
+            const nextBalance = Number(data?.balance ?? 0);
+
+            setBalance(nextBalance);
+
+            return nextBalance;
+        } catch (cause) {
+            setError(cause instanceof Error ? cause.message : "포인트를 불러오지 못했습니다.");
+
+            return null;
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    const fetchPointTransactions = useCallback(async () => {
+        const { data, error: selectError } = await createClient()
+            .from("point_ledger")
+            .select("id, client_id, type, amount, balance_after, payment_id, created_at")
+            .order("created_at", { ascending: false })
+            .limit(200);
+
+        if (selectError) {
+            setError("포인트 이력을 불러오지 못했습니다.");
+
+            return [];
+        }
+
+        const entries = (data as PointLedgerRow[]).map(toLedgerEntry);
+
+        setTransactions(entries);
+
+        return entries;
+    }, []);
+
+    const { pay } = payment;
+
+    /** Returns true only when the top-up payment SUCCEEDED. */
+    const chargePoint = useCallback(
+        async (amount: number, testResult: PaymentTestResult) => {
+            const result = await pay({ purpose: "POINT_TOPUP", amount }, testResult);
+
+            await Promise.all([fetchPoint(), fetchPointTransactions()]);
+
+            return result?.status === "SUCCEEDED";
+        },
+        [fetchPoint, fetchPointTransactions, pay],
     );
 
-
-    const [
-        transactions,
-        setTransactions,
-    ] = useState<PointTransaction[]>([]);
-
-    // ==========================================
-    // 1. Client Point 조회
-    // ==========================================
-
-    const fetchPoint =
-        useCallback(
-            async () => {
-                setLoading(true);
-                setError(null);
-
-                try {
-                    const session =
-                        await authProfile.getSession();
-
-                    if (
-                        !session?.access_token
-                    ) {
-                        throw new Error(
-                            "로그인이 필요합니다.",
-                        );
-                    }
-
-                    const url =
-                        `${API_BASE_URL}${API_ENDPOINTS.CLIENT_POINTS.BASE}`;
-
-                    const response =
-                        await fetch(url, {
-                            headers: {
-                                Authorization:
-                                    `Bearer ${session.access_token}`,
-                            },
-                        });
-
-                    const result =
-                        await response
-                            .json()
-                            .catch(
-                                () => null,
-                            );
-
-                    console.log(
-                        "[usePoint] Point 조회 API result:",
-                        result,
-                    );
-
-                    if (!response.ok) {
-                        throw new Error(
-                            result?.message ||
-                            "포인트를 불러오지 못했습니다.",
-                        );
-                    }
-
-                    const data =
-                        result?.data
-                            ? (result.data as Point)
-                            : null;
-
-                    if (data) {
-                        updatePoint(
-                            data,
-                        );
-                    }
-
-                    return data;
-                } catch (err) {
-                    console.error(
-                        "[usePoint] Point 조회 실패:",
-                        err,
-                    );
-
-                    setError(
-                        err instanceof Error
-                            ? err.message
-                            : "포인트 조회에 실패했습니다.",
-                    );
-
-                    return null;
-                } finally {
-                    setLoading(false);
-                }
-            },
-            [updatePoint],
-        );
-    // ==========================================
-    // 2. Client Point Transaction 조회
-    // ==========================================
-
-    const fetchPointTransactions =
-        useCallback(
-            async () => {
-                setLoading(true);
-                setError(null);
-
-                try {
-                    const session =
-                        await authProfile.getSession();
-
-                    if (
-                        !session?.access_token
-                    ) {
-                        throw new Error(
-                            "로그인이 필요합니다.",
-                        );
-                    }
-
-                    const url =
-                        `${API_BASE_URL}${API_ENDPOINTS.CLIENT_POINTS.TRANSACTIONS}`;
-
-                    const response =
-                        await fetch(url, {
-                            headers: {
-                                Authorization:
-                                    `Bearer ${session.access_token}`,
-                            },
-                        });
-
-                    const result =
-                        await response
-                            .json()
-                            .catch(
-                                () => null,
-                            );
-
-                    console.log(
-                        "[usePoint] Point Transaction 조회 API result:",
-                        result,
-                    );
-
-                    if (!response.ok) {
-                        throw new Error(
-                            result?.message ||
-                            "포인트 이용 내역을 불러오지 못했습니다.",
-                        );
-                    }
-
-                    const data =
-                        Array.isArray(
-                            result?.data,
-                        )
-                            ? (result.data as PointTransaction[])
-                            : [];
-
-                    setTransactions(data);
-                } catch (err) {
-                    console.error(
-                        "[usePoint] Point Transaction 조회 실패:",
-                        err,
-                    );
-
-                    setError(
-                        err instanceof Error
-                            ? err.message
-                            : "포인트 이용 내역 조회에 실패했습니다.",
-                    );
-                } finally {
-                    setLoading(false);
-                }
-            },
-            [],
-        );
-
-
-    // ==========================================
-    // 2. Client Point 충전
-    // ==========================================
-
-    const chargePoint =
-        useCallback(
-            async (
-                amount: number,
-            ) => {
-                setLoading(true);
-                setError(null);
-
-                try {
-                    const session =
-                        await authProfile.getSession();
-
-                    if (
-                        !session?.access_token
-                    ) {
-                        throw new Error(
-                            "로그인이 필요합니다.",
-                        );
-                    }
-
-                    const url =
-                        `${API_BASE_URL}${API_ENDPOINTS.CLIENT_POINTS.CHARGE}`;
-
-                    const response =
-                        await fetch(url, {
-                            method: "POST",
-                            headers: {
-                                "Content-Type":
-                                    "application/json",
-                                Authorization:
-                                    `Bearer ${session.access_token}`,
-                            },
-                            body:
-                                JSON.stringify({
-                                    amount,
-                                }),
-                        });
-
-                    const result =
-                        await response
-                            .json()
-                            .catch(
-                                () => null,
-                            );
-
-                    console.log(
-                        "[usePoint] Point 충전 API result:",
-                        result,
-                    );
-
-                    if (!response.ok) {
-                        throw new Error(
-                            result?.message ||
-                            "포인트 충전에 실패했습니다.",
-                        );
-                    }
-
-                    const data =
-                        result?.data
-                            ? (result.data as Point)
-                            : null;
-
-                    if (data) {
-                        updatePoint(
-                            data,
-                        );
-                    }
-
-                    return data;
-                } catch (err) {
-                    console.error(
-                        "[usePoint] Point 충전 실패:",
-                        err,
-                    );
-
-                    setError(
-                        err instanceof Error
-                            ? err.message
-                            : "포인트 충전에 실패했습니다.",
-                    );
-
-                    return null;
-                } finally {
-                    setLoading(false);
-                }
-            },
-            [updatePoint],
-        );
-
     return {
-        loading,
-        error,
-
+        balance,
         transactions,
+
+        loading: loading || payment.processing,
+        error: payment.error ?? error,
 
         fetchPoint,
         fetchPointTransactions,

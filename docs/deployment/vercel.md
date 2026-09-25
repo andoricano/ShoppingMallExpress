@@ -28,4 +28,12 @@ Values are managed in Vercel and must not be committed. `turbo.json` declares th
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `SUPABASE_SECRET_KEY` — server-only Supabase secret key used by Admin Route Handlers. Never prefix it with `NEXT_PUBLIC_`.
 
+`apps/client-web` (Consumer) reads these variable names:
+
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `SUPABASE_SECRET_KEY` — server-only; used by the payment Route Handlers for the service-role payment RPCs.
+- `PG_TEST_ENDPOINT_URL` — server-only PG Test recorder endpoint.
+- `PG_TEST_API_KEY` — server-only; sent as `X-PG-Test-Key`. Never prefix it with `NEXT_PUBLIC_`.
+
 Only `apps/client-pwa`'s Vercel link and environment-variable names are confirmed here. Before linking another app, verify its deployment-time environment-variable requirements from its own configuration.

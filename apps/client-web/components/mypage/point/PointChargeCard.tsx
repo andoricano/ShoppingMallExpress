@@ -2,10 +2,9 @@
 
 "use client";
 
-export type PointPaymentMethod =
-    | "card"
-    | "bank"
-    | "easy";
+import type { PaymentTestResult } from "@mall/types";
+
+import { PaymentTestResultPicker } from "@/components/payment/PaymentTestResultPicker";
 
 interface PointChargeCardProps {
     amountOptions: number[];
@@ -14,9 +13,9 @@ interface PointChargeCardProps {
         amount: number,
     ) => void;
 
-    paymentMethod: PointPaymentMethod;
-    onPaymentMethodChange: (
-        method: PointPaymentMethod,
+    testResult: PaymentTestResult;
+    onTestResultChange: (
+        value: PaymentTestResult,
     ) => void;
 
     onCharge: () => void | Promise<void>;
@@ -25,34 +24,12 @@ interface PointChargeCardProps {
     error?: string | null;
 }
 
-const PAYMENT_METHODS: Array<{
-    value: PointPaymentMethod;
-    label: string;
-    description: string;
-}> = [
-    {
-        value: "card",
-        label: "카드",
-        description: "신용/체크카드",
-    },
-    {
-        value: "bank",
-        label: "계좌이체",
-        description: "실시간 계좌이체",
-    },
-    {
-        value: "easy",
-        label: "간편결제",
-        description: "간편결제 서비스",
-    },
-];
-
 export function PointChargeCard({
     amountOptions,
     selectedAmount,
     onAmountChange,
-    paymentMethod,
-    onPaymentMethodChange,
+    testResult,
+    onTestResultChange,
     onCharge,
     loading = false,
     error = null,
@@ -65,7 +42,7 @@ export function PointChargeCard({
                 </h2>
 
                 <p className="mt-1 text-sm text-slate-500">
-                    원하는 금액과 결제 수단을 선택해주세요.
+                    충전 금액과 테스트 결제 결과를 선택해주세요.
                 </p>
             </div>
 
@@ -111,70 +88,13 @@ export function PointChargeCard({
                 </div>
             </div>
 
-            {/* 결제 수단 */}
+            {/* 테스트 결제 결과 (PG test mode) */}
             <div className="mt-7">
-                <h3 className="text-sm font-semibold text-slate-800">
-                    결제 수단
-                </h3>
-
-                <div className="mt-3 space-y-2">
-                    {PAYMENT_METHODS.map(
-                        (method) => {
-                            const selected =
-                                paymentMethod ===
-                                method.value;
-
-                            return (
-                                <button
-                                    key={
-                                        method.value
-                                    }
-                                    type="button"
-                                    onClick={() =>
-                                        onPaymentMethodChange(
-                                            method.value,
-                                        )
-                                    }
-                                    disabled={loading}
-                                    className={[
-                                        "flex w-full items-center justify-between rounded-xl border px-4 py-3 text-left transition-colors",
-                                        selected
-                                            ? "border-slate-900 bg-slate-50"
-                                            : "border-slate-200 hover:border-slate-300 hover:bg-slate-50",
-                                        "disabled:cursor-not-allowed disabled:opacity-50",
-                                    ].join(" ")}
-                                >
-                                    <div>
-                                        <p className="text-sm font-semibold text-slate-900">
-                                            {
-                                                method.label
-                                            }
-                                        </p>
-
-                                        <p className="mt-0.5 text-xs text-slate-500">
-                                            {
-                                                method.description
-                                            }
-                                        </p>
-                                    </div>
-
-                                    <span
-                                        className={[
-                                            "flex h-5 w-5 items-center justify-center rounded-full border",
-                                            selected
-                                                ? "border-slate-900"
-                                                : "border-slate-300",
-                                        ].join(" ")}
-                                    >
-                                        {selected && (
-                                            <span className="h-2.5 w-2.5 rounded-full bg-slate-900" />
-                                        )}
-                                    </span>
-                                </button>
-                            );
-                        },
-                    )}
-                </div>
+                <PaymentTestResultPicker
+                    value={testResult}
+                    onChange={onTestResultChange}
+                    disabled={loading}
+                />
             </div>
 
             {/* 결제 금액 */}

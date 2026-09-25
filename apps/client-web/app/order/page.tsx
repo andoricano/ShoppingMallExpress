@@ -10,8 +10,9 @@ export default function OrderPage() {
     return (
         <OrderSection
             onOrderCreated={(orderId) => {
+                // The Order is PENDING; pay it through ORDER_PAYMENT.
                 router.replace(
-                    `/success?orderId=${encodeURIComponent(orderId)}`,
+                    `/payment?orderId=${encodeURIComponent(orderId)}`,
                 );
             }}
         />

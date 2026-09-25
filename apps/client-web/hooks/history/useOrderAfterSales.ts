@@ -26,6 +26,11 @@ const NON_REFUNDABLE_STATUSES: readonly OrderStatus[] = ["PENDING", "CANCELLED"]
 /** request_refund() ignores these requests when summing refunded quantity. */
 const INACTIVE_REFUND_STATUSES: readonly RefundStatus[] = ["REJECTED", "CANCELLED"];
 
+/** create_payment(): only PENDING orders are payable (ORDER_PAYMENT). */
+export function canPayOrder(status: OrderStatus) {
+    return status === "PENDING";
+}
+
 export function canCancelOrder(status: OrderStatus) {
     return CANCELLABLE_STATUSES.includes(status);
 }

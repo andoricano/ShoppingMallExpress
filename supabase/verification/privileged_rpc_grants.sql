@@ -35,7 +35,9 @@ with privileged(signature) as (
         ('public.get_ware_snapshot(uuid)'),
         ('public.link_product_variant_ware(uuid, uuid)'),
         ('public.unlink_product_variant_ware(uuid, uuid)'),
-        ('public.validate_product_variant_configuration(uuid)')
+        ('public.validate_product_variant_configuration(uuid)'),
+        ('public.create_payment(uuid, text, uuid, numeric)'),
+        ('public.complete_payment(uuid, uuid, boolean, text, text)')
 )
 select
     signature,
@@ -102,7 +104,9 @@ begin
         'public.get_ware_snapshot(uuid)',
         'public.link_product_variant_ware(uuid, uuid)',
         'public.unlink_product_variant_ware(uuid, uuid)',
-        'public.validate_product_variant_configuration(uuid)'
+        'public.validate_product_variant_configuration(uuid)',
+        'public.create_payment(uuid, text, uuid, numeric)',
+        'public.complete_payment(uuid, uuid, boolean, text, text)'
     ]
     loop
         v_checked := v_checked + 1;

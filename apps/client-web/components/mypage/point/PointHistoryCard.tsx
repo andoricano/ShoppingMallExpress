@@ -1,12 +1,12 @@
 "use client";
 
-import { PointTransaction } from "@mall/types";
+import type { PointLedgerEntry } from "@mall/types";
 import { useMemo, useState } from "react";
 import { PointHistoryItem } from "./PointHistoryItem";
 
 
 interface PointHistoryCardProps {
-    items: PointTransaction[];
+    items: PointLedgerEntry[];
 
     pageSize?: number;
 }

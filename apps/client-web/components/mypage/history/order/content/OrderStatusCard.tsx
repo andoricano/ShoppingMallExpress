@@ -1,11 +1,17 @@
 "use client";
 
+import Link from "next/link";
+
 import type { OrderStatus } from "@mall/types";
 
 import { getOrderStatusLabel } from "@/utils/orderUtils";
-import { canCancelOrder } from "@/hooks/history/useOrderAfterSales";
+import {
+    canCancelOrder,
+    canPayOrder,
+} from "@/hooks/history/useOrderAfterSales";
 
 interface OrderStatusCardProps {
+    orderId: string;
     status: OrderStatus;
     disabled?: boolean;
     onCancel?: () => void;
@@ -20,8 +26,12 @@ const STATUS_DESCRIPTION: Record<OrderStatus, string> = {
     CANCELLED: "주문이 취소되었습니다.",
 };
 
-/** Order status; the cancel action follows cancel_order() (PENDING only). */
+/**
+ * Order status. Pay (create_payment) and cancel (cancel_order) are offered
+ * only for PENDING orders, as the RPCs enforce.
+ */
 export default function OrderStatusCard({
+    orderId,
     status,
     disabled = false,
     onCancel,
@@ -38,16 +48,26 @@ export default function OrderStatusCard({
                 {STATUS_DESCRIPTION[status]}
             </p>
 
-            {canCancelOrder(status) && onCancel && (
-                <div className="mt-6 border-t border-slate-100 pt-6">
-                    <button
-                        type="button"
-                        onClick={onCancel}
-                        disabled={disabled}
-                        className="rounded-md border border-red-200 bg-red-50 px-4 py-2 text-sm font-medium text-red-600 transition-colors hover:border-red-300 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                        주문 취소
-                    </button>
+            {(canPayOrder(status) || (canCancelOrder(status) && onCancel)) && (
+                <div className="mt-6 flex flex-wrap gap-2 border-t border-slate-100 pt-6">
+                    {canPayOrder(status) && (
+                        <Link
+                            href={`/payment?orderId=${encodeURIComponent(orderId)}`}
+                            className="rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800"
+                        >
+                            결제하기
+                        </Link>
+                    )}
+                    {canCancelOrder(status) && onCancel && (
+                        <button
+                            type="button"
+                            onClick={onCancel}
+                            disabled={disabled}
+                            className="rounded-md border border-red-200 bg-red-50 px-4 py-2 text-sm font-medium text-red-600 transition-colors hover:border-red-300 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                            주문 취소
+                        </button>
+                    )}
                 </div>
             )}
         </section>
