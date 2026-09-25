@@ -1,11 +1,12 @@
 "use client";
 
 import { useRefund } from "@/hooks/refund/useRefund";
-import type { RefundRequest } from "@mall/types";
+import type { AdminRefundRequest } from "@mall/types";
+import { RefundItemRestockRow } from "@/component/refund/RefundItemRestockRow";
 import { useEffect, useState } from "react";
 
 const REFUND_STATUS_LABEL: Record<
-    RefundRequest["status"],
+    AdminRefundRequest["status"],
     string
 > = {
     REQUESTED: "처리 대기",
@@ -22,6 +23,7 @@ export default function RefundPage() {
         error,
         fetchRefunds,
         processRefund,
+        restockRefundItem,
     } = useRefund();
 
     const [processingId, setProcessingId] = useState<string | null>(null);
@@ -31,7 +33,7 @@ export default function RefundPage() {
     }, [fetchRefunds]);
 
     const handleProcessRefund = async (
-        refund: RefundRequest,
+        refund: AdminRefundRequest,
         status: "APPROVED" | "REJECTED",
     ) => {
         if (!window.confirm(
@@ -57,7 +59,7 @@ export default function RefundPage() {
                     </h1>
 
                     <p className="mt-2 text-sm text-slate-500">
-                        환불 요청 데이터를 확인합니다.
+                        환불 요청을 처리합니다. 승인만으로는 재고가 변하지 않으며, 반품을 확인한 뒤 승인된 환불 항목별로 재고를 복구합니다.
                     </p>
                 </header>
 
@@ -103,6 +105,11 @@ export default function RefundPage() {
                                                 <p className="mt-1 text-xs text-slate-400">
                                                     요청일: {new Date(refund.createdAt).toLocaleString("ko-KR")}
                                                 </p>
+                                                {refund.processedAt && (
+                                                    <p className="mt-1 text-xs text-slate-400">
+                                                        처리일: {new Date(refund.processedAt).toLocaleString("ko-KR")}
+                                                    </p>
+                                                )}
                                             </div>
 
                                             <div className="flex items-center gap-2">
@@ -131,6 +138,20 @@ export default function RefundPage() {
                                                 )}
                                             </div>
                                         </div>
+
+                                        {refund.items.length > 0 && (
+                                            <ul className="mt-4 space-y-2">
+                                                {refund.items.map((item) => (
+                                                    <RefundItemRestockRow
+                                                        key={item.id}
+                                                        refundId={refund.id}
+                                                        item={item}
+                                                        approved={refund.status === "APPROVED"}
+                                                        onRestock={restockRefundItem}
+                                                    />
+                                                ))}
+                                            </ul>
+                                        )}
                                     </article>
                                 );
                             })}

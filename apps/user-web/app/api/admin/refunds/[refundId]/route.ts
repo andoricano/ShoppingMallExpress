@@ -28,7 +28,7 @@ export async function PATCH(
             "admin_transition_refund_status",
             {
                 p_refund_request_id: refundId,
-                p_next_status: status,
+                p_status: status,
             },
         );
 

@@ -400,6 +400,8 @@ OrderItem
 
 환불 시 재고 복구가 필요하면 서버/RPC가 OrderItem의 Variant 정보를 기준으로 관련 Ware를 찾아 처리한다.
 
+확정 정책: Refund `APPROVED`는 재고를 자동으로 바꾸지 않는다. 반품 확인 후 Admin이 승인된 refund item별로 명시적으로 restock하며, 복구는 해당 OrderItem이 원래 차감된 `order_item_ware_allocations`의 Ware 안에서만, 환불 수량과 allocation 수량을 넘지 않게 처리한다. 복구 기록(`refund_item_restocks`)과 `admin_restock_refund_item()`은 Admin/service-role 전용이며 Consumer에 노출하지 않는다.
+
 Consumer-facing Refund 계약에 Ware를 노출하지 않는다.
 
 ---

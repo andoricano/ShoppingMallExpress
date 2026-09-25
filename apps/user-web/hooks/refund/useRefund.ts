@@ -8,13 +8,16 @@ import {
 } from "react";
 
 
-import { RefundRequest } from "@mall/types";
+import type {
+    AdminRefundRequest,
+    AdminRestockRefundItemInput,
+} from "@mall/types";
 
 export function useRefund() {
     const [
         refundList,
         setRefundList,
-    ] = useState<RefundRequest[]>([]);
+    ] = useState<AdminRefundRequest[]>([]);
 
     const [
         loading,
@@ -30,9 +33,13 @@ export function useRefund() {
     // 환불 요청 목록 조회
     // ==========================================
 
+    // `silent` refreshes the list in place (no loading state), so a row the
+    // Admin is working in stays mounted.
     const fetchRefunds = useCallback(
-        async () => {
-            setLoading(true);
+        async (options?: { silent?: boolean }) => {
+            if (!options?.silent) {
+                setLoading(true);
+            }
             setError(null);
 
             try {
@@ -59,7 +66,7 @@ export function useRefund() {
                     Array.isArray(
                         result.data,
                     )
-                        ? (result.data as RefundRequest[])
+                        ? (result.data as AdminRefundRequest[])
                         : [];
 
                 setRefundList(
@@ -78,7 +85,9 @@ export function useRefund() {
 
                 return [];
             } finally {
-                setLoading(false);
+                if (!options?.silent) {
+                    setLoading(false);
+                }
             }
         },
         [],
@@ -120,6 +129,48 @@ export function useRefund() {
             setLoading(false);
         }
     }, [fetchRefunds]);
+
+    // ==========================================
+    // 반품 확인 후 재고 복구 (Admin)
+    // ==========================================
+    // Failures are returned to the calling row instead of the list-level
+    // `error`, which replaces the whole list.
+    const restockRefundItem = useCallback(async (
+        refundId: string,
+        input: AdminRestockRefundItemInput,
+    ): Promise<{ ok: true } | { ok: false; message: string }> => {
+        try {
+            const response = await fetch(
+                `/api/admin/refunds/${refundId}/restocks`,
+                {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(input),
+                },
+            );
+            const payload = await response.json().catch(() => null) as {
+                message?: string;
+            } | null;
+
+            if (!response.ok) {
+                return {
+                    ok: false,
+                    message: payload?.message ?? "재고 복구에 실패했습니다.",
+                };
+            }
+
+            await fetchRefunds({ silent: true });
+            return { ok: true };
+        } catch (requestError) {
+            return {
+                ok: false,
+                message: requestError instanceof Error
+                    ? requestError.message
+                    : "재고 복구에 실패했습니다.",
+            };
+        }
+    }, [fetchRefunds]);
+
     return {
         refundList,
         loading,
@@ -127,5 +178,6 @@ export function useRefund() {
 
         fetchRefunds,
         processRefund,
+        restockRefundItem,
     };
 }
