@@ -537,9 +537,12 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY
 Server-only Supabase credentials:
 
 ```text
-SUPABASE_URL
 SUPABASE_SECRET_KEY
 ```
+
+`SUPABASE_SECRET_KEY`는 Mall v2의 canonical privileged credential 이름이다. 값은 Supabase secret key(`sb_secret_...`)이며, legacy `service_role` JWT도 동일하게 동작한다. `SUPABASE_SERVICE_ROLE_KEY` 등 다른 이름은 사용하지 않는다.
+
+`apps/user-web`에서는 `lib/supabase/admin.ts`의 `requireAdminServiceClient()`만 이 값을 읽으며, 모든 Admin Route Handler는 이 helper를 통해서만 privileged client를 만든다. Supabase URL은 browser-safe 값이므로 이 helper도 `NEXT_PUBLIC_SUPABASE_URL`을 사용한다.
 
 프로젝트에서 추가 server secret naming을 사용하는 경우에도 동일한 원칙을 적용한다.
 

@@ -12,15 +12,17 @@ export class AdminAuthorizationError extends Error {
 
 function createServiceRoleClient() {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    // Server-only Supabase secret key (`sb_secret_...`, or a legacy
+    // service_role JWT). Never expose it through a NEXT_PUBLIC_* variable.
+    const secretKey = process.env.SUPABASE_SECRET_KEY;
 
-    if (!url || !serviceRoleKey) {
+    if (!url || !secretKey) {
         throw new Error(
             "Admin server access is not configured.",
         );
     }
 
-    return createSupabaseClient(url, serviceRoleKey, {
+    return createSupabaseClient(url, secretKey, {
         auth: {
             autoRefreshToken: false,
             persistSession: false,
