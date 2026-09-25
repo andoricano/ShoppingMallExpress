@@ -281,7 +281,7 @@ Primary domains:
 
 ## Phase 6 — Supabase Access Migration
 
-**Status:** COMPLETE (code; production migration `20260925140000_payments_and_points.sql` not yet applied)
+**Status:** COMPLETE (all migrations through `20260925140000_payments_and_points.sql` are applied to the linked Supabase project; production smoke test pending in Phase 8)
 
 Owner: Codex + Claude
 
@@ -450,4 +450,4 @@ Google Login
 ## Remaining Work
 
 * Finish any still-required catalog-level Supabase inspection.
-* Complete Phases 6–8.
+* Complete Phases 7–8.
