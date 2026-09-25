@@ -1,11 +1,11 @@
 "use client";
 
-import type { Wishlist } from "@mall/types";
+import type { WishlistItemView } from "@/store/wishlistStore";
 
 import WishlistItem from "./WishlistItem";
 
 interface WishlistBoxProps {
-    items: Wishlist[];
+    items: WishlistItemView[];
 
     onItemClick?: (
         productPostId: string,
@@ -45,9 +45,7 @@ export default function WishlistBox({
                     {items.map((item) => (
                         <WishlistItem
                             key={item.id}
-                            productPostId={
-                                item.productPostId
-                            }
+                            item={item}
                             onClick={
                                 onItemClick
                             }

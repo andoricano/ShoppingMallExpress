@@ -1,4 +1,4 @@
-// hooks/wishlist/useWishlist.ts
+// hooks/user/useWishlist.ts
 
 "use client";
 
@@ -7,16 +7,59 @@ import {
     useState,
 } from "react";
 
+import type { ProductPostSummary } from "@mall/types";
+
+import { createClient } from "@/lib/supabase/client";
 import {
-    API_ENDPOINTS,
-} from "@mall/constants";
+    useWishlistStore,
+    type WishlistItemView,
+} from "@/store/wishlistStore";
 
-import type { Wishlist } from "@mall/types";
+type WishlistRow = {
+    id: string;
+    client_id: string;
+    product_post_id: string;
+    created_at: string;
+    product_posts: {
+        id: string;
+        title: string;
+        slug: string | null;
+        summary: string | null;
+        thumbnail_url: string | null;
+        published_at: string | null;
+    } | null;
+};
 
-import { API_BASE_URL } from "@/lib/api";
-import { authProfile } from "@/lib/authClient";
-import { useWishlistStore } from "@/store/wishlistStore";
+function toWishlistItem(row: WishlistRow): WishlistItemView {
+    const post = row.product_posts;
+    const productPost: ProductPostSummary | null = post
+        ? {
+            id: post.id,
+            title: post.title,
+            slug: post.slug,
+            summary: post.summary,
+            thumbnailUrl: post.thumbnail_url,
+            publishedAt: post.published_at,
+        }
+        : null;
 
+    return {
+        id: row.id,
+        clientId: row.client_id,
+        productPostId: row.product_post_id,
+        createdAt: row.created_at,
+        productPost,
+    };
+}
+
+export const WISHLIST_LOGIN_REQUIRED = "로그인이 필요합니다.";
+
+/**
+ * ProductPost-based Wishlist through direct Supabase + RLS on
+ * `wishlist_items` (owner select/insert/delete; insert only for published
+ * posts). The embedded ProductPost summary is read through the public
+ * `product_posts` RLS, so unpublished posts come back as null.
+ */
 export function useWishlist() {
     const wishlist =
         useWishlistStore(
@@ -28,282 +71,133 @@ export function useWishlist() {
             (state) => state.setItems,
         );
 
-    const addItem =
-        useWishlistStore(
-            (state) => state.addItem,
-        );
-
     const removeItem =
         useWishlistStore(
             (state) => state.removeItem,
         );
 
-    const [
-        loading,
-        setLoading,
-    ] = useState(false);
+    const [loading, setLoading] =
+        useState(false);
 
-    const [
-        error,
-        setError,
-    ] = useState<string | null>(
-        null,
-    );
+    const [error, setError] =
+        useState<string | null>(null);
+
+    const getSessionUserId = useCallback(async () => {
+        const {
+            data: { session },
+        } = await createClient().auth.getSession();
+
+        return session?.user.id ?? null;
+    }, []);
 
     // ==========================================
     // 1. Wishlist 조회
     // ==========================================
+    const fetchWishlist = useCallback(async () => {
+        setLoading(true);
+        setError(null);
 
-    const fetchWishlist =
-        useCallback(async () => {
-            setLoading(true);
-            setError(null);
-
-            try {
-                const session =
-                    await authProfile.getSession();
-
-                if (
-                    !session?.access_token
-                ) {
-                    throw new Error(
-                        "로그인이 필요합니다.",
-                    );
-                }
-
-                const response =
-                    await fetch(
-                        `${API_BASE_URL}${API_ENDPOINTS.CLIENT_WISHLIST.BASE}`,
-                        {
-                            headers: {
-                                Authorization:
-                                    `Bearer ${session.access_token}`,
-                            },
-                        },
-                    );
-
-                const result =
-                    await response
-                        .json()
-                        .catch(
-                            () => null,
-                        );
-
-                if (!response.ok) {
-                    throw new Error(
-                        result?.message ||
-                            "관심상품을 불러오지 못했습니다.",
-                    );
-                }
-
-                const data =
-                    Array.isArray(
-                        result?.data,
-                    )
-                        ? (result.data as Wishlist[])
-                        : [];
-
-                setItems(data);
-
-                return data;
-            } catch (err) {
-                const message =
-                    err instanceof Error
-                        ? err.message
-                        : "관심상품 조회에 실패했습니다.";
-
-                console.error(
-                    "[useWishlist] 조회 실패:",
-                    err,
-                );
-
-                setError(message);
+        try {
+            if (!(await getSessionUserId())) {
+                setItems([]);
+                setError(WISHLIST_LOGIN_REQUIRED);
 
                 return [];
-            } finally {
-                setLoading(false);
             }
-        }, [setItems]);
+
+            const { data, error: selectError } = await createClient()
+                .from("wishlist_items")
+                .select("id, client_id, product_post_id, created_at, product_posts(id, title, slug, summary, thumbnail_url, published_at)")
+                .order("created_at", { ascending: false });
+
+            if (selectError) {
+                throw selectError;
+            }
+
+            const items = (data as unknown as WishlistRow[]).map(toWishlistItem);
+
+            setItems(items);
+
+            return items;
+        } catch {
+            setError("관심상품을 불러오지 못했습니다.");
+
+            return [];
+        } finally {
+            setLoading(false);
+        }
+    }, [getSessionUserId, setItems]);
 
     // ==========================================
     // 2. Wishlist 추가
     // ==========================================
+    const addWishlist = useCallback(
+        async (productPostId: string) => {
+            setError(null);
 
-    const addWishlist =
-        useCallback(
-            async (
-                productPostId: string,
-            ) => {
-                setLoading(true);
-                setError(null);
+            const clientId = await getSessionUserId();
 
-                try {
-                    const session =
-                        await authProfile.getSession();
+            if (!clientId) {
+                setError(WISHLIST_LOGIN_REQUIRED);
 
-                    if (
-                        !session?.access_token
-                    ) {
-                        throw new Error(
-                            "로그인이 필요합니다.",
-                        );
-                    }
+                return false;
+            }
 
-                    const response =
-                        await fetch(
-                            `${API_BASE_URL}${API_ENDPOINTS.CLIENT_WISHLIST.BASE}`,
-                            {
-                                method: "POST",
-                                headers: {
-                                    "Content-Type":
-                                        "application/json",
-                                    Authorization:
-                                        `Bearer ${session.access_token}`,
-                                },
-                                body:
-                                    JSON.stringify({
-                                        productPostId,
-                                    }),
-                            },
-                        );
+            const { error: insertError } = await createClient()
+                .from("wishlist_items")
+                .insert({
+                    client_id: clientId,
+                    product_post_id: productPostId,
+                });
 
-                    const result =
-                        await response
-                            .json()
-                            .catch(
-                                () => null,
-                            );
+            // 23505: already in the wishlist (client_id, product_post_id).
+            if (insertError && insertError.code !== "23505") {
+                setError(
+                    insertError.code === "42501"
+                        ? "판매 중인 게시물만 관심상품에 담을 수 있습니다."
+                        : "관심상품에 담지 못했습니다.",
+                );
 
-                    if (!response.ok) {
-                        throw new Error(
-                            result?.message ||
-                                "관심상품 등록에 실패했습니다.",
-                        );
-                    }
+                return false;
+            }
 
-                    const item =
-                        result?.data as
-                            | Wishlist
-                            | undefined;
+            await fetchWishlist();
 
-                    if (item) {
-                        addItem(item);
-                    }
-
-                    return item ?? null;
-                } catch (err) {
-                    const message =
-                        err instanceof Error
-                            ? err.message
-                            : "관심상품 등록에 실패했습니다.";
-
-                    console.error(
-                        "[useWishlist] 추가 실패:",
-                        err,
-                    );
-
-                    setError(message);
-
-                    return null;
-                } finally {
-                    setLoading(false);
-                }
-            },
-            [addItem],
-        );
+            return true;
+        },
+        [fetchWishlist, getSessionUserId],
+    );
 
     // ==========================================
     // 3. Wishlist 삭제
     // ==========================================
+    const removeWishlist = useCallback(
+        async (productPostId: string) => {
+            setError(null);
 
-    const removeWishlist =
-        useCallback(
-            async (
-                productPostId: string,
-            ) => {
-                setLoading(true);
-                setError(null);
+            if (!(await getSessionUserId())) {
+                setError(WISHLIST_LOGIN_REQUIRED);
 
-                try {
-                    const session =
-                        await authProfile.getSession();
+                return false;
+            }
 
-                    if (
-                        !session?.access_token
-                    ) {
-                        throw new Error(
-                            "로그인이 필요합니다.",
-                        );
-                    }
+            const { error: deleteError } = await createClient()
+                .from("wishlist_items")
+                .delete()
+                .eq("product_post_id", productPostId);
 
-                    const response =
-                        await fetch(
-                            `${API_BASE_URL}${API_ENDPOINTS.CLIENT_WISHLIST.BASE}/${productPostId}`,
-                            {
-                                method: "DELETE",
-                                headers: {
-                                    Authorization:
-                                        `Bearer ${session.access_token}`,
-                                },
-                            },
-                        );
+            if (deleteError) {
+                setError("관심상품을 삭제하지 못했습니다.");
 
-                    const result =
-                        await response
-                            .json()
-                            .catch(
-                                () => null,
-                            );
+                return false;
+            }
 
-                    if (!response.ok) {
-                        throw new Error(
-                            result?.message ||
-                                "관심상품 삭제에 실패했습니다.",
-                        );
-                    }
+            removeItem(productPostId);
 
-                    removeItem(
-                        productPostId,
-                    );
-
-                    return true;
-                } catch (err) {
-                    const message =
-                        err instanceof Error
-                            ? err.message
-                            : "관심상품 삭제에 실패했습니다.";
-
-                    console.error(
-                        "[useWishlist] 삭제 실패:",
-                        err,
-                    );
-
-                    setError(message);
-
-                    return false;
-                } finally {
-                    setLoading(false);
-                }
-            },
-            [removeItem],
-        );
-
-    // ==========================================
-    // 4. Wishlist 여부
-    // ==========================================
-
-    const isWishlisted =
-        useCallback(
-            (
-                productPostId: string,
-            ) =>
-                wishlist.some(
-                    (item) =>
-                        item.productPostId ===
-                        productPostId,
-                ),
-            [wishlist],
-        );
+            return true;
+        },
+        [getSessionUserId, removeItem],
+    );
 
     return {
         wishlist,
@@ -314,6 +208,5 @@ export function useWishlist() {
         fetchWishlist,
         addWishlist,
         removeWishlist,
-        isWishlisted,
     };
 }

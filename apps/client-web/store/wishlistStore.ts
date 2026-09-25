@@ -3,19 +3,25 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-import type { Wishlist } from "@mall/types";
+import type {
+    ProductPostSummary,
+    Wishlist,
+} from "@mall/types";
+
+/**
+ * Wishlist row with its ProductPost summary. `productPost` is null when the
+ * post is no longer published (hidden by the public ProductPost RLS).
+ */
+export interface WishlistItemView extends Wishlist {
+    productPost: ProductPostSummary | null;
+}
 
 interface WishlistStore {
-    items: Wishlist[];
+    items: WishlistItemView[];
 
     // 서버 Wishlist 전체 반영
     setItems: (
-        items: Wishlist[],
-    ) => void;
-
-    // Wishlist 추가
-    addItem: (
-        item: Wishlist,
+        items: WishlistItemView[],
     ) => void;
 
     // Wishlist 삭제
@@ -38,27 +44,6 @@ export const useWishlistStore =
                         items,
                     }),
 
-                addItem: (item) =>
-                    set((state) => {
-                        const exists =
-                            state.items.some(
-                                (value) =>
-                                    value.productPostId ===
-                                    item.productPostId,
-                            );
-
-                        if (exists) {
-                            return state;
-                        }
-
-                        return {
-                            items: [
-                                item,
-                                ...state.items,
-                            ],
-                        };
-                    }),
-
                 removeItem: (
                     productPostId,
                 ) =>
@@ -78,6 +63,13 @@ export const useWishlistStore =
             }),
             {
                 name: "client-wishlist",
+
+                // v1: rows carry a ProductPost summary; cached legacy
+                // (Express) wishlist rows are discarded.
+                version: 1,
+                migrate: () => ({
+                    items: [],
+                }),
             },
         ),
     );

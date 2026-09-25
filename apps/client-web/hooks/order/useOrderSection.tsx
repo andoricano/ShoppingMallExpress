@@ -11,7 +11,7 @@ import {
 
 import type { ClientAddress } from "@mall/types";
 
-import { createClient } from "@/lib/supabase/client";
+import { shippingAddressClient } from "@/lib/shippingAddressClient";
 import { useCart } from "@/hooks/user/useCart";
 import {
     toOrderErrorMessage,
@@ -38,36 +38,6 @@ const EMPTY_SHIPPING: OrderShippingForm = {
     addressDetail: "",
 };
 
-type ClientAddressRow = {
-    id: string;
-    client_id: string;
-    label: string | null;
-    recipient_name: string;
-    phone: string;
-    zonecode: string;
-    address: string;
-    address_detail: string | null;
-    is_default: boolean;
-    created_at: string;
-    updated_at: string;
-};
-
-function toClientAddress(row: ClientAddressRow): ClientAddress {
-    return {
-        id: row.id,
-        clientId: row.client_id,
-        label: row.label,
-        recipientName: row.recipient_name,
-        phone: row.phone,
-        zonecode: row.zonecode,
-        address: row.address,
-        addressDetail: row.address_detail,
-        isDefault: row.is_default,
-        createdAt: row.created_at,
-        updatedAt: row.updated_at,
-    };
-}
-
 function toShippingForm(address: ClientAddress): OrderShippingForm {
     return {
         recipientName: address.recipientName,
@@ -92,19 +62,12 @@ export function useOrderSection() {
     const [orderError, setOrderError] =
         useState<string | null>(null);
 
-    // Saved addresses through the owner RLS policy on client_addresses.
+    // Saved addresses (default first) through the owner RLS on client_addresses.
     const fetchAddresses = useCallback(async () => {
-        const { data, error } = await createClient()
-            .from("client_addresses")
-            .select("id, client_id, label, recipient_name, phone, zonecode, address, address_detail, is_default, created_at, updated_at")
-            .order("is_default", { ascending: false })
-            .order("created_at", { ascending: true });
+        const list = await shippingAddressClient
+            .getMyAddresses()
+            .catch(() => []);
 
-        if (error) {
-            return;
-        }
-
-        const list = (data as ClientAddressRow[]).map(toClientAddress);
         setAddresses(list);
 
         const initial = list.find((item) => item.isDefault) ?? list[0];
