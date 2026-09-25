@@ -334,7 +334,8 @@ Remove or retire legacy API assumptions that no longer apply after removal of `a
   * [x] Admin Overview aggregates v2 `orders`, `refund_requests`, active `wares` (available = current − reserved), `product_posts`, and `user_profiles` through the admin-only `GET /api/admin/overview` Route Handler. No DB change was required.
   * [x] Main page config (`/api/page-config`) has no confirmed v2 table/RPC contract; the Admin design editor now works on a local `mainPageMock` copy with saving disabled. A persisted page-config contract remains undecided.
   * [x] ProductPost thumbnail upload uses `POST /api/admin/images/upload-url`: the Admin-only Route Handler issues a service-role signed upload URL for the public `images` bucket (migration `20260925110000_images_storage_bucket.sql`: JPEG/PNG/WebP, 5 MiB, no anon/authenticated write policy), and the public URL is saved to `product_posts.thumbnail_url`.
-  * [ ] Uploaded image deletion/orphan cleanup, ProductPost body (editor) image upload, and Product `image_urls` upload are not implemented.
+  * [x] ProductPost body (editor) images: before `admin_save_product_post`, pending `blob:` image sources still referenced by the content are uploaded through the same route (`purpose: "content"`, `product-posts/content/`) and replaced with public URLs. Already-uploaded URLs are kept; a failed upload or an unresolved `blob:` source aborts the save.
+  * [ ] Uploaded image deletion/orphan cleanup and Product `image_urls` upload are not implemented.
   * [ ] `/api/master/cloudinary/ping` is called by a hard-coded path but has no Route Handler in `apps/user-web`.
 
 ## Phase 7 — Client / Admin Migration

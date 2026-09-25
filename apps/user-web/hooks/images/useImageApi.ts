@@ -1,7 +1,18 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useRef } from "react";
+import type { JSONContent } from "@tiptap/core";
 
+import type { PendingImage } from "@/component/products/post/editor/useEditSection";
+
+import {
+    collectTemporaryImageSources,
+    replaceImageSources,
+} from "./contentImages";
+
+
+/** Storage folder under the `images` bucket; see the upload-url route. */
+export type ImageUploadPurpose = "thumbnail" | "content";
 
 export interface ImageUploadResult {
     path: string;
@@ -19,6 +30,7 @@ export function useImageApi() {
     const uploadImage = useCallback(
         async (
             file: File,
+            purpose: ImageUploadPurpose = "thumbnail",
         ): Promise<ImageUploadResult> => {
             if (!file) {
                 throw new Error(
@@ -37,6 +49,7 @@ export function useImageApi() {
                     body: JSON.stringify({
                         filename: file.name,
                         contentType: file.type,
+                        purpose,
                     }),
                 },
             );
@@ -89,7 +102,51 @@ export function useImageApi() {
         [],
     );
 
+    // previewUrl → public URL of body images already uploaded by this editor
+    // session, so retries and repeated saves never upload the same file twice.
+    const uploadedContentImagesRef = useRef(new Map<string, string>());
+
+    /**
+     * Uploads the pending body images still referenced by `content` and
+     * returns a copy whose temporary `blob:` sources are replaced with public
+     * URLs. Throws before returning if any upload fails or a temporary source
+     * has no pending file, so no temporary URL can be persisted.
+     */
+    const uploadContentImages = useCallback(
+        async (
+            content: JSONContent,
+            pendingImages: PendingImage[],
+        ): Promise<JSONContent> => {
+            const uploaded = uploadedContentImagesRef.current;
+            const missing = collectTemporaryImageSources(content)
+                .filter((src) => !uploaded.has(src));
+
+            await Promise.all(
+                missing.map(async (src) => {
+                    const pending = pendingImages.find(
+                        (image) => image.previewUrl === src,
+                    );
+
+                    if (!pending) {
+                        return;
+                    }
+
+                    const { imageUrl } = await uploadImage(
+                        pending.file,
+                        "content",
+                    );
+
+                    uploaded.set(src, imageUrl);
+                }),
+            );
+
+            return replaceImageSources(content, uploaded);
+        },
+        [uploadImage],
+    );
+
     return {
         uploadImage,
+        uploadContentImages,
     };
 }
