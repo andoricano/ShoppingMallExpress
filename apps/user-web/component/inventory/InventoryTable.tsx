@@ -10,6 +10,7 @@ interface InventoryTableProps {
   onEdit?: (ware: Ware) => void;
   onEditStock?: (ware: Ware) => void;
   onToggleStatus?: (wareId: string) => void;
+  onLinkVariants?: (ware: Ware) => void;
 }
 
 export const InventoryTable: React.FC<InventoryTableProps> = ({
@@ -18,6 +19,7 @@ export const InventoryTable: React.FC<InventoryTableProps> = ({
   onEdit,
   onEditStock,
   onToggleStatus,
+  onLinkVariants,
 }) => {
   return (
     <div className="w-full overflow-x-auto border border-slate-200 rounded-xl bg-white shadow-sm">
@@ -136,6 +138,14 @@ export const InventoryTable: React.FC<InventoryTableProps> = ({
                         onClick={() => onEdit(item)}
                       >
                         수정
+                      </InventoryActionButton>
+                    )}
+
+                    {onLinkVariants && (
+                      <InventoryActionButton
+                        onClick={() => onLinkVariants(item)}
+                      >
+                        Variant 연결
                       </InventoryActionButton>
                     )}
 

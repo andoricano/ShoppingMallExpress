@@ -5,11 +5,14 @@ import {
   useAdminWare,
   type CreateWareInput,
   type UpdateWareInput,
+  type CreateWarehouseInput,
 } from "@/hooks/useAdminInventory";
 import { InventoryHeader } from "@/component/inventory/InventoryHeader";
 import { InventorySearchToolbar } from "@/component/inventory/InventorySearchToolbar";
 import { InventoryTable } from "@/component/inventory/InventoryTable";
 import { AddInventoryModal } from "@/component/inventory/modals/AddInventoryModal";
+import { AddWarehouseModal } from "@/component/inventory/modals/AddWarehouseModal";
+import { LinkVariantWareModal } from "@/component/inventory/modals/LinkVariantWareModal";
 import { EditInventoryModal } from "@/component/inventory/modals/EditInventoryModal";
 import { AdjustStockModal } from "@/component/inventory/modals/AdjustStockModal";
 import type { Ware } from "@mall/types";
@@ -27,12 +30,16 @@ export default function AdminInventoryPage() {
     error,
     fetchWareList,
     fetchWarehouseList,
+    createWarehouse,
     createWare,
     updateWare,
     adjustWareStock,
   } = useAdminWare();
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isAddWarehouseOpen, setIsAddWarehouseOpen] = useState(false);
+  const [linkTarget, setLinkTarget] = useState<Ware | null>(null);
+  const [warehousesLoaded, setWarehousesLoaded] = useState(false);
   const [editTarget, setEditTarget] = useState<Ware | null>(null);
   const [adjustTargetSku, setAdjustTargetSku] =
     useState<AdjustTarget | null>(null);
@@ -40,7 +47,7 @@ export default function AdminInventoryPage() {
   // 초기 재고 목록 조회
   useEffect(() => {
     void fetchWareList();
-    void fetchWarehouseList();
+    void fetchWarehouseList().then(() => setWarehousesLoaded(true));
   }, [fetchWareList, fetchWarehouseList]);
 
   // 신규 재고 등록
@@ -49,6 +56,13 @@ export default function AdminInventoryPage() {
   ) => {
     await createWare(data);
     setIsAddModalOpen(false);
+  };
+
+  // Warehouse 등록
+  const handleCreateWarehouse = async (
+    data: CreateWarehouseInput
+  ) => {
+    await createWarehouse(data);
   };
 
   // 재고 정보 수정
@@ -74,7 +88,14 @@ export default function AdminInventoryPage() {
       <div className="max-w-7xl mx-auto space-y-6">
         <InventoryHeader
           onOpenAddModal={() => setIsAddModalOpen(true)}
+          onOpenAddWarehouseModal={() => setIsAddWarehouseOpen(true)}
         />
+
+        {warehousesLoaded && warehouseList.length === 0 && (
+          <div className="p-4 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-xl">
+            등록된 Warehouse가 없습니다. Ware를 등록하려면 먼저 Warehouse를 등록해주세요.
+          </div>
+        )}
 
         {error && (
           <div className="flex items-center gap-2 p-4 text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-xl animate-in fade-in">
@@ -99,6 +120,7 @@ export default function AdminInventoryPage() {
                 currentQty: inventory.currentStock,
               })
             }
+            onLinkVariants={setLinkTarget}
             onToggleStatus={(wareId) => {
               const ware = wareList.find((item) => item.id === wareId);
               if (ware) {
@@ -107,6 +129,19 @@ export default function AdminInventoryPage() {
             }}
           />
         </div>
+
+        <AddWarehouseModal
+          isOpen={isAddWarehouseOpen}
+          onClose={() => setIsAddWarehouseOpen(false)}
+          onSubmit={handleCreateWarehouse}
+        />
+
+        {linkTarget && (
+          <LinkVariantWareModal
+            ware={linkTarget}
+            onClose={() => setLinkTarget(null)}
+          />
+        )}
 
         <AddInventoryModal
           isOpen={isAddModalOpen}

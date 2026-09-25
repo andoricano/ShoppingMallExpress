@@ -17,3 +17,4 @@ export * from './category.js';
 export * from './clientAddress.js';
 export * from './adminOverview.js';
 export * from './adminRefund.js';
+export * from './adminVariantWare.js';

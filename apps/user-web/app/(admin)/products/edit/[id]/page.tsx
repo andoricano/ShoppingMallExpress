@@ -48,6 +48,7 @@ export default function ProductPostEditPage() {
         moveProduct,
 
         saveProductPost,
+        setPublishStatus,
         deleteProductPost,
     } = useProductPostEdit(productPostId);
 
@@ -102,6 +103,33 @@ export default function ProductPostEditPage() {
     };
 
     // ==========================================
+    // 게시 / 비공개 전환
+    // ==========================================
+
+    const handleTogglePublish = async () => {
+        if (!draftPost) {
+            return;
+        }
+
+        const next =
+            draftPost.status === "PUBLISHED"
+                ? "DRAFT"
+                : "PUBLISHED";
+
+        const confirmed = window.confirm(
+            next === "PUBLISHED"
+                ? "이 상품 게시물을 게시(공개)하시겠습니까?"
+                : "이 상품 게시물을 비공개로 전환하시겠습니까?",
+        );
+
+        if (!confirmed) {
+            return;
+        }
+
+        await setPublishStatus(next);
+    };
+
+    // ==========================================
     // 게시물 삭제
     // ==========================================
 
@@ -133,6 +161,13 @@ export default function ProductPostEditPage() {
             onClick: handleSave,
         },
         {
+            menuTitle:
+                draftPost?.status === "PUBLISHED"
+                    ? "비공개로 전환"
+                    : "게시하기",
+            onClick: handleTogglePublish,
+        },
+        {
             menuTitle: "삭제하기",
             onClick: handleDelete,
         },
@@ -158,6 +193,15 @@ export default function ProductPostEditPage() {
         <div className="min-h-screen bg-slate-50/50 p-6 md:p-8">
             <div className="mx-auto max-w-[1800px] space-y-6">
                 <ProductAdminHeader menu={menu} />
+
+                <p className="text-sm text-slate-600">
+                    현재 상태:{" "}
+                    <span className="font-semibold">
+                        {draftPost.status === "PUBLISHED"
+                            ? "공개 (Consumer에 노출)"
+                            : "비공개 (초안)"}
+                    </span>
+                </p>
 
                 {error && (
                     <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">

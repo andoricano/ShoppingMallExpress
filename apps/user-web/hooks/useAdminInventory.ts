@@ -18,6 +18,12 @@ export interface CreateWareInput {
     meta?: Record<string, unknown>;
 }
 
+export interface CreateWarehouseInput {
+    name: string;
+    code?: string;
+    description?: string;
+}
+
 export interface UpdateWareInput {
     name?: string;
     wareCode?: string | null;
@@ -101,6 +107,16 @@ export function useAdminWare() {
             setWarehouseList([]);
         }
     }, []);
+
+    // Failures are thrown to the calling modal (no list-level error state).
+    const createWarehouse = useCallback(async (input: CreateWarehouseInput) => {
+        await adminRequest<Warehouse>("/api/admin/warehouses", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(input),
+        });
+        await fetchWarehouseList();
+    }, [fetchWarehouseList]);
 
     const createWare = useCallback(async (input: CreateWareInput) => {
         setLoading(true);
@@ -187,6 +203,7 @@ export function useAdminWare() {
         error,
         fetchWareList,
         fetchWarehouseList,
+        createWarehouse,
         createWare,
         updateWare,
         adjustWareStock,

@@ -446,6 +446,14 @@ Google Login
 * Stock increases only after an Admin restocks an `APPROVED` refund item (Admin Refund screen → `POST /api/admin/refunds/[refundId]/restocks`): **stock increases by exactly the restocked quantity, only in the OrderItem's original allocation Ware**.
 * Restock beyond the refunded quantity or the Ware allocation fails and changes nothing; `REQUESTED`/`REJECTED` refunds cannot be restocked.
 
+### Admin operation paths (Phase 8 prerequisites)
+
+* [x] ProductPost publish/unpublish: the user-web `/products/edit/[id]` menu toggles `DRAFT` ↔ `PUBLISHED` through a status-only `PATCH /api/admin/product-posts/[postId]` (existing `admin_save_product_post`; Product links stay unchanged). On `/products/add`, "게시하기" creates a `PUBLISHED` post and "저장 (비공개)" creates a `DRAFT`.
+* [x] Warehouse creation: `POST /api/admin/warehouses` (Admin check + service role, existing `create_warehouse`) and `/inventory` "+ Warehouse 등록"; a duplicate `code` returns 409.
+* [x] Existing Variant ↔ Ware link: `/inventory` Ware row "Variant 연결" → `GET`/`POST /api/admin/products/[productId]/variant-wares` (existing `link_product_variant_ware`). Works for any Variant of any Product, including Products with several Variants; the Variant must belong to the Product in the URL; linking an already linked pair is a no-op. Ware data stays in Admin-only types (`AdminVariantLinkedWare`).
+* [ ] There is still no unlink UI/route; removing a wrong link needs the service-role `unlink_product_variant_ware()` (SQL).
+* Validated locally (43 route checks against the local Supabase: Admin/CLIENT/unauthenticated access, publish/unpublish visibility for anon, Warehouse creation, link/duplicate/wrong-Product/unknown ids, Consumer availability). The screens were not exercised in a browser.
+
 ### Verify
 
 * [ ] targeted typecheck/tests
@@ -458,7 +466,7 @@ Google Login
 
 ### Open decisions
 
-* [x] Ware stock after Refund approval is decided: **B — separate restock confirmation**. `request_refund()` and `admin_transition_refund_status()` never restock Ware; an Admin restocks explicitly after the returned goods are confirmed (see "Stock expectations"). `restock_order_item()` is unchanged, keeps no restock record, is used by no application, and is not part of the Refund flow. Restocks record no actor (no other Admin RPC does). The migration is applied locally only; it is not yet applied to the linked Supabase project.
+* [x] Ware stock after Refund approval is decided: **B — separate restock confirmation**. `request_refund()` and `admin_transition_refund_status()` never restock Ware; an Admin restocks explicitly after the returned goods are confirmed (see "Stock expectations"). `restock_order_item()` is unchanged, keeps no restock record, is used by no application, and is not part of the Refund flow. Restocks record no actor (no other Admin RPC does). `supabase migration list --linked` shows `20260925150000` applied to the linked Supabase project.
 
 ### Completion criteria
 

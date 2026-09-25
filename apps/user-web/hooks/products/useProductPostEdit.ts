@@ -12,6 +12,19 @@ export function useProductPostEdit(productPostId: string) {
     useEffect(() => { if (productPostId) void fetchProductPost(); }, [productPostId, fetchProductPost]);
     const updatePost = useCallback((post: ProductPost) => setDraftPost(post), []); const addProduct = useCallback((product: Product) => setDraftProducts((items) => [...items, product]), []); const updateProduct = useCallback((product: Product) => setDraftProducts((items) => items.map((item) => item.id === product.id ? product : item)), []); const removeProduct = useCallback((id: string) => setDraftProducts((items) => items.filter((item) => item.id !== id)), []); const moveProduct = useCallback((from: number, to: number) => setDraftProducts((items) => { const next = [...items]; const [item] = next.splice(from, 1); if (item) next.splice(to, 0, item); return next; }), []);
     const saveProductPost = useCallback(async () => { if (!draftPost) return; setSaving(true); setError(null); try { let thumbnailUrl = draftPost.thumbnailUrl; if (thumbnailFile) thumbnailUrl = (await uploadImage(thumbnailFile)).imageUrl; const content = await uploadContentImages(draftPost.content, pendingImages); const response = await fetch(`/api/admin/product-posts/${productPostId}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...draftPost, content, thumbnailUrl, productIds: draftProducts.map((item) => item.id) }) }); if (!response.ok) throw new Error("상품 게시물 저장에 실패했습니다."); } catch (cause) { setError(cause instanceof Error ? cause.message : "상품 게시물 저장에 실패했습니다."); throw cause; } finally { setSaving(false); } }, [draftPost, draftProducts, pendingImages, productPostId, thumbnailFile, uploadContentImages, uploadImage]);
+    // Publish / unpublish through the existing PATCH route (admin_save_product_post). Only `status` is sent, so unsaved edits stay local and Product links are untouched.
+    const setPublishStatus = useCallback(async (status: ProductPost["status"]) => {
+        setError(null);
+        try {
+            const response = await fetch(`/api/admin/product-posts/${productPostId}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status }) });
+            const result = await response.json().catch(() => null) as { data?: ProductPost; message?: string } | null;
+            if (!response.ok || !result?.data) throw new Error(result?.message ?? "게시 상태 변경에 실패했습니다.");
+            const saved = result.data;
+            setDraftPost((post) => post ? { ...post, status: saved.status, publishedAt: saved.publishedAt, updatedAt: saved.updatedAt } : post);
+        } catch (cause) {
+            setError(cause instanceof Error ? cause.message : "게시 상태 변경에 실패했습니다.");
+        }
+    }, [productPostId]);
     const deleteProductPost = useCallback(async () => { const response = await fetch(`/api/admin/product-posts/${productPostId}`, { method: "DELETE" }); if (!response.ok) throw new Error("상품 게시물 삭제에 실패했습니다."); }, [productPostId]);
-    return { draftPost, draftProducts, thumbnailFile, setThumbnailFile, pendingImages, setPendingImages, loading, saving, error, fetchProductPost, updatePost, addProduct, updateProduct, removeProduct, moveProduct, saveProductPost, deleteProductPost };
+    return { draftPost, draftProducts, thumbnailFile, setThumbnailFile, pendingImages, setPendingImages, loading, saving, error, fetchProductPost, updatePost, addProduct, updateProduct, removeProduct, moveProduct, saveProductPost, setPublishStatus, deleteProductPost };
 }

@@ -60,9 +60,10 @@ export default function ProductPostAddPage() {
         setRegisterWare(inventory);
     };
 
-    const handlePublish = async () => {
+    // "게시하기" creates a PUBLISHED post; "저장 (비공개)" keeps it a DRAFT.
+    const handleSave = async (status: "DRAFT" | "PUBLISHED") => {
         try {
-            await createProductPost();
+            await createProductPost(status);
             router.replace("/products");
         } catch {
             // Hook에서 error 처리
@@ -75,8 +76,12 @@ export default function ProductPostAddPage() {
 
     const menu: AdminMenuItem[] = [
         {
+            menuTitle: "저장 (비공개)",
+            onClick: () => handleSave("DRAFT"),
+        },
+        {
             menuTitle: "게시하기",
-            onClick: handlePublish,
+            onClick: () => handleSave("PUBLISHED"),
         },
     ];
 
