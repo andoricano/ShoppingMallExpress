@@ -15,6 +15,8 @@ import { AdminMenuItem } from "@/component/common/AdminMenu";
 import { ProductAdminHeader } from "@/component/products/ProductAdminHeader";
 import { ProductInventorySection } from "@/component/products/add/ProductInventorySection";
 import { ProductCreateModal } from "@/component/products/add/ProductCreateModal";
+import { ProductPickerModal } from "@/component/products/add/ProductPickerModal";
+import { ProductEditModal } from "@/component/products/edit/ProductEditModal";
 import { ProductInfoSection } from "@/component/products/add/ProductInfoSection";
 import { ProductPostEditor } from "@/component/products/edit/ProductEditor";
 
@@ -53,6 +55,12 @@ export default function ProductPostEditPage() {
     // through the Admin server boundary before it joins the ProductPost draft.
     const [registerWare, setRegisterWare] =
         useState<Ware | null>(null);
+
+    // Persisted Product picker / editor (admin_update_product).
+    const [isProductPickerOpen, setIsProductPickerOpen] =
+        useState(false);
+    const [editingProductId, setEditingProductId] =
+        useState<string | null>(null);
 
     // ==========================================
     // 상품 게시물 조회
@@ -170,7 +178,8 @@ export default function ProductPostEditPage() {
                         products={draftProducts}
                         onChange={updatePost}
                         onThumbnailSelect={setThumbnailFile}
-                        onEditProduct={updateProduct}
+                        onEditProduct={(product) => setEditingProductId(product.id)}
+                        onAddExistingProduct={() => setIsProductPickerOpen(true)}
                         onRemoveProduct={removeProduct}
                         onMoveProduct={moveProduct}
                     />
@@ -193,6 +202,28 @@ export default function ProductPostEditPage() {
                             setRegisterWare(null);
                         }}
                         onCancel={() => setRegisterWare(null)}
+                    />
+                )}
+
+                {isProductPickerOpen && (
+                    <ProductPickerModal
+                        excludeIds={draftProducts.map((product) => product.id)}
+                        onSelect={(product) => {
+                            addProduct(product);
+                            setIsProductPickerOpen(false);
+                        }}
+                        onClose={() => setIsProductPickerOpen(false)}
+                    />
+                )}
+
+                {editingProductId && (
+                    <ProductEditModal
+                        productId={editingProductId}
+                        onSaved={(product) => {
+                            updateProduct(product);
+                            setEditingProductId(null);
+                        }}
+                        onClose={() => setEditingProductId(null)}
                     />
                 )}
 

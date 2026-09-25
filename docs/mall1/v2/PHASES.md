@@ -325,7 +325,9 @@ Remove or retire legacy API assumptions that no longer apply after removal of `a
 * [ ] Product/ProductPost/Option/Variant management is migrated from legacy Express and Inventory assumptions.
   * [x] Product + ProductOption/Value + ProductVariant creation uses the service-role-only `admin_create_product(jsonb, jsonb, jsonb)` RPC (migration `20260925060000_admin_create_product.sql`) through `POST /api/admin/products`; one transaction satisfies the deferred variant-integrity triggers. Variant ↔ Ware links stay on `link_product_variant_ware()`.
   * [x] ProductPost drafts link only persisted Products; ProductPost routes reject unknown `productIds`.
-  * [ ] Product/Option/Variant update and existing-Product selection for ProductPosts.
+  * [x] Product basic info, ProductOption/Value (rename, required flag, value active flag, appended values) and ProductVariant SKU/label/price/active updates run in one transaction through the service-role-only `admin_update_product(uuid, jsonb, jsonb, jsonb)` RPC (migration `20260925090000_admin_update_product.sql`) via `GET/PATCH /api/admin/products/[productId]`; invalid changes roll back (`supabase/verification/admin_update_product.sql`).
+  * [x] ProductPost add/edit screens can search and link existing persisted Products (`GET /api/admin/products`); links are saved through `admin_save_product_post()`.
+  * [ ] Adding ProductOptions/ProductVariants to an existing Product, changing a Variant's option combination, and Product/Option/Value/Variant deletion.
   * [x] ProductPost create/update and ordered `product_post_products` replacement run in one transaction through the service-role-only `admin_save_product_post(uuid, jsonb, uuid[])` RPC (migration `20260925080000_admin_save_product_post.sql`); unknown `productIds`, duplicate slugs, invalid status, and link failures leave no partial save (`supabase/verification/admin_save_product_post.sql`).
 * [ ] All remaining user-web routes are migrated from legacy Express endpoint constants.
 

@@ -48,6 +48,36 @@ function validateBody(body: AdminProductCreateBody) {
     return body.variants;
 }
 
+/** Persisted Products only, for linking existing Products to a ProductPost. */
+export async function GET(request: NextRequest) {
+    try {
+        const supabase = await requireAdminServiceClient();
+        const search = request.nextUrl.searchParams.get("search")?.trim();
+
+        let query = supabase
+            .from("products")
+            .select(PRODUCT_COLUMNS)
+            .order("created_at", { ascending: false })
+            .limit(50);
+
+        if (search) {
+            query = query.ilike("name", `%${search}%`);
+        }
+
+        const { data, error } = await query;
+
+        if (error) {
+            throw error;
+        }
+
+        return NextResponse.json({
+            data: (data as ProductRow[]).map(toProduct),
+        });
+    } catch (error) {
+        return adminErrorResponse(error);
+    }
+}
+
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json() as AdminProductCreateBody;

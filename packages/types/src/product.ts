@@ -127,3 +127,52 @@ export interface ProductCreateResult {
     productId: string;
     variantIds: string[];
 }
+
+/**
+ * Admin-only Product editing view. Includes inactive Options/Values/Variants.
+ * Ware / Warehouse data is never part of this contract.
+ */
+export interface AdminProductOption extends ProductOption {
+    values: ProductOptionValue[];
+}
+
+export interface AdminProductVariant extends ProductVariant {
+    optionValueIds: string[];
+}
+
+export interface AdminProductDetail extends Product {
+    options: AdminProductOption[];
+    variants: AdminProductVariant[];
+}
+
+/**
+ * Admin-only input for the service-role `admin_update_product()` RPC.
+ * Only present keys change; ids must belong to the Product.
+ * Values without id are appended to the Option.
+ */
+export interface ProductUpdateInput {
+    product?: {
+        name?: string;
+        description?: string | null;
+        isActive?: boolean;
+    };
+    options?: {
+        id: string;
+        name?: string;
+        isRequired?: boolean;
+        displayOrder?: number;
+        values?: {
+            id?: string;
+            value?: string;
+            displayOrder?: number;
+            isActive?: boolean;
+        }[];
+    }[];
+    variants?: {
+        id: string;
+        skuCode?: string | null;
+        label?: string | null;
+        price?: number;
+        isActive?: boolean;
+    }[];
+}

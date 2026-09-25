@@ -19,6 +19,7 @@ interface ProductInfoSectionProps {
         fromIndex: number,
         toIndex: number,
     ) => void;
+    onAddExistingProduct?: () => void;
 }
 
 export function ProductInfoSection({
@@ -29,6 +30,7 @@ export function ProductInfoSection({
     onEditProduct,
     onRemoveProduct,
     onMoveProduct,
+    onAddExistingProduct,
 }: ProductInfoSectionProps) {
     return (
         <section className="space-y-6">
@@ -47,6 +49,7 @@ export function ProductInfoSection({
                 onEdit={onEditProduct}
                 onRemove={onRemoveProduct}
                 onMove={onMoveProduct}
+                onAddExisting={onAddExistingProduct}
             />
         </section>
     );

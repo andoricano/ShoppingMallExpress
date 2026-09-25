@@ -11,6 +11,8 @@ interface ProductsTableProps {
     onEdit?: (product: Product) => void;
     onRemove?: (productId: string) => void;
     onMove?: (fromIndex: number, toIndex: number) => void;
+    /** Opens the persisted-Product picker. */
+    onAddExisting?: () => void;
 }
 
 export const ProductsTable: React.FC<ProductsTableProps> = ({
@@ -18,13 +20,26 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
     onEdit,
     onRemove,
     onMove,
+    onAddExisting,
 }) => {
     return (
         <div className="w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
             <div className="border-b border-slate-200 px-4 py-3">
-                <h3 className="text-sm font-semibold text-slate-700">
-                    Products
-                </h3>
+                <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-semibold text-slate-700">
+                        Products
+                    </h3>
+
+                    {onAddExisting && (
+                        <button
+                            type="button"
+                            onClick={onAddExisting}
+                            className="rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 transition-colors hover:bg-slate-50"
+                        >
+                            기존 상품 추가
+                        </button>
+                    )}
+                </div>
 
                 <p className="mt-1 text-xs text-slate-400">
                     현재 게시물에 등록된 상품을 관리합니다.
