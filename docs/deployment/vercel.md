@@ -6,13 +6,12 @@
 
 The production and preview environments use these variable names:
 
-- `API_URL`
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 
 Values are managed in Vercel and must not be committed. `turbo.json` declares these names in `globalEnv` so a root-level `turbo run build` passes them through to the Next.js build task and includes them in Turborepo's environment handling. `.vercel` is ignored and its local link data must remain untracked.
 
-`API_URL` is read while Next.js builds the `/api/*` rewrite; the two `NEXT_PUBLIC_*` values are embedded in client-side code at build time. Add or change any of these values in the target Vercel environment, then redeploy that environment. Production builds fail when `API_URL` is absent instead of deploying a rewrite to localhost.
+The two `NEXT_PUBLIC_*` values are embedded in client-side code at build time. Add or change any of these values in the target Vercel environment, then redeploy that environment. `client-pwa` talks to Supabase directly (RPC + RLS); it has no Express API, `/api/*` rewrite, or `API_URL`. If `API_URL` still exists in a Vercel project it is unused and can be removed.
 
 ## Additional frontend projects
 

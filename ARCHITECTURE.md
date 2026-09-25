@@ -38,7 +38,7 @@ Supabase RPC
 
 를 기본 application architecture로 사용한다.
 
-`apps/api`의 기존 Express 서버는 Mall v2의 기본 실행 경계가 아니며, 명시적인 기술적 필요가 확인되지 않는 한 복원하지 않는다.
+`apps/api`의 기존 Express 서버는 삭제되었고 Mall v2의 실행 경계가 아니다. 명시적인 기술적 필요가 확인되지 않는 한 복원하지 않는다.
 
 ---
 
@@ -49,7 +49,7 @@ Supabase RPC
 | `apps/client-pwa`  | 고객용 Next.js PWA. ProductPost, Product, ProductVariant, Cart, Order 등 Consumer flow를 담당한다.                                |
 | `apps/client-web`  | 고객용 Next.js 웹. 상품 조회, 장바구니, 관심상품, 주문, 마이페이지, History/Refund 등의 Consumer flow를 담당한다.                                      |
 | `apps/user-web`    | 현재 Admin application. Product, ProductPost, ProductOption, ProductVariant, Warehouse/Ware, Order, Refund 등의 관리 기능을 담당한다. |
-| `apps/api`         | Legacy Express API 영역. Mall v2의 기본 architecture가 아니며 현재 삭제/제거 방향이다. 명시적인 요구가 없는 한 복원하지 않는다.                              |
+| `apps/api`         | 삭제됨(Legacy Express API). Mall v2의 architecture가 아니며 현재 workspace에 존재하지 않는다. 명시적인 요구가 없는 한 복원하지 않는다.                            |
 
 ---
 

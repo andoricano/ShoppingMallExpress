@@ -2,19 +2,6 @@
 
 ## Development
 
-### API
-
-```bash
-pnpm --filter @mall/api dev
-```
-
-```bash
-docker run --name mall-api-container \
-  -p 8080:8080 \
-  --env-file apps/api/.env \
-  mall-api
-```
-
 ### Admin
 
 ```bash
@@ -39,4 +26,3 @@ git push origin deployment-mvp-mall
 
 * Client Web → Netlify
 * Admin Web → Netlify
-* API → Google Cloud
