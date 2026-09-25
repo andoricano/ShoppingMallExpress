@@ -17,7 +17,7 @@ interface HistoryItemListProps {
 export default function HistoryItemList({
     historyList,
     onSelect,
-    emptyMessage = "History가 없습니다.",
+    emptyMessage = "주문 내역이 없습니다.",
 }: HistoryItemListProps) {
     if (historyList.length === 0) {
         return (

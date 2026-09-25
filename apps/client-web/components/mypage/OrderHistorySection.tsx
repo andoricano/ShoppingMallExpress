@@ -56,7 +56,7 @@ export default function OrderHistorySection() {
                 historyList={historyList}
                 onSelect={(history) => {
                     router.push(
-                        `/mypage/order-history/${history.order.id}`,
+                        `/mypage/order-history/${history.id}`,
                     );
                 }}
             />

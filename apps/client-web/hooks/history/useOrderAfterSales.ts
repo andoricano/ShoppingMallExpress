@@ -1,317 +1,151 @@
-// hooks/order-history/useOrderAction.ts
+// hooks/history/useOrderAfterSales.ts
 
 "use client";
 
-import { authProfile } from "@/lib/authClient";
-import { API_BASE_URL } from "@/lib/api";
-import { API_ENDPOINTS } from "@mall/constants";
 import {
     useCallback,
     useState,
 } from "react";
 
-export function useOrderAfterSales() {
-    const [
-        loading,
-        setLoading,
-    ] = useState(false);
+import type {
+    Order,
+    OrderStatus,
+    RefundRequest,
+    RefundStatus,
+} from "@mall/types";
 
-    const [
-        error,
-        setError,
-    ] = useState<string | null>(null);
+import { createClient } from "@/lib/supabase/client";
 
-    // ==========================================
-    // 1. 환불 요청
-    // ==========================================
+// Lifecycle rules owned by the RPCs; the UI only mirrors them.
+/** cancel_order(): "Only PENDING orders may be cancelled". */
+const CANCELLABLE_STATUSES: readonly OrderStatus[] = ["PENDING"];
 
-    // ==========================================
-    // 1. 환불 요청
-    // ==========================================
+/** request_refund(): rejects PENDING and CANCELLED orders. */
+const NON_REFUNDABLE_STATUSES: readonly OrderStatus[] = ["PENDING", "CANCELLED"];
 
-    const requestRefund = useCallback(
-        async (orderId: string) => {
-            setLoading(true);
-            setError(null);
+/** request_refund() ignores these requests when summing refunded quantity. */
+const INACTIVE_REFUND_STATUSES: readonly RefundStatus[] = ["REJECTED", "CANCELLED"];
 
-            try {
-                const session =
-                    await authProfile.getSession();
+export function canCancelOrder(status: OrderStatus) {
+    return CANCELLABLE_STATUSES.includes(status);
+}
 
-                if (!session?.access_token) {
-                    throw new Error(
-                        "로그인이 필요합니다.",
-                    );
-                }
+export function canRequestRefund(status: OrderStatus) {
+    return !NON_REFUNDABLE_STATUSES.includes(status);
+}
 
-                const url =
-                    `${API_BASE_URL}${API_ENDPOINTS.CLIENT_REFUNDS.BASE}`;
+/** Remaining refundable quantity per OrderItem id. */
+export function getRefundableQuantities(
+    order: Order,
+    refunds: RefundRequest[],
+) {
+    const requested = new Map<string, number>();
 
-                const response =
-                    await fetch(url, {
-                        method: "POST",
-                        headers: {
-                            "Content-Type":
-                                "application/json",
-                            Authorization:
-                                `Bearer ${session.access_token}`,
-                        },
-                        body: JSON.stringify({
-                            orderId,
-                        }),
-                    });
+    for (const refund of refunds) {
+        if (INACTIVE_REFUND_STATUSES.includes(refund.status)) {
+            continue;
+        }
 
-                const result =
-                    await response
-                        .json()
-                        .catch(() => null);
+        for (const item of refund.items ?? []) {
+            requested.set(
+                item.orderItemId,
+                (requested.get(item.orderItemId) ?? 0) + item.quantity,
+            );
+        }
+    }
 
-                console.log(
-                    "[useOrderAfterSales] 환불 요청 API result:",
-                    result,
-                );
-
-                if (!response.ok) {
-                    throw new Error(
-                        result?.message ||
-                        "환불 요청에 실패했습니다.",
-                    );
-                }
-
-                return result?.data;
-            } catch (err) {
-                console.error(
-                    "[useOrderAfterSales] 환불 요청 실패:",
-                    err,
-                );
-
-                setError(
-                    err instanceof Error
-                        ? err.message
-                        : "환불 요청에 실패했습니다.",
-                );
-
-                return null;
-            } finally {
-                setLoading(false);
-            }
-        },
-        [],
+    return new Map(
+        order.items.map((item) => [
+            item.id,
+            Math.max(0, item.quantity - (requested.get(item.id) ?? 0)),
+        ]),
     );
+}
 
-    // ==========================================
-    // 2. 교환 요청
-    // ==========================================
+export interface RefundItemInput {
+    orderItemId: string;
+    quantity: number;
+}
 
-    const requestExchange =
-        useCallback(
-            async (
-                orderId: string,
-            ) => {
-                setLoading(true);
-                setError(null);
+function toAfterSalesErrorMessage(error: unknown, fallback: string) {
+    const message =
+        typeof error === "object" && error !== null && "message" in error
+            ? String((error as { message: unknown }).message)
+            : "";
 
-                console.log(
-                    "[useOrderAction] 교환 요청:",
-                    orderId,
-                );
+    if (message.includes("Authentication required")) return "로그인이 필요합니다.";
+    if (message.includes("Order not found")) return "주문을 찾을 수 없습니다.";
+    if (message.includes("Only PENDING orders may be cancelled")) return "주문 접수 상태에서만 취소할 수 있습니다.";
+    if (message.includes("cannot be refunded in status")) return "현재 주문 상태에서는 환불을 요청할 수 없습니다.";
+    if (message.includes("Refund items are required")) return "환불할 상품을 선택해 주세요.";
+    if (message.includes("Refund quantity exceeds ordered quantity")) return "환불 요청 수량이 주문 수량을 초과합니다.";
+    if (message.includes("does not belong to Order") || message.includes("Invalid refund item")) return "잘못된 환불 요청입니다.";
 
-                try {
-                    // TODO:
-                    // 교환 요청 API 연결
+    return fallback;
+}
 
-                    console.log(
-                        "[useOrderAction] 교환 요청 API 연결 예정:",
-                        orderId,
-                    );
+/** cancel_order() and request_refund() for the caller's own Orders. */
+export function useOrderAfterSales() {
+    const [loading, setLoading] =
+        useState(false);
 
-                    return true;
-                } catch (err) {
-                    console.error(
-                        "[useOrderAction] 교환 요청 실패:",
-                        err,
-                    );
+    const [error, setError] =
+        useState<string | null>(null);
 
-                    const message =
-                        err instanceof Error
-                            ? err.message
-                            : "교환 요청에 실패했습니다.";
-
-                    setError(message);
-
-                    return false;
-                } finally {
-                    setLoading(false);
-                }
-            },
-            [],
-        );
-    // ==========================================
-    // 3. 주문 정보 수정
-    // ==========================================
-    const updateOrder = useCallback(
+    const run = useCallback(
         async (
-            orderId: string,
-            shippingAddress: {
-                name: string;
-                recipient: string;
-                phone: string;
-                postalCode: string;
-                address: string;
-                detailAddress?: string;
-            },
+            call: () => PromiseLike<{ error: unknown }>,
+            fallback: string,
         ) => {
             setLoading(true);
             setError(null);
 
             try {
-                const session =
-                    await authProfile.getSession();
+                const { error: rpcError } = await call();
 
-                if (!session?.access_token) {
-                    throw new Error(
-                        "로그인이 필요합니다.",
-                    );
+                if (rpcError) {
+                    throw rpcError;
                 }
 
-                const url =
-                    `${API_BASE_URL}${API_ENDPOINTS.CLIENT_ORDERS.BY_ID(
-                        orderId,
-                    )}`;
+                return true;
+            } catch (cause) {
+                setError(toAfterSalesErrorMessage(cause, fallback));
 
-                const response =
-                    await fetch(url, {
-                        method: "PATCH",
-                        headers: {
-                            "Content-Type":
-                                "application/json",
-                            Authorization:
-                                `Bearer ${session.access_token}`,
-                        },
-                        body: JSON.stringify({
-                            shippingAddress,
-                        }),
-                    });
-
-                const result =
-                    await response
-                        .json()
-                        .catch(() => null);
-
-                console.log(
-                    "[useOrderAction] 주문 정보 수정 API result:",
-                    result,
-                );
-
-                if (!response.ok) {
-                    throw new Error(
-                        result?.message ||
-                        "주문 정보 수정에 실패했습니다.",
-                    );
-                }
-
-                return result?.data;
-            } catch (err) {
-                console.error(
-                    "[useOrderAction] 주문 정보 수정 실패:",
-                    err,
-                );
-
-                setError(
-                    err instanceof Error
-                        ? err.message
-                        : "주문 정보 수정에 실패했습니다.",
-                );
-
-                return null;
+                return false;
             } finally {
                 setLoading(false);
             }
         },
         [],
     );
-    // ==========================================
-    // 4. 주문 취소
-    // ==========================================
+
     const requestCancel = useCallback(
-        async (orderId: string) => {
-            setLoading(true);
-            setError(null);
-
-            try {
-                const session =
-                    await authProfile.getSession();
-
-                if (!session?.access_token) {
-                    throw new Error(
-                        "로그인이 필요합니다.",
-                    );
-                }
-
-                const url =
-                    `${API_BASE_URL}${API_ENDPOINTS.CLIENT_ORDERS.CANCEL(
-                        orderId,
-                    )}`;
-
-                const response =
-                    await fetch(url, {
-                        method: "PATCH",
-                        headers: {
-                            Authorization:
-                                `Bearer ${session.access_token}`,
-                        },
-                    });
-
-                const result =
-                    await response
-                        .json()
-                        .catch(() => null);
-
-                console.log(
-                    "[useOrderAction] 주문 취소 API result:",
-                    result,
-                );
-
-                if (!response.ok) {
-                    throw new Error(
-                        result?.message ||
-                        "주문 취소에 실패했습니다.",
-                    );
-                }
-
-                return result?.data;
-            } catch (err) {
-                console.error(
-                    "[useOrderAction] 주문 취소 실패:",
-                    err,
-                );
-
-                setError(
-                    err instanceof Error
-                        ? err.message
-                        : "주문 취소에 실패했습니다.",
-                );
-
-                return null;
-            } finally {
-                setLoading(false);
-            }
-        },
-        [],
+        (orderId: string) =>
+            run(
+                () => createClient().rpc("cancel_order", { p_order_id: orderId }),
+                "주문을 취소하지 못했습니다.",
+            ),
+        [run],
     );
 
-    const clearError = useCallback(() => {
-        setError(null);
-    }, []);
+    const requestRefund = useCallback(
+        (orderId: string, items: RefundItemInput[], reason: string | null) =>
+            run(
+                () => createClient().rpc("request_refund", {
+                    p_order_id: orderId,
+                    p_items: items,
+                    p_reason: reason,
+                }),
+                "환불을 요청하지 못했습니다.",
+            ),
+        [run],
+    );
 
     return {
         loading,
         error,
 
-        requestRefund,
-        requestExchange,
-        updateOrder,
         requestCancel,
-        clearError,
+        requestRefund,
     };
 }

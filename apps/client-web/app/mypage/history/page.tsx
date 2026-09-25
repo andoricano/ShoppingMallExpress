@@ -22,7 +22,7 @@ export default function HistoryPage() {
     if (loading) {
         return (
             <div className="flex min-h-[calc(100vh-120px)] items-center justify-center">
-                History 불러오는 중...
+                주문 내역 불러오는 중...
             </div>
         );
     }
@@ -43,11 +43,11 @@ export default function HistoryPage() {
                 {/* Header */}
                 <header className="mb-10">
                     <h1 className="text-3xl font-bold text-slate-900">
-                        주문 이력
+                        주문 내역
                     </h1>
 
                     <p className="mt-3 text-sm text-slate-500">
-                        주문 및 배송과 관련된 활동 내역을 확인할 수 있습니다.
+                        주문하신 내역을 확인할 수 있습니다.
                     </p>
                 </header>
 
@@ -57,21 +57,9 @@ export default function HistoryPage() {
                         historyList={
                             historyList
                         }
-                        onSelect={(
-                            history,
-                        ) => {
-                            const orderId =
-                                history
-                                    .order
-                                    .id;
-
-                            console.log(
-                                "Order ID:",
-                                orderId,
-                            );
-
+                        onSelect={(history) => {
                             router.push(
-                                `/mypage/order-history/${orderId}`,
+                                `/mypage/order-history/${history.id}`,
                             );
                         }}
                     />

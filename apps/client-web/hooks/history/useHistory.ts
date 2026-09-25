@@ -1,4 +1,4 @@
-// hooks/useHistory.ts
+// hooks/history/useHistory.ts
 
 "use client";
 
@@ -7,16 +7,17 @@ import {
     useState,
 } from "react";
 
-import { API_ENDPOINTS } from "@mall/constants";
 import type { ClientHistoryItem } from "@mall/types";
-import { API_BASE_URL } from "@/lib/api";
-import { authProfile } from "@/lib/authClient";
 
+import { createClient } from "@/lib/supabase/client";
+
+/**
+ * Consumer order history through the authenticated get_order_history() RPC:
+ * the caller's own Orders with immutable OrderItem snapshots only.
+ */
 export function useHistory() {
-    const [
-        historyList,
-        setHistoryList,
-    ] = useState<ClientHistoryItem[]>([]);
+    const [historyList, setHistoryList] =
+        useState<ClientHistoryItem[]>([]);
 
     const [loading, setLoading] =
         useState(false);
@@ -24,75 +25,43 @@ export function useHistory() {
     const [error, setError] =
         useState<string | null>(null);
 
-    // ==========================================
-    // 1. Client History 조회
-    // ==========================================
-
     const fetchHistory = useCallback(
-        async () => {
+        async (limit = 100, offset = 0) => {
             setLoading(true);
             setError(null);
 
             try {
-                const session =
-                    await authProfile.getSession();
+                const supabase = createClient();
+                const {
+                    data: { session },
+                } = await supabase.auth.getSession();
 
-                if (!session?.access_token) {
-                    throw new Error(
-                        "로그인이 필요합니다.",
-                    );
+                if (!session) {
+                    throw new Error("로그인이 필요합니다.");
                 }
 
-                const url =
-                    `${API_BASE_URL}${API_ENDPOINTS.CLIENT_HISTORY.BASE}`;
-
-                const response =
-                    await fetch(url, {
-                        headers: {
-                            Authorization:
-                                `Bearer ${session.access_token}`,
-                        },
-                    });
-
-                const result =
-                    await response
-                        .json()
-                        .catch(() => null);
-
-                console.log(
-                    "[useHistory] API result:",
-                    result,
+                const { data, error: rpcError } = await supabase.rpc(
+                    "get_order_history",
+                    { p_limit: limit, p_offset: offset },
                 );
 
-                if (!response.ok) {
-                    throw new Error(
-                        result?.message ||
-                            "History를 불러오지 못했습니다.",
-                    );
+                if (rpcError) {
+                    throw new Error("주문 내역을 불러오지 못했습니다.");
                 }
 
-                const history =
-                    Array.isArray(
-                        result?.data,
-                    )
-                        ? (result.data as ClientHistoryItem[])
-                        : [];
+                const history = (
+                    Array.isArray(data) ? data : []
+                ) as ClientHistoryItem[];
 
                 setHistoryList(history);
 
                 return history;
-            } catch (err) {
-                console.error(
-                    "[useHistory] History 조회 실패:",
-                    err,
-                );
-
+            } catch (cause) {
                 setError(
-                    err instanceof Error
-                        ? err.message
-                        : "History 조회에 실패했습니다.",
+                    cause instanceof Error
+                        ? cause.message
+                        : "주문 내역을 불러오지 못했습니다.",
                 );
-
                 setHistoryList([]);
 
                 return [];

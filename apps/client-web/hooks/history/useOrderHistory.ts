@@ -1,4 +1,4 @@
-// hooks/order-history/useOrderHistory.ts
+// hooks/history/useOrderHistory.ts
 
 "use client";
 
@@ -9,229 +9,127 @@ import {
 
 import type {
     Order,
+    RefundRequest,
+    RefundStatus,
 } from "@mall/types";
-import { CLIENT_ORDER_API } from "@mall/constants";
-import { API_BASE_URL } from "@/lib/api";
-import { authProfile } from "@/lib/authClient";
 
-interface OrderDeliveryStatus {
-    carrier: string;
-    trackingNumber: string;
-    status: string;
+import { createClient } from "@/lib/supabase/client";
+import { useClientOrder } from "@/hooks/order/useClientOrder";
+
+type RefundItemRow = {
+    id: string;
+    refund_request_id: string;
+    order_item_id: string;
+    quantity: number;
+    refund_amount: number;
+    created_at: string;
+};
+
+type RefundRequestRow = {
+    id: string;
+    order_id: string;
+    client_id: string;
+    status: RefundStatus;
+    reason: string | null;
+    requested_amount: number | null;
+    requested_at: string;
+    processed_at: string | null;
+    created_at: string;
+    updated_at: string;
+    refund_items: RefundItemRow[] | null;
+};
+
+function toRefundRequest(row: RefundRequestRow): RefundRequest {
+    return {
+        id: row.id,
+        orderId: row.order_id,
+        clientId: row.client_id,
+        status: row.status,
+        reason: row.reason,
+        requestedAmount:
+            row.requested_amount === null ? null : Number(row.requested_amount),
+        requestedAt: row.requested_at,
+        processedAt: row.processed_at,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+        items: (row.refund_items ?? []).map((item) => ({
+            id: item.id,
+            refundRequestId: item.refund_request_id,
+            orderItemId: item.order_item_id,
+            quantity: item.quantity,
+            refundAmount: Number(item.refund_amount),
+            createdAt: item.created_at,
+        })),
+    };
 }
+
+/**
+ * One Order with its RefundRequests. Both are read through the owner RLS
+ * policies (orders/order_items, refund_requests/refund_items); another
+ * user's order resolves to "not found".
+ */
 export function useOrderHistory() {
-    // ==========================================
-    // State
-    // ==========================================
+    const { fetchOrder } = useClientOrder();
 
-    const [
-        order,
-        setOrder,
-    ] = useState<Order | null>(null);
+    const [order, setOrder] =
+        useState<Order | null>(null);
 
-    const [
-        deliveryStatus,
-        setDeliveryStatus,
-    ] = useState<OrderDeliveryStatus | null>(
-        null,
-    );
+    const [refunds, setRefunds] =
+        useState<RefundRequest[]>([]);
 
-    const [
-        loading,
-        setLoading,
-    ] = useState(false);
+    const [loading, setLoading] =
+        useState(false);
 
-    const [
-        error,
-        setError,
-    ] = useState<string | null>(null);
+    const [error, setError] =
+        useState<string | null>(null);
 
-    // ==========================================
-    // 1. Order 조회
-    // ==========================================
-    const fetchOrder = useCallback(
+    const fetchOrderDetail = useCallback(
         async (orderId: string) => {
             setLoading(true);
             setError(null);
 
-            console.log(
-                "[useOrderHistory] fetchOrder:",
-                orderId,
-            );
-
             try {
-                const session =
-                    await authProfile.getSession();
+                const nextOrder = await fetchOrder(orderId);
 
-                if (!session?.access_token) {
-                    throw new Error(
-                        "로그인이 필요합니다.",
-                    );
+                if (!nextOrder) {
+                    setOrder(null);
+                    setRefunds([]);
+                    setError("주문을 찾을 수 없습니다.");
+
+                    return null;
                 }
 
-                const response =
-                    await fetch(
-                        `${API_BASE_URL}${CLIENT_ORDER_API.DETAIL(orderId)}`,
-                        {
-                            headers: {
-                                Authorization:
-                                    `Bearer ${session.access_token}`,
-                            },
-                        },
-                    );
+                const { data, error: refundError } = await createClient()
+                    .from("refund_requests")
+                    .select("id, order_id, client_id, status, reason, requested_amount, requested_at, processed_at, created_at, updated_at, refund_items(id, refund_request_id, order_item_id, quantity, refund_amount, created_at)")
+                    .eq("order_id", orderId)
+                    .order("requested_at", { ascending: false });
 
-                const result =
-                    await response
-                        .json()
-                        .catch(() => null);
-
-                console.log(
-                    "[useOrderHistory] Order API result:",
-                    result,
-                );
-
-                if (!response.ok) {
-                    throw new Error(
-                        result?.message ||
-                        "주문 정보를 불러오지 못했습니다.",
-                    );
+                if (refundError) {
+                    throw refundError;
                 }
 
-                const order =
-                    result?.data as Order;
+                setOrder(nextOrder);
+                setRefunds((data as RefundRequestRow[]).map(toRefundRequest));
 
-                setOrder(order);
-
-                return order;
-            } catch (err) {
-                console.error(
-                    "[useOrderHistory] Order 조회 실패:",
-                    err,
-                );
-
-                const message =
-                    err instanceof Error
-                        ? err.message
-                        : "주문 정보를 불러오지 못했습니다.";
-
-                setError(message);
-                setOrder(null);
+                return nextOrder;
+            } catch {
+                setError("주문 정보를 불러오지 못했습니다.");
 
                 return null;
             } finally {
                 setLoading(false);
             }
         },
-        [],
+        [fetchOrder],
     );
-
-
-    // ==========================================
-    // 2. 배송 상태 조회
-    // ==========================================
-
-    const fetchDeliveryStatus =
-        useCallback(
-            async (
-                orderId: string,
-            ) => {
-                console.log(
-                    "[useOrderHistory] 배송 상태 조회:",
-                    orderId,
-                );
-
-                try {
-                    // TODO:
-                    // 배송 상태 API 연결
-
-                    console.log(
-                        "[useOrderHistory] 배송 상태 API 연결 예정:",
-                        orderId,
-                    );
-
-                    return null;
-                } catch (err) {
-                    console.error(
-                        "[useOrderHistory] 배송 상태 조회 실패:",
-                        err,
-                    );
-
-                    return null;
-                }
-            },
-            [],
-        );
-
-    // ==========================================
-    // 3. 주문 상세 정보 조회
-    // ==========================================
-
-    const fetchOrderDetail =
-        useCallback(
-            async (
-                orderId: string,
-            ) => {
-                console.log(
-                    "[useOrderHistory] 주문 상세 정보 조회:",
-                    orderId,
-                );
-
-                const orderData =
-                    await fetchOrder(
-                        orderId,
-                    );
-
-                const deliveryData =
-                    await fetchDeliveryStatus(
-                        orderId,
-                    );
-
-                if (orderData) {
-                    setOrder(
-                        orderData,
-                    );
-                }
-
-                if (deliveryData) {
-                    setDeliveryStatus(
-                        deliveryData,
-                    );
-                }
-
-                return {
-                    order: orderData,
-                    delivery:
-                        deliveryData,
-                };
-            },
-            [
-                fetchOrder,
-                fetchDeliveryStatus,
-            ],
-        );
-
-    // ==========================================
-    // 4. 상태 초기화
-    // ==========================================
-
-    const clearOrder =
-        useCallback(() => {
-            setOrder(null);
-            setDeliveryStatus(null);
-            setError(null);
-        }, []);
 
     return {
         order,
-        deliveryStatus,
-
+        refunds,
         loading,
         error,
 
-        fetchOrder,
-        fetchDeliveryStatus,
         fetchOrderDetail,
-
-        clearOrder,
     };
 }
