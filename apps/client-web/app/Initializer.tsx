@@ -3,7 +3,6 @@
 import { useEffect } from "react";
 
 import { useClientAuthStore } from "@/store/useClientAuthStore";
-import { useCart } from "@/hooks/user/useCart";
 import { useWishlist } from "@/hooks/user/useWishlist";
 import { useProductPostCategoryStore } from "@/store/useProductPostCategoryStore";
 
@@ -23,10 +22,6 @@ export function Initializer() {
         useClientAuthStore(
             (state) => state.authUserId,
         );
-
-    const {
-        fetchCart,
-    } = useCart();
 
     const {
         fetchWishlist,
@@ -80,7 +75,6 @@ export function Initializer() {
         const initializeClient =
             async () => {
                 await getProfile();
-                await fetchCart();
                 await fetchWishlist();
             };
 
@@ -88,7 +82,6 @@ export function Initializer() {
     }, [
         authUserId,
         getProfile,
-        fetchCart,
         fetchWishlist,
     ]);
 

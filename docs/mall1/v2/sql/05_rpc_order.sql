@@ -337,9 +337,9 @@ begin
     where c.client_id = v_client_id
     group by c.id;
 
+    -- No cart row yet: return an empty cart without writing
+    -- (STABLE; add_cart_item() creates the cart on first add).
     if v_result is null then
-        perform public.get_or_create_cart();
-
         return jsonb_build_object(
             'items',
             '[]'::jsonb

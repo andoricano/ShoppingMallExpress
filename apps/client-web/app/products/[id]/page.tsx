@@ -4,11 +4,15 @@ import {
     useEffect,
     useState,
 } from "react";
+import Link from "next/link";
 import { useParams } from "next/navigation";
 
 import { useProductPost } from "@/hooks/useProductPost";
 import { useWishlist } from "@/hooks/user/useWishlist";
-import { useCart } from "@/hooks/user/useCart";
+import {
+    LOGIN_REQUIRED_MESSAGE,
+    useCart,
+} from "@/hooks/user/useCart";
 
 import { ProductPostSection } from "@/components/product/post/ProductPostSection";
 import type { ProductVariantSelection } from "@/components/product/purchase/ProductPurchase";
@@ -36,7 +40,13 @@ export default function ProductDetailPage() {
 
     const {
         addCart,
+        error: cartError,
     } = useCart();
+
+    const [
+        cartMessage,
+        setCartMessage,
+    ] = useState<string | null>(null);
 
     const [
         selection,
@@ -109,17 +119,30 @@ export default function ProductDetailPage() {
 
     const handleCartClick =
         async () => {
-            if (!selection?.isAvailable) {
+            if (!selection) {
+                setCartMessage("옵션을 선택해 주세요.");
                 return;
             }
 
-            // Cart is migrated separately; the legacy cart hook still takes
-            // productId only (see PHASES.md Phase 6 Consumer blockers).
-            await addCart(
-                selection.productId,
-                selection.quantity,
+            if (!selection.isAvailable) {
+                setCartMessage("품절 또는 판매 중지된 옵션입니다.");
+                return;
+            }
+
+            // Cart identity is Product + ProductVariant (add_cart_item).
+            const added = await addCart({
+                productId: selection.productId,
+                productVariantId: selection.productVariantId,
+                quantity: selection.quantity,
+            });
+
+            setCartMessage(
+                added ? "장바구니에 담았습니다." : null,
             );
         };
+
+    const cartNotice =
+        cartMessage ?? cartError;
 
     if (loading) {
         return (
@@ -167,6 +190,22 @@ export default function ProductDetailPage() {
                     setSelection
                 }
             />
+
+            {cartNotice && (
+                <div className="fixed bottom-4 left-1/2 z-50 -translate-x-1/2 rounded-lg bg-slate-900 px-4 py-3 text-sm text-white shadow-lg">
+                    {cartNotice}
+                    {cartNotice === LOGIN_REQUIRED_MESSAGE && (
+                        <Link href="/auth" className="ml-2 underline">
+                            로그인
+                        </Link>
+                    )}
+                    {cartNotice === "장바구니에 담았습니다." && (
+                        <Link href="/cart" className="ml-2 underline">
+                            장바구니 보기
+                        </Link>
+                    )}
+                </div>
+            )}
         </main>
     );
 }

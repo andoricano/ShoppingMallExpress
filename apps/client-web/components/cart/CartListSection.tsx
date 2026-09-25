@@ -2,97 +2,27 @@
 
 import type { CartItem } from "@mall/types";
 
-import { useCartEditor } from "@/hooks/user/useCartEditor";
-
 import CartListItem from "./CartListItem";
 
 interface CartListSectionProps {
     items: CartItem[];
+    disabled?: boolean;
 
-    onChange?: (
-        items: CartItem[],
+    onQuantityChange?: (
+        item: CartItem,
+        quantity: number,
     ) => void;
+
+    onRemove?: (item: CartItem) => void;
 }
 
+/** Server-backed cart list; every change is applied through the cart RPCs. */
 export default function CartListSection({
-    items: initialItems,
-    onChange,
+    items,
+    disabled = false,
+    onQuantityChange,
+    onRemove,
 }: CartListSectionProps) {
-    const {
-        items,
-        increase,
-        decrease,
-        remove,
-    } = useCartEditor(
-        initialItems,
-    );
-
-    const totalPrice =
-        items.reduce(
-            (total, item) =>
-                total +
-                item.product.price *
-                item.quantity,
-            0,
-        );
-
-    const handleIncrease = (
-        productId: string,
-    ) => {
-        increase(productId);
-
-        onChange?.(
-            items.map((item) =>
-                item.product.id ===
-                    productId
-                    ? {
-                        ...item,
-                        quantity:
-                            item.quantity +
-                            1,
-                    }
-                    : item,
-            ),
-        );
-    };
-
-    const handleDecrease = (
-        productId: string,
-    ) => {
-        decrease(productId);
-
-        onChange?.(
-            items.map((item) =>
-                item.product.id ===
-                    productId
-                    ? {
-                        ...item,
-                        quantity:
-                            Math.max(
-                                1,
-                                item.quantity -
-                                1,
-                            ),
-                    }
-                    : item,
-            ),
-        );
-    };
-
-    const handleRemove = (
-        productId: string,
-    ) => {
-        remove(productId);
-
-        onChange?.(
-            items.filter(
-                (item) =>
-                    item.product.id !==
-                    productId,
-            ),
-        );
-    };
-
     return (
         <section className="w-full">
             <header className="mb-6">
@@ -116,23 +46,16 @@ export default function CartListSection({
                 <div className="space-y-4">
                     {items.map((item) => (
                         <CartListItem
-                            key={item.product.id}
+                            key={item.id}
                             item={item}
+                            disabled={disabled}
                             onIncrease={() =>
-                                handleIncrease(
-                                    item.product.id,
-                                )
+                                onQuantityChange?.(item, item.quantity + 1)
                             }
                             onDecrease={() =>
-                                handleDecrease(
-                                    item.product.id,
-                                )
+                                onQuantityChange?.(item, item.quantity - 1)
                             }
-                            onRemove={() =>
-                                handleRemove(
-                                    item.product.id,
-                                )
-                            }
+                            onRemove={() => onRemove?.(item)}
                         />
                     ))}
                 </div>
