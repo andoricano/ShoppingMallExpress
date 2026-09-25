@@ -37,7 +37,15 @@ export default function AdminProductPage() {
     search?: string;
     isPublished?: boolean;
   }) => {
-    fetchPosts(params);
+    fetchPosts({
+      search: params.search,
+      status:
+        params.isPublished === undefined
+          ? undefined
+          : params.isPublished
+            ? "PUBLISHED"
+            : "DRAFT",
+    });
   };
 
   const handleReset = () => {
