@@ -33,7 +33,7 @@
 ### client-web
 - [ ] `NEXT_PUBLIC_SUPABASE_URL`
 - [ ] `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-- [ ] `SUPABASE_SECRET_KEY`
+- [x] `SUPABASE_SECRET_KEY` (was missing; added and redeployed during step 12/13 diagnosis)
 - [ ] `PG_TEST_ENDPOINT_URL=https://saas-showcase-admin-web.vercel.app/api/pg-test`
 - [ ] `PG_TEST_API_KEY`
 
@@ -179,43 +179,65 @@ Result: `PASS`
 
 Expected:
 - [x] Redirect to `/payment?orderId=...`.
-- [ ] Order is `PENDING`. (not yet confirmed)
-- [ ] Cart is empty. (not yet confirmed)
+- [x] Order is `PENDING`. (SQL: status `PENDING`, `payment_reference` null, total_amount 20000)
+- [x] Cart is empty. (reported by tester)
 - [x] OrderItem snapshot exists. (product name / Variant / quantity / amount shown on `/payment`, which renders the OrderItem snapshot)
-- [ ] Stock becomes `S - 2`. (expected 8; actual value not yet checked)
+- [x] Stock becomes `S - 2`. (tester reported Ware stock `8` right after Order A creation; S = 10)
 
 Order A number: `ORD-20260925165934-EBA4C2DF` (Product `Phase8 Test Product`, Variant `Black`, quantity 2, total 20,000원)
-Observed stock: not yet checked (expected 8 = S - 2; S = 10)
-Result: `IN PROGRESS` (order creation succeeded; stock and Order status checks pending)
+Observed stock: `8` right after Order A creation (S - 2). The tester later created 3 more Orders under other Order IDs (stock now `5`); those extra Orders are not part of this checklist and must be accounted for in the expected stock of steps 17 and 21.
+Result: `PASS`
 
 ## 12. Payment Failure
 
 - [x] Select failure and submit. (executed)
 
 Expected:
-- [ ] Payment is `FAILED`. (not confirmed)
-- [ ] Order remains `PENDING`. (not confirmed)
-- [ ] Failure record appears at `https://saas-showcase-admin-web.vercel.app/pg-test`. (not confirmed)
+- [x] Payment is `FAILED`. (retest, see below)
+- [x] Order remains `PENDING`. (retest, see below)
+- [x] Failure record appears at `https://saas-showcase-admin-web.vercel.app/pg-test`. (retest, see below)
 
 Observed UI text: `결제 요청을 처리하지 못했습니다. 주문은 결제 대기 상태로 유지됩니다.`
 
 Open finding: a properly recorded failure shows `결제에 실패했습니다.` (payment `FAILED`). The observed first sentence is the generic 500 message (`lib/payment/server.ts`), which suggests the server call failed rather than a recorded test failure (e.g. missing client-web Production `SUPABASE_SECRET_KEY` / `PG_TEST_*`). Not yet diagnosed; see `phase8-handoff.md`.
 
-Result: `IN PROGRESS` (do not mark PASS until the `payments` row and the PG Test Monitor record are confirmed)
+Attempt 1 evidence (SQL join of Order A with `payments`): Order A `PENDING`, `payment_reference` null, and **no `payments` row exists for Order A** (payment_id / status / failure_reason / pg_callback_id all null). So the failure happened at payment attempt creation (`POST /api/payments`), before any PG call; the UI text was the generic 500, not a recorded `FAILED` payment. Order A stayed `PENDING` as expected. Root cause not yet confirmed; `POST /api/payments` needs only `NEXT_PUBLIC_SUPABASE_URL` + `SUPABASE_SECRET_KEY` (service-role client) and the `create_payment` RPC — `PG_TEST_*` are used later, at confirm.
+
+Root cause (confirmed by tester): the client-web Production env was missing `SUPABASE_SECRET_KEY`, so the server-side Route Handler could not create the service-role client. After adding it and redeploying, a payment success flow worked on a new Order (see step 13). No code change.
+
+Correction: the PG Test Monitor failure record `96cc1adb-fc01-4d0a-9f90-ddf327081a0e` (amount 40000, `isSuccess: false`) belongs to a separate 40,000원 Order, not Order A (20,000원). It is not evidence for step 12. Order A currently has no linked payment.
+
+Retest (after the `SUPABASE_SECRET_KEY` fix), on a **different Order than Order A** — the tester's decision, see note below:
+- Order: `ORD-20260926072514-DFC92AA0`; `order_status` `PENDING`; `payment_reference` null.
+- `payments` row: id `fa3840a7-c485-431d-b693-3c9f1f77a99d`, `status` `FAILED`, amount 10000, `failure_reason` `PG test payment failed`, `pg_callback_id` `cb_Sdo3rhZLQ4seyk_U8kQ8adIpbH1arvW1`.
+- PG Test Monitor: same id `fa3840a7-...`, same `callbackId`, `isSuccess: false`, amount 10000.
+- UI showed the normal failure message.
+
+Note: Order A (`ORD-20260925165934-EBA4C2DF`, id `803dcfc9-2677-4e21-8438-9afe8c84c075`) was never used for a failure/success payment. Opening `/payment?orderId=<Order A id>` returned `주문을 찾을 수 없습니다.` (owner RLS `orders_owner_select`: `client_id = auth.uid()`; most likely a different logged-in account or an expired session; cause not yet confirmed). The tester chose to judge steps 12/13 on the new Order above instead. Order A remains `PENDING` and unpaid; its access problem is unresolved.
+
+Result: `PASS` (on Order `ORD-20260926072514-DFC92AA0`)
 
 ## 13. Payment Success
 
-- [ ] Retry Order A payment.
-- [ ] Select success and submit.
+- [x] Retry payment on the subject Order (`ORD-20260926072514-DFC92AA0`, see below; not Order A).
+- [x] Select success and submit.
 
 Expected:
-- [ ] Payment is `SUCCEEDED`.
-- [ ] Order becomes `PAID`.
-- [ ] `payment_reference` contains payment id.
-- [ ] Success record appears in PG Test Monitor.
-- [ ] Stock does not change due to payment.
+- [x] Payment is `SUCCEEDED`.
+- [x] Order becomes `PAID`.
+- [x] `payment_reference` contains payment id.
+- [x] Success record appears in PG Test Monitor.
+- [ ] Stock does not change due to payment. (UNVERIFIED: the Ware stock right before the payment was not recorded; re-verify in the stock verification steps 17/21)
 
-Result: `PASS / FAIL`
+Supporting evidence (not the step 13 result): after the `SUPABASE_SECRET_KEY` fix, the tester paid a **different, new Order** `ORD-20260926063003-133CC21B` (Product `Phase8 Test Product`, Variant `Black`, 10,000원 × 4, total 40,000원) and reported its status as paid (`결제 완료`). This shows the client-web payment success path works, but it is not Order A, and `payment_reference`, the `SUCCEEDED` payment row, the PG Test Monitor success record and the stock-unchanged check were not reported. The extra Order also consumed stock (relevant to steps 17 and 21). Sub-items above stay unchecked.
+
+Step 13 subject (tester's decision): Order `ORD-20260926072514-DFC92AA0` (10000, `PENDING` after the step 12 failed payment), retried with success. `ORD-20260926063003-133CC21B` stays reference evidence only.
+
+Reported so far (UI + SQL): UI shows `결제 완료`, total 10000; `order_status` `PAID`; `payment_reference` = `05aea877-6bdc-4463-894d-db0cd17989da` = latest `payment_id`; latest payment `SUCCEEDED`, amount 10000, `failure_reason` null; the earlier `FAILED` payment (`fa3840a7-...`) is preserved. So the Payment `SUCCEEDED`, Order `PAID` and `payment_reference` items are confirmed (Order-A-related sub-items above were written for Order A; read them against the subject Order). PG Test Monitor (reported): id `05aea877-6bdc-4463-894d-db0cd17989da`, `callbackId` `cb_nLZ6_58TYvhi1aryWplr1osTu--XCtQg`, `isSuccess: true`, amount 10000.
+
+Not verified: the Ware stock right before this payment was not recorded, so "stock unchanged by payment" cannot be proven for this payment. It is left open and must be re-checked in the later stock verification steps (17/21), using a freshly recorded current stock before/after.
+
+Result: `PASS` (all items met except the stock-unchanged item, which is UNVERIFIED — PASS with one open verification, on Order `ORD-20260926072514-DFC92AA0`)
 
 ## 14. Point Top-up Failure
 URL: `https://shopping-mall-express-client-web.vercel.app/mypage/point`

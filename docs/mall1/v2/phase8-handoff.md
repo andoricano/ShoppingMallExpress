@@ -15,9 +15,10 @@ Phase 8 is **NOT COMPLETE**. `PHASES.md` stays `NOT STARTED` until the whole E2E
 | Steps | State |
 |---|---|
 | 1–10 | PASS |
-| 11 Order creation | Order A created (see below). **Stock 10 → 8 not yet confirmed**; Order `PENDING` / Cart empty not yet confirmed |
-| 12 Payment failure | Failure UI executed. **Order `PENDING` and PG Test Monitor failure record not yet confirmed** (see "Open finding") |
-| 13–24 | Not started |
+| 11 Order creation | PASS. Order A created; stock `10 → 8`, Order `PENDING`, Cart empty confirmed. Tester later created 3 extra Orders under other IDs (stock now `5`); not part of the checklist — adjust expected stock of steps 17/21 accordingly |
+| 12 Payment failure | PASS on Order `ORD-20260926072514-DFC92AA0` (10000): payment `fa3840a7-c485-431d-b693-3c9f1f77a99d` `FAILED`, Order `PENDING`, `payment_reference` null, PG Monitor same id `isSuccess: false`. (Attempt 1 on Order A failed: no `payments` row, missing `SUPABASE_SECRET_KEY`, fixed.) Order A itself was not used — `/payment?orderId=<Order A id>` showed `주문을 찾을 수 없습니다.` (owner RLS; likely different account/expired session, unconfirmed) |
+| 13 Payment success | PASS with one open item, on `ORD-20260926072514-DFC92AA0` (tester's decision): payment `05aea877-6bdc-4463-894d-db0cd17989da` `SUCCEEDED`, Order `PAID`, `payment_reference` = that id, PG Monitor `isSuccess: true` amount 10000. **"Stock unchanged by payment" UNVERIFIED** (stock before payment not recorded) — re-verify in steps 17/21. `ORD-20260926063003-133CC21B` (Black × 4, 40,000원, reported paid) is reference evidence only |
+| 14–24 | Not started |
 
 Steps 9 and 10 were reported PASS by the tester; some sub-items were not individually reported and are left unchecked in the checklist.
 Step 7: "Ware/Warehouse not exposed" is left unchecked; it is verified systematically in step 23.
@@ -36,7 +37,9 @@ Step 7: "Ware/Warehouse not exposed" is left unchecked; it is verified systemati
 1. **Admin server access** — user-web showed `Admin server access is not configured.` → added `SUPABASE_SECRET_KEY` to the user-web Vercel **Production** env and redeployed. Admin server access works.
 2. **Consumer OAuth landed on user-web** — the client-web callback URL was missing from Supabase Redirect URLs (fallback to Site URL). Added `https://shopping-mall-express-client-web.vercel.app/auth/callback`; Consumer OAuth works.
 
-## Open finding (step 12, not yet diagnosed)
+## Step 12 finding — root cause confirmed (client-web env), retest pending
+
+Root cause: client-web Production was missing `SUPABASE_SECRET_KEY`; added + redeployed, payment success then worked on a new Order. Order A still needs the failure retest (see checklist step 12). Original analysis below is kept for the record.
 
 - The tester saw `결제 요청을 처리하지 못했습니다. 주문은 결제 대기 상태로 유지됩니다.`
 - A recorded test failure shows `결제에 실패했습니다.` (payment `FAILED`). The observed first sentence is the generic **500** message from `apps/client-web/lib/payment/server.ts`, so the server call probably failed (most likely a missing client-web Production env: `SUPABASE_SECRET_KEY` / `PG_TEST_ENDPOINT_URL` / `PG_TEST_API_KEY`). A PG-side error would show `결제 처리 중 오류가 발생했습니다...` (502) instead.
@@ -53,7 +56,9 @@ Step 7: "Ware/Warehouse not exposed" is left unchecked; it is verified systemati
 
 ## Next start point
 
-`Step 11 재고가 8인지 확인 → Step 12 Order PENDING + PG failure 기록 확인`
+`Step 12 Order A 실패 결제 재테스트 (FAILED payment row + Order PENDING + PG Monitor failure record) → Step 13 Order A 성공 결제`
+
+(Step 11 is PASS. The block below is the original plan; items already done: Step 11 checks, `SUPABASE_SECRET_KEY` fix.)
 
 1. Step 11: user-web `/inventory` → `Phase8 Test Ware` stock should be **8**. SQL (read-only): `select order_number, status, payment_reference, total_amount from public.orders where order_number = 'ORD-20260925165934-EBA4C2DF';` → `PENDING`, no reference, 20000. Confirm the Cart is empty. Then record step 11 PASS.
 2. Step 12 diagnosis:
@@ -68,3 +73,5 @@ Step 7: "Ware/Warehouse not exposed" is left unchecked; it is verified systemati
 
 - No new features, no new migration/RPC, no `db push` / `db reset --linked`, no automatic production data changes; the user operates the UI, the assistant judges PASS/FAIL and proposes minimal fixes only on FAIL.
 - Update the checklist PASS/FAIL only from actual user-reported results; do not tick unreported sub-items.
+- Step 13 is judged on `ORD-20260926072514-DFC92AA0` (tester's decision, replacing the earlier "Order A only" plan because Order A could not be opened on `/payment`); `ORD-20260926063003-133CC21B` stays reference evidence that production payment works after the `SUPABASE_SECRET_KEY` fix. Order A stays `PENDING`/unpaid with its access problem unresolved.
+- Extra Orders exist, so do not compare stock with the `S = 10` formulas. Record the actual Ware stock right before steps 12/13 as the baseline and compare only the before/after change (payment must not change stock). Recompute the later expected stock sequence (steps 17/21) from a fresh baseline taken at that time.
