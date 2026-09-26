@@ -53,6 +53,21 @@ psqlf < supabase/cutover/v3_precheck_v2_baseline.sql | grep -E "BLOCKER|ACTION" 
 check "precheck: no BLOCKER" "$(psqlf -qtA < supabase/cutover/v3_precheck_v2_baseline.sql | awk -F'|' '$2=="BLOCKER" && $3!="0"' | wc -l | tr -d ' ')" 0
 check "precheck: exactly 2 ACTION Orders (unpaid PENDING + manual PAID)" "$(psqlf -qtA < supabase/cutover/v3_precheck_v2_baseline.sql | awk -F'|' '$2=="ACTION" {print $3}')" 2
 
+# The read-only scripts the user runs against production (docs/mall1/v3/PRECHECK.md),
+# wrapped exactly as documented there: begin read only; <script>; commit;
+ro() { { echo "begin read only;"; cat "$1"; echo "commit;"; } | docker exec -i "$DB_CONTAINER" psql -U postgres -d postgres -v ON_ERROR_STOP=1 -X -qtA; }
+STATE="$(ro supabase/cutover/v3_precheck_state.sql | grep -v '^begin\|^COMMIT\|^BEGIN')"
+check "state check: no v3 object exists on the v2 baseline" "$(echo "$STATE" | grep -c '|t$')" 0
+check "state check: no Ware has reserved_stock" "$(echo "$STATE" | tail -1)" 0
+PREVIEW="$(ro supabase/cutover/v3_preview_unpaid_legacy_orders.sql)"
+check "preview: 2 unpaid Orders in the totals" "$(echo "$PREVIEW" | tail -1 | cut -d'|' -f1)" 2
+check "preview: item rows shown (2 Orders x 1 item)" "$(echo "$PREVIEW" | grep -c 'ORD-')" 2
+WRITE="$(mktemp)"; echo "create table public._must_not_exist(i int);" > "$WRITE"
+check "the read-only wrapper refuses a write" "$(ro "$WRITE" 2>&1 | grep -c 'read-only transaction')" 1
+check "the read-only wrapper left no table behind" "$(val "select count(*) from pg_tables where tablename = '_must_not_exist'")" 0
+rm -f "$WRITE"
+check "precheck: the wrapper runs it (4 BLOCKER rows)" "$(ro supabase/cutover/v3_precheck_v2_baseline.sql | grep -c BLOCKER)" 4
+
 step "3. backup and verify it by restoring into a scratch database"
 docker exec "$DB_CONTAINER" sh -c "pg_dump -U postgres -d postgres -Fc -f /tmp/v2_backup.dump" && pass "backup taken (pg_dump -Fc)" || fail "backup failed"
 docker exec "$DB_CONTAINER" psql -U postgres -d postgres -qtA -c "drop database if exists rehearsal_scratch" >/dev/null

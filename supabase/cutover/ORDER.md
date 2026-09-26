@@ -8,7 +8,7 @@ rehearsal `supabase/rehearsal/v3_cutover_rehearsal.sh` (local database only).
 
 | Step | What | File | Local validation |
 |---|---|---|---|
-| 0 | Read-only precheck of production (v2 schema); every BLOCKER must be 0 | `v3_precheck_v2_baseline.sql` | rehearsal step 2 |
+| 0 | Read-only checks of production (v2 schema), in a read-only session (docs/mall1/v3/PRECHECK.md): schema state, precheck (every BLOCKER must be 0), and the preview of the unpaid legacy Orders to be shown to the user | `v3_precheck_state.sql`, `v3_precheck_v2_baseline.sql`, `v3_preview_unpaid_legacy_orders.sql` | rehearsal step 2 |
 | 1 | Backup, and verify it by restoring into a scratch database | | rehearsal step 3 |
 | 2 | Additive migrations `20260926130000` to `20260927100000` (v2 keeps working) | `supabase/migrations/` | `pnpm supabase db reset --local` + all `v3_phase*` scripts, rehearsal step 4 |
 | 3 | Resolve unpaid legacy Orders (cancel, v2 stock semantics) | `v3_resolve_unpaid_legacy_orders.sql` | rehearsal step 6 |
