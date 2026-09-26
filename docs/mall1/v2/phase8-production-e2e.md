@@ -242,27 +242,31 @@ Result: `PASS` (all items met except the stock-unchanged item, which is UNVERIFI
 ## 14. Point Top-up Failure
 URL: `https://shopping-mall-express-client-web.vercel.app/mypage/point`
 
-- [ ] Record current balance.
-- [ ] Try allowed amount such as `5000`.
-- [ ] Select failure.
+- [x] Record current balance. (not reported directly; 0 by derivation — the user's only ledger entry is the step 15 top-up with `balance_after` 30000 = `amount` 30000)
+- [x] Try allowed amount (30000 was used instead of `5000`; within the 1,000–1,000,000, 1,000-unit policy).
+- [x] Select failure.
 
 Expected:
-- [ ] Balance unchanged.
-- [ ] No successful TOPUP ledger entry.
+- [x] Balance unchanged. (tester: no balance increase on failure)
+- [x] No successful TOPUP ledger entry. (SQL: failure payment has no linked `point_ledger` row)
 
-Result: `PASS / FAIL`
+Evidence: payment `2e0fa7d9-a2d4-4d15-920f-467820314a51` `FAILED`, amount 30000, `ledger_id` null. PG Test Monitor: `callbackId` `cb_-WukWYxq6teeYk_P8Ps6RH3Q4NcxL1U4`, `isSuccess: false`, amount 30000.
+
+Result: `PASS`
 
 ## 15. Point Top-up Success
 
-- [ ] Top up same allowed amount with success.
-- [ ] Refresh.
+- [x] Top up same allowed amount (30000) with success.
+- [ ] Refresh. (tester will confirm the balance stays 30000 after a refresh; not yet reported)
 
 Expected:
-- [ ] Balance increases exactly once.
-- [ ] One `TOPUP` ledger entry exists.
-- [ ] Refresh/retry does not duplicate credit.
+- [x] Balance increases exactly once. (tester: balance increased; the user's `point_ledger` has a single entry, `balance_after` 30000)
+- [x] One `TOPUP` ledger entry exists. (SQL: `a2136c81-12ef-4795-a73c-322b975ce650`, `TOPUP`, amount 30000, `balance_after` 30000; no duplicate ledger rows for the user)
+- [ ] Refresh/retry does not duplicate credit. (open: DB-level `point_ledger_payment_unique` prevents a second credit per payment; the UI refresh observation is still to be reported)
 
-Result: `PASS / FAIL`
+Evidence: payment `fd04e741-a8fd-41c5-8091-ceae9a784171` `SUCCEEDED`, amount 30000, linked to the single ledger row above. PG Test Monitor: `callbackId` `cb_JuHaKxMnV71gqZc8zPqKI9XtBV-f04Vc`, `isSuccess: true`, amount 30000.
+
+Result: `PASS` (one open item: UI refresh observation not yet reported; re-verify in the final "Point idempotency verified" check)
 
 ## 16. Order History
 

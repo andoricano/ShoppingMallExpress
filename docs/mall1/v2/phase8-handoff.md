@@ -18,7 +18,9 @@ Phase 8 is **NOT COMPLETE**. `PHASES.md` stays `NOT STARTED` until the whole E2E
 | 11 Order creation | PASS. Order A created; stock `10 → 8`, Order `PENDING`, Cart empty confirmed. Tester later created 3 extra Orders under other IDs (stock now `5`); not part of the checklist — adjust expected stock of steps 17/21 accordingly |
 | 12 Payment failure | PASS on Order `ORD-20260926072514-DFC92AA0` (10000): payment `fa3840a7-c485-431d-b693-3c9f1f77a99d` `FAILED`, Order `PENDING`, `payment_reference` null, PG Monitor same id `isSuccess: false`. (Attempt 1 on Order A failed: no `payments` row, missing `SUPABASE_SECRET_KEY`, fixed.) Order A itself was not used — `/payment?orderId=<Order A id>` showed `주문을 찾을 수 없습니다.` (owner RLS; likely different account/expired session, unconfirmed) |
 | 13 Payment success | PASS with one open item, on `ORD-20260926072514-DFC92AA0` (tester's decision): payment `05aea877-6bdc-4463-894d-db0cd17989da` `SUCCEEDED`, Order `PAID`, `payment_reference` = that id, PG Monitor `isSuccess: true` amount 10000. **"Stock unchanged by payment" UNVERIFIED** (stock before payment not recorded) — re-verify in steps 17/21. `ORD-20260926063003-133CC21B` (Black × 4, 40,000원, reported paid) is reference evidence only |
-| 14–24 | Not started |
+| 14 Point top-up failure | PASS: payment `2e0fa7d9-...` `FAILED` (30000), no ledger row, no balance increase, PG Monitor `isSuccess: false` |
+| 15 Point top-up success | PASS with one open item: payment `fd04e741-...` `SUCCEEDED` (30000), one `TOPUP` ledger row (`balance_after` 30000), PG Monitor `isSuccess: true`. UI refresh observation (balance stays 30000) not yet reported |
+| 16–24 | Not started |
 
 Steps 9 and 10 were reported PASS by the tester; some sub-items were not individually reported and are left unchecked in the checklist.
 Step 7: "Ware/Warehouse not exposed" is left unchecked; it is verified systematically in step 23.
