@@ -362,10 +362,14 @@ Search browser Network responses for:
 - `restock`
 
 Expected:
-- [ ] No Consumer response exposes internal Ware/Warehouse/restock details.
-- [ ] Only Consumer-safe availability/status is exposed.
+- [x] No Consumer response exposes internal Ware/Warehouse/restock details.
+- [x] Only Consumer-safe availability/status is exposed. (availability level only: purchasable / sold out)
 
-Result: `PASS / FAIL`
+Checked by the tester on client-web Fetch/XHR responses. Screens inspected: Product/Post detail, Cart, Order / Order History detail, Refund screens, Wishlist, Point. Findings: no `current_stock`, no `reserved_stock`, no `ware_id` / `warehouse_id` internals, no allocation detail, no restock information; no direct reads of `product_variant_wares`, `order_item_ware_allocations` or `refund_item_restocks`.
+
+Not listed as inspected: home / product list (`/`, `/products`), Variant selection, `/order`, `/payment`. The bare `ware` / `warehouse` keyword search results were reported through the field-level findings above.
+
+Result: `PASS` (on the listed screens)
 
 ## 24. client-pwa Smoke Test
 URL: `https://shopping-mall-express-client-pwa-teal.vercel.app/`

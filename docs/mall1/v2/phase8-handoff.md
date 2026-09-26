@@ -27,7 +27,8 @@ Phase 8 is **NOT COMPLETE**. `PHASES.md` stays `NOT STARTED` until the whole E2E
 | 20 Admin restock | PASS with one open item: restock of 4 took stock `0` → `4`. **"Restock beyond approved quantity is rejected" UNVERIFIED** (not tested); original-allocation-Ware selection not individually reported |
 | 21 Stock verification | PASS as a sequence (`0` → `0` → `4`; changes only at restock, by exactly the approved quantity); the `S - 1` formula does not apply because of extra Orders |
 | 22 Wishlist | PASS (toggle UI: add / list / remove confirmed; no separate "duplicate add" test — the UI is a toggle, DB unique constraint is reference only; re-add not individually reported) |
-| 23–24 | Not started |
+| 23 Consumer Ware non-exposure | PASS on the inspected screens (Product/Post detail, Cart, Order/History detail, Refund, Wishlist, Point): no stock/Ware/Warehouse/allocation/restock internals, no direct reads of the internal tables; only availability level. Home/product list, Variant selection, `/order`, `/payment` not listed as inspected |
+| 24 | Not started |
 
 Steps 9 and 10 were reported PASS by the tester; some sub-items were not individually reported and are left unchecked in the checklist.
 Step 7: "Ware/Warehouse not exposed" is left unchecked; it is verified systematically in step 23.
