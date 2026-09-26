@@ -290,11 +290,13 @@ Expected stock sequence:
 - Order B created: `S - 3`
 - Order B cancelled: `S - 2`
 
-- [ ] Cancel Order B.
-- [ ] Order becomes `CANCELLED`.
-- [ ] Stock returns to `S - 2`.
+- [x] Cancel Order B.
+- [ ] Order becomes `CANCELLED`. (not reported separately; a PENDING Order was cancelled and the stock was restored)
+- [x] Stock returns to the value before Order B was created. (the `S - 2` formula is not used: extra Orders exist, so the actual before/after stock was compared)
 
-Result: `PASS / FAIL`
+Tester reported: stock decreased correctly when Order B was created, and was restored correctly when the PENDING Order B was cancelled. The three actual stock numbers and Order B's number were not reported.
+
+Result: `PASS` (Order B number, the three stock numbers and the `CANCELLED` status were not individually reported)
 
 ## 18. Refund Request
 

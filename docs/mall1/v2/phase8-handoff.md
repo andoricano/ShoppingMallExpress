@@ -21,7 +21,8 @@ Phase 8 is **NOT COMPLETE**. `PHASES.md` stays `NOT STARTED` until the whole E2E
 | 14 Point top-up failure | PASS: payment `2e0fa7d9-...` `FAILED` (30000), no ledger row, no balance increase, PG Monitor `isSuccess: false` |
 | 15 Point top-up success | PASS with one open item: payment `fd04e741-...` `SUCCEEDED` (30000), one `TOPUP` ledger row (`balance_after` 30000), PG Monitor `isSuccess: true`. UI refresh observation (balance stays 30000) not yet reported |
 | 16 Order History | PASS: only the tester's own Orders shown, paid `ORD-20260926072514-DFC92AA0` included; snapshot sub-item not individually reported. (A "mixed client_id Orders" observation was a false alarm — the Admin shipping-history screen was opened by mistake.) |
-| 17–24 | Not started |
+| 17 PENDING Order cancel | PASS: stock decreased on Order B creation and was restored on cancel (tester report; actual numbers / Order B number / `CANCELLED` status not individually reported) |
+| 18–24 | Not started |
 
 Steps 9 and 10 were reported PASS by the tester; some sub-items were not individually reported and are left unchecked in the checklist.
 Step 7: "Ware/Warehouse not exposed" is left unchecked; it is verified systematically in step 23.
@@ -55,6 +56,7 @@ Root cause: client-web Production was missing `SUPABASE_SECRET_KEY`; added + red
 - No unlink UI for Variant↔Ware (`unlink_product_variant_ware` is SQL-only). Not fixed.
 - Admin dashboard shows only low-stock (available ≤ 5) / out-of-stock Wares, never Warehouses or a full Ware list (by design).
 - Tester's UI/design remarks: to be listed after the E2E.
+- **Architecture follow-up (non-blocker, raised at step 17; no code change now, review as a separate improvement after the whole E2E):** the current cancel / stock-restore structure is enough for the simple scenario, but needs a clearer design for compound cases: partial cancel; Orders with several Ware allocations; cancel after payment; partial refund combined with cancel; repeated cancel/restore of the same OrderItem; idempotency / concurrency and restore-history tracking.
 - Known, unrelated to Phase 8: client-web `/auth/callback` redirects to an unvalidated `next` query value (open redirect candidate); stale `payment-contract.md` §14–15.
 
 ## Next start point
