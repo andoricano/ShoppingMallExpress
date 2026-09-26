@@ -81,6 +81,36 @@ export interface PaymentReversal {
     idempotencyKey: string;
     pgReference: string | null;
     failureReason: string | null;
+    /** Executions attempted so far (a retry reuses the same reversal). */
+    attemptCount: number;
+    lastAttemptedAt: string | null;
+    /** Set when the reversal reached `SUCCEEDED`. */
+    completedAt: string | null;
+    /** Admin who requested a manual reconciliation or a retry, when recorded. */
+    requestedBy: string | null;
     createdAt: string;
     updatedAt: string;
+}
+
+/**
+ * Payment-level refund display, derived from the reversals. It is never a
+ * `Payment.status` value (the original payment success is preserved).
+ */
+export type PaymentRefundDisplayStatus =
+    | "NONE"
+    | "REFUND_IN_PROGRESS"
+    | "PARTIALLY_REFUNDED"
+    | "REFUNDED";
+
+/** Internal read model of `get_payment_reversal_summary`. */
+export interface PaymentReversalSummary {
+    paymentId: string;
+    paymentAmount: number;
+    /** Sum of `SUCCEEDED` reversals. */
+    succeededAmount: number;
+    /** Sum of `PENDING` reversals; they occupy reversible amount. */
+    pendingAmount: number;
+    /** `paymentAmount - succeededAmount - pendingAmount`. */
+    reversibleAmount: number;
+    displayStatus: PaymentRefundDisplayStatus;
 }
