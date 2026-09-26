@@ -238,7 +238,7 @@ Compared with the eight areas first proposed: allocation/shortage/SOLD_OUT moved
 
 **Preconditions**: Phases 2, 3, 4.
 
-**Decision Before Implementation**: DN-12 (rejection reason/actor model and concurrent-cancel display); DN-19 (how cancellation and reversal progress are shown to the Consumer).
+**Decision Before Implementation** (decided in Phase 5): DN-12 — the actor (`CLIENT`/`ADMIN` and user id) and an optional reason are recorded in the internal table `order_cancellations`, one row per Order, the first cancel kept; DN-19 (narrowed) — only the API/domain contract is fixed here (the response carries the outcome and the order id, no reversal detail); how cancellation and reversal progress and any reason are shown to the Consumer is carried to Phase 8.
 
 **Completion criteria**
 - S-12 to S-15, S-27, S-30, S-32 pass.
@@ -406,7 +406,7 @@ Compared with the eight areas first proposed: allocation/shortage/SOLD_OUT moved
 | 2 | DN-25, IN-09 (decided) |
 | 3 | DN-40, IN-01, IN-03 (decided) |
 | 4 | DN-38, DN-39, DN-41, IN-10, IN-11 (decided); DN-19, DN-20, DN-23, DN-24 carried to Phase 8 |
-| 5 | DN-12, DN-19 |
+| 5 | DN-12 (decided); DN-19 carried to Phase 8 |
 | 6 | DN-02, DN-04, DN-14 |
 | 7 | DN-27, DN-42, DN-43, DN-44, DN-45, DN-46, DN-47 |
 | 8 | DN-48, DN-49, and from Phase 4: DN-19, DN-20, DN-23, DN-24 |
