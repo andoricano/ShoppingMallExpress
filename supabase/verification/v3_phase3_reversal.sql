@@ -151,7 +151,7 @@ begin
     insert into _results values ('cause: FINALIZE_FAILURE without an Order allowed', v_res = 'OK', v_res);
 
     v_res := pg_temp._try(format(
-        'select public.create_payment_reversal(%L, 100, ''ORPHAN_PAYMENT'', ''__v3p3_op'')', v_p1));
+        'select public.create_payment_reversal(%L, 100, ''ORPHAN_PAYMENT'', ''__v3p3_op'')', pg_temp._pay(v_a, 1000)));
     insert into _results values ('cause: ORPHAN_PAYMENT without an Order allowed', v_res = 'OK', v_res);
 
     insert into public.refund_requests (order_id, client_id, status, requested_amount)

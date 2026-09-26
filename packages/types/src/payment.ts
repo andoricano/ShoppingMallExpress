@@ -114,3 +114,41 @@ export interface PaymentReversalSummary {
     reversibleAmount: number;
     displayStatus: PaymentRefundDisplayStatus;
 }
+
+/**
+ * Mall v3 payment-first checkout (migration
+ * 20260926160000_v3_phase4_order_finalization.sql).
+ *
+ * Stage 1: the Client holds the checkout data; the server records only a
+ * Payment whose amount it determines from the submitted items. Stage 2
+ * (finalize): the Client resubmits the same items and the address; the server
+ * revalidates sellability and price and creates the `PENDING` Order, or
+ * reverses the whole Payment. The Client never sends a price.
+ */
+export interface CheckoutItemInput {
+    productId: string;
+    productVariantId: string;
+    quantity: number;
+}
+
+/** Body of POST /api/checkout/payments. */
+export interface CreateCheckoutPaymentInput {
+    items: CheckoutItemInput[];
+}
+
+/** Body of POST /api/checkout/payments/[paymentId]/finalize. */
+export interface FinalizeOrderInput {
+    items: CheckoutItemInput[];
+    shippingAddress: Record<string, unknown>;
+}
+
+/** Why a finalize was rejected. A rejected finalize creates no Order and reverses the whole Payment. */
+export type FinalizeRejectionReason =
+    | "NOT_SELLABLE"
+    | "PRICE_MISMATCH"
+    | "ALREADY_CLOSED";
+
+/** Consumer-safe finalize result: no stock, allocation, shortage, or reversal details. */
+export type FinalizeOrderResult =
+    | { outcome: "CREATED" | "EXISTING"; orderId: string; orderNumber: string | null }
+    | { outcome: "REJECTED"; reason: FinalizeRejectionReason };

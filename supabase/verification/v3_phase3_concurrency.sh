@@ -108,7 +108,7 @@ check "A: no deadlock" \
 PAY_B="$(new_payment 50000)"
 stmts=()
 for _ in 1 2 3 4 5 6; do
-  stmts+=("select public.create_payment_reversal('$PAY_B', 10000, 'ORPHAN_PAYMENT', '__v3p3conc_b')")
+  stmts+=("select public.create_payment_reversal('$PAY_B', 10000, 'MANUAL_RECONCILIATION', '__v3p3conc_b')")
 done
 run_parallel "${stmts[@]}"
 check "B: 6 parallel requests with one key all succeed" "$(ok_count)" 6
@@ -116,7 +116,7 @@ check "B: exactly one reversal row exists for the key" \
   "$(sql "select count(*) from public.payment_reversals where idempotency_key = '__v3p3conc_b'")" 1
 
 # ---------------- C: claim lease ----------------
-REV_C="$(sql "select id from public.create_payment_reversal('$PAY_B', 10000, 'ORPHAN_PAYMENT', '__v3p3conc_c')")"
+REV_C="$(sql "select id from public.create_payment_reversal('$PAY_B', 10000, 'MANUAL_RECONCILIATION', '__v3p3conc_c')")"
 stmts=()
 for _ in 1 2 3 4 5 6; do
   stmts+=("select (public.claim_payment_reversal('$REV_C') ->> 'claimed')")
@@ -128,7 +128,7 @@ check "C: the attempt was counted once" \
   "$(sql "select attempt_count from public.payment_reversals where id = '$REV_C'")" 1
 
 # ---------------- D: success and failure reported in parallel ----------------
-REV_D="$(sql "select id from public.create_payment_reversal('$PAY_B', 10000, 'ORPHAN_PAYMENT', '__v3p3conc_d')")"
+REV_D="$(sql "select id from public.create_payment_reversal('$PAY_B', 10000, 'MANUAL_RECONCILIATION', '__v3p3conc_d')")"
 stmts=()
 for i in 1 2 3 4; do
   stmts+=("select public.complete_payment_reversal('$REV_D', true, '__v3p3conc_pg_d')")
@@ -143,7 +143,7 @@ check "D: exactly one PG reference recorded" \
 
 # ---------------- E: retry vs new request for freed amount ----------------
 PAY_E="$(new_payment 10000)"
-REV_E="$(sql "select id from public.create_payment_reversal('$PAY_E', 10000, 'ORPHAN_PAYMENT', '__v3p3conc_e1')")"
+REV_E="$(sql "select id from public.create_payment_reversal('$PAY_E', 10000, 'MANUAL_RECONCILIATION', '__v3p3conc_e1')")"
 psqlq -c "select public.complete_payment_reversal('$REV_E', false, null, 'failed')" >/dev/null
 run_parallel \
   "select public.retry_payment_reversal('$REV_E')" \

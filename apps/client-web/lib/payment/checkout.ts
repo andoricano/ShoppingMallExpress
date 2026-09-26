@@ -1,0 +1,63 @@
+import "server-only";
+
+import { NextResponse } from "next/server";
+
+import { createServiceRoleClient } from "@/lib/supabase/admin";
+import {
+    createSimulatedPgTestReversalAdapter,
+    executePaymentReversal,
+    type RpcCaller,
+} from "./reversal";
+import { paymentErrorResponse } from "./server";
+
+/**
+ * Error mapping of the Mall v3 checkout routes (payment-first checkout).
+ * Anything not listed falls back to the shared payment mapping.
+ */
+export function checkoutErrorResponse(error: unknown) {
+    const { code, message = "" } = typeof error === "object" && error !== null
+        ? error as { code?: string; message?: string }
+        : {};
+
+    if (code === "P0001") {
+        if (message.startsWith("Not sellable")) {
+            return NextResponse.json(
+                { message: "현재 구매할 수 없는 상품이 포함되어 있습니다." },
+                { status: 409 },
+            );
+        }
+
+        if (message.includes("has not succeeded")) {
+            return NextResponse.json(
+                { message: "결제가 완료되지 않았습니다." },
+                { status: 409 },
+            );
+        }
+
+        return NextResponse.json({ message: "잘못된 주문 요청입니다." }, { status: 400 });
+    }
+
+    return paymentErrorResponse(error);
+}
+
+/**
+ * Executes a payment reversal after the database transaction committed. The PG
+ * Test service has no cancel API, so the development adapter simulates the PG;
+ * replace it with the production adapter when production PG integration exists.
+ * An unknown outcome leaves the reversal PENDING (see ./reversal.ts); this
+ * never throws into the request.
+ */
+export async function runPaymentReversal(reversalId: string) {
+    const supabase = createServiceRoleClient();
+    const rpc: RpcCaller = (fn, args) => supabase.rpc(fn, args);
+
+    try {
+        return await executePaymentReversal(
+            rpc,
+            reversalId,
+            createSimulatedPgTestReversalAdapter(),
+        );
+    } catch {
+        return "UNKNOWN_OUTCOME" as const;
+    }
+}

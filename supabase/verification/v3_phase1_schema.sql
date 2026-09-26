@@ -230,13 +230,13 @@ begin
         (select count(*) = 2 from public.payment_reversals where payment_id = v_pay_ok), 'ok');
 
     v_res := pg_temp._try(format(
-        'insert into public.payment_reversals (payment_id, amount, reason_type, idempotency_key) values (%L, 1, ''ORPHAN_PAYMENT'', ''__v3p1_k3'')',
+        'insert into public.payment_reversals (payment_id, amount, reason_type, idempotency_key) values (%L, 1, ''MANUAL_RECONCILIATION'', ''__v3p1_k3'')',
         v_pay_ok));
     insert into _results values ('reversal: total above the Payment amount rejected (BR-34)', v_res = '23514', v_res);
 
     update public.payment_reversals set status = 'FAILED', failure_reason = 'pg down' where id = v_r2;
     v_res := pg_temp._try(format(
-        'insert into public.payment_reversals (payment_id, amount, reason_type, idempotency_key) values (%L, 6000, ''ORPHAN_PAYMENT'', ''__v3p1_k4'')',
+        'insert into public.payment_reversals (payment_id, amount, reason_type, idempotency_key) values (%L, 6000, ''MANUAL_RECONCILIATION'', ''__v3p1_k4'')',
         v_pay_ok));
     insert into _results values ('reversal: a FAILED reversal frees its amount', v_res = 'OK', v_res);
 
