@@ -68,3 +68,22 @@ export interface CancelOrderResult {
     outcome: "CANCELLED" | "ALREADY_CANCELLED";
     orderId: string;
 }
+
+/**
+ * Mall v3 Admin fulfillment (migration 20260926180000_v3_phase6_admin_fulfillment.sql).
+ * One step forward at a time: PENDING -> PROCESSING -> SHIPPED -> DELIVERED.
+ * There is no PAID step and no cancel here. PROCESSING needs full allocation and
+ * consumes the reservation; a request for the status the Order already has is
+ * a no-op (`UNCHANGED`).
+ */
+export type AdvanceableOrderStatus = "PROCESSING" | "SHIPPED" | "DELIVERED";
+
+export interface AdvanceOrderInput {
+    nextStatus: AdvanceableOrderStatus;
+}
+
+export interface AdvanceOrderResult {
+    outcome: "TRANSITIONED" | "UNCHANGED";
+    orderId: string;
+    status: OrderStatus;
+}

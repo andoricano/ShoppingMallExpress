@@ -43,6 +43,7 @@ check() {
 CLIENT="" ADMIN="" WH="" POST="" PRODUCT_NAME="__v3p5conc product"
 cleanup() {
   psqlq >/dev/null 2>&1 <<SQL
+set session_replication_role = replica;
 delete from public.order_cancellations where order_id in (select id from public.orders where client_id = nullif('$CLIENT','')::uuid);
 delete from public.payment_reversals where payment_id in (select id from public.payments where client_id = nullif('$CLIENT','')::uuid);
 delete from public.order_item_ware_allocations where order_item_id in

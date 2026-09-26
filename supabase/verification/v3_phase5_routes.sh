@@ -40,6 +40,7 @@ esac
 WH="" POST="" PRODUCT_NAME="__v3p5routes product"
 cleanup() {
   psqlq >/dev/null 2>&1 <<SQL
+set session_replication_role = replica;
 create temp table _u as select id from auth.users where email like 'v3p5-%@example.test';
 delete from public.order_cancellations where order_id in (select id from public.orders where client_id in (select id from _u));
 delete from public.payment_reversals where payment_id in (select id from public.payments where client_id in (select id from _u));

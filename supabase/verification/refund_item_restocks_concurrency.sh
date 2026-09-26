@@ -42,6 +42,7 @@ check() {
 CLIENT="" WH="" ORDER=""
 cleanup() {
   psqlq >/dev/null 2>&1 <<SQL
+set session_replication_role = replica;
 delete from public.refund_item_restocks where refund_item_id in
   (select ri.id from public.refund_items ri join public.refund_requests rr on rr.id = ri.refund_request_id
     where rr.client_id = nullif('$CLIENT','')::uuid);

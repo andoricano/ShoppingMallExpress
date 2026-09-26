@@ -59,3 +59,22 @@ export interface AdminOrderItemShortage {
     allocatedQuantity: number;
     shortageQuantity: number;
 }
+
+/**
+ * Internal Admin read model (v3): ordered / allocated / shortage per Order
+ * (`get_orders_shortage`). Never include in Consumer payloads.
+ */
+export interface AdminOrderShortageSummary {
+    orderId: string;
+    orderStatus: string;
+    orderedQuantity: number;
+    allocatedQuantity: number;
+    shortageQuantity: number;
+}
+
+/** Result of an Admin additional allocation: what was taken now and the state afterwards. */
+export interface AdminOrderAllocationResult {
+    /** Quantity newly allocated by this call; 0 when nothing was available (not an error). */
+    allocatedQuantity: number;
+    items: AdminOrderItemShortage[];
+}
