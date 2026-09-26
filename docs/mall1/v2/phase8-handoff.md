@@ -20,7 +20,8 @@ Phase 8 is **NOT COMPLETE**. `PHASES.md` stays `NOT STARTED` until the whole E2E
 | 13 Payment success | PASS with one open item, on `ORD-20260926072514-DFC92AA0` (tester's decision): payment `05aea877-6bdc-4463-894d-db0cd17989da` `SUCCEEDED`, Order `PAID`, `payment_reference` = that id, PG Monitor `isSuccess: true` amount 10000. **"Stock unchanged by payment" UNVERIFIED** (stock before payment not recorded) — re-verify in steps 17/21. `ORD-20260926063003-133CC21B` (Black × 4, 40,000원, reported paid) is reference evidence only |
 | 14 Point top-up failure | PASS: payment `2e0fa7d9-...` `FAILED` (30000), no ledger row, no balance increase, PG Monitor `isSuccess: false` |
 | 15 Point top-up success | PASS with one open item: payment `fd04e741-...` `SUCCEEDED` (30000), one `TOPUP` ledger row (`balance_after` 30000), PG Monitor `isSuccess: true`. UI refresh observation (balance stays 30000) not yet reported |
-| 16–24 | Not started |
+| 16 Order History | PASS: only the tester's own Orders shown, paid `ORD-20260926072514-DFC92AA0` included; snapshot sub-item not individually reported. (A "mixed client_id Orders" observation was a false alarm — the Admin shipping-history screen was opened by mistake.) |
+| 17–24 | Not started |
 
 Steps 9 and 10 were reported PASS by the tester; some sub-items were not individually reported and are left unchecked in the checklist.
 Step 7: "Ware/Warehouse not exposed" is left unchecked; it is verified systematically in step 23.

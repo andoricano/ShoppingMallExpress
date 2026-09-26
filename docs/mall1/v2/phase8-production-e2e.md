@@ -274,10 +274,12 @@ URLs:
 - `/mypage/history`
 - `/mypage/order-history/<ORDER_ID>`
 
-- [ ] Order A appears as paid.
-- [ ] Snapshot values are shown.
+- [x] Paid Order appears as paid. (tester: `/mypage/history` shows the tester's own Orders, including the paid `ORD-20260926072514-DFC92AA0` and earlier Orders; step 13 subject, not Order A)
+- [ ] Snapshot values are shown. (not individually reported)
 
-Result: `PASS / FAIL`
+Tester confirmed only the tester's own Orders are listed; no other CLIENT's Orders are exposed. An earlier suspicion of mixed `client_id` Orders was a false alarm: the tester had opened the Admin shipping-history screen by mistake. No security/RLS issue.
+
+Result: `PASS` (snapshot sub-item not individually reported)
 
 ## 17. PENDING Order Cancel
 
