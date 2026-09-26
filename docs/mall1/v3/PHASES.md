@@ -164,7 +164,7 @@ Compared with the eight areas first proposed: allocation/shortage/SOLD_OUT moved
 
 **Preconditions**: Phase 1.
 
-**Decision Before Implementation**: DN-40 (who may reprocess a `FAILED` reversal and the minimal procedure); IN-01 (retry history on the same row or an attempt table); IN-03 (enforcement mechanism).
+**Decision Before Implementation** (decided in Phase 3): DN-40 — retry and `MANUAL_RECONCILIATION` creation only at the `service_role` boundary, the acting Admin recorded in `requested_by`, Admin UI/approval UX decided in the phase that wires it; IN-01 — a retry reuses the existing `payment_reversals` row and increments `attempt_count`, with no separate attempt history table in the initial v3; IN-03 — the Phase 1 trigger stays the final guard and the creation RPC takes the Payment row lock to serialize concurrent requests.
 
 **Completion criteria**
 - Concurrent reversal requests cannot exceed the Payment amount; a duplicate request with the same key creates one reversal (S-29).
@@ -404,7 +404,7 @@ Compared with the eight areas first proposed: allocation/shortage/SOLD_OUT moved
 |---|---|
 | Pre-1 | delivery strategy (2.4), DN-34, IN-05 |
 | 2 | DN-25, IN-09 (decided) |
-| 3 | DN-40, IN-01, IN-03 |
+| 3 | DN-40, IN-01, IN-03 (decided) |
 | 4 | DN-19, DN-20, DN-23, DN-24, DN-38, DN-39, DN-41, IN-10, IN-11 |
 | 5 | DN-12, DN-19 |
 | 6 | DN-02, DN-04, DN-14 |

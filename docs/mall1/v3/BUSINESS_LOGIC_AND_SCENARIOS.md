@@ -1,6 +1,6 @@
 # Mall v3 — Business Logic and Scenarios
 
-Draft 0.6 · 2026-09-26 · Source of Truth candidate
+Draft 0.7 · 2026-09-26 · Source of Truth candidate
 
 This document is analysis and policy capture only. It is not an implementation plan and it does not define phases.
 
@@ -588,7 +588,7 @@ Format per area: Approved v3 policy · Current v2 implementation · Conflict · 
   - `[E2E]` Failure → payment `FAILED`, Order stays `PENDING`; retry on the same Order then succeeded → `SUCCEEDED`, Order `PAID`, `payment_reference` = payment id; PG Test Monitor records matched. The first attempt failed because client-web Production lacked `SUPABASE_SECRET_KEY` (configuration only).
   - `[E2E]` Not verified: payment success leaves Ware stock unchanged.
 - **Conflict**: CF-03, CF-04, CF-05, CF-13, CF-14, CF-15.
-- **Decision Needed**: DN-19, DN-20, DN-38, DN-39, DN-40, DN-41.
+- **Decision Needed**: DN-19, DN-20, DN-38, DN-39, DN-41.
 - **Implementation notes**: IN-01 to IN-06, IN-08, IN-10, IN-11.
 - **Affected**: RPC `create_payment`, `complete_payment`; table `payments` (and the new reversal table); client-web `app/api/payments/route.ts`, `app/api/payments/[paymentId]/confirm/route.ts`, `lib/payment/server.ts`, `lib/payment/pgTest.ts`, `hooks/payment/usePaymentApi.ts`, `app/payment/page.tsx`, `app/success/page.tsx`, `components/payment/*`.
 
@@ -709,7 +709,7 @@ Format per area: Approved v3 policy · Current v2 implementation · Conflict · 
   - `[E2E]` The CLIENT saw only their own Orders; Admin login and server access worked after the user-web `SUPABASE_SECRET_KEY` fix; Consumer Ware/Warehouse non-exposure was observed on the inspected screens (product/post detail, Cart, Order/history detail, Refund, Wishlist, Point).
   - `[CODE]` user-web calls an RPC `complete_onboarding` that has no definition in the migrations or design SQL that were read (VF-05).
 - **Conflict**: CF-10 (Admin cannot see allocation/shortage), CF-13 (manual `PENDING → PAID`).
-- **Decision Needed**: DN-12, DN-40, DN-46.
+- **Decision Needed**: DN-12, DN-46.
 - **Affected**: `user_profiles`; user-web `lib/supabase/admin.ts`, all `app/api/admin/*`; RLS policies.
 
 ### 4.15 client-web
@@ -831,7 +831,7 @@ Refund track (Orders in PROCESSING / SHIPPED / DELIVERED; not PENDING / CANCELLE
        original allocation Ware only, never above the allocated quantity
        shortage/unallocated quantity is never restockable
    the Order fulfillment status is not changed by a Refund           [APPROVED BR-41]
-   exceptional payment reconciliation channel ................. [DN-40]
+   exceptional payment reconciliation channel ................. [service_role only, actor in requested_by; UX open]
 
 Payment reversals (any cause)                                           [APPROVED BR-29 to BR-34]
    PENDING -> SUCCEEDED | FAILED ; a FAILED reversal frees its amount
@@ -1172,9 +1172,9 @@ Expected Results contain only what is approved. Anything else points to a `DN-xx
 - **Expected Result**: the Order stays `CANCELLED`; the Order cancellation and the allocation release are not repeated; a repeated cancel request stays idempotent (BR-17, BR-26). `payments.status` stays `SUCCEEDED` (BR-29, BR-32). A `FAILED` reversal frees its amount for a new reversal request (BR-34). How retries are recorded is an implementation note (IN-01); the Admin reprocessing procedure is open (DN-40).
 - **Stock/Allocation Effect**: none beyond the single release already done.
 - **Consumer Visibility**: whether refund progress is shown is open (DN-19).
-- **Admin Visibility**: the reversal and its failure; procedure open (DN-40).
+- **Admin Visibility**: the reversal and its failure; retry only at the trusted server boundary, actor recorded (former DN-40); the Admin screen is open.
 - **Current v2 behavior**: not applicable; no payment reversal exists `[CODE]`; the PG Test service has no cancel API.
-- **v3 Status**: direction `APPROVED` (BR-26, BR-29, BR-31, BR-34); `CONFLICT` CF-14; `DECISION NEEDED` (DN-40).
+- **v3 Status**: direction `APPROVED` (BR-26, BR-29, BR-31, BR-34); `CONFLICT` CF-14; the reprocessing boundary is decided (former DN-40).
 
 #### S-28 Admin allocation competes with a newer Order
 
@@ -1249,7 +1249,7 @@ Expected Results contain only what is approved. Anything else points to a `DN-xx
 - **Expected Result**: the Refund stays `APPROVED` and is never moved back to `REQUESTED`; the reversal becomes `FAILED` or a retry target and is reprocessed in the reversal domain; `payments.status` stays `SUCCEEDED` (BR-39, BR-29, BR-32). If the reversal row could not be created inside the transaction, the Refund would not have been approved at all (BR-39). A `FAILED` reversal frees its amount (BR-34).
 - **Stock/Allocation Effect**: none (BR-40).
 - **Consumer Visibility**: whether reversal progress is shown is open (DN-19).
-- **Admin Visibility**: the approved Refund with a failed reversal; the reprocessing procedure is open (DN-40).
+- **Admin Visibility**: the approved Refund with a failed reversal; reprocessing is a trusted-server operation with the actor recorded (former DN-40); the Admin screen is open.
 - **Current v2 behavior**: `[CODE]` approval creates no reversal.
 - **v3 Status**: `APPROVED` (BR-39); `CONFLICT` CF-14; retry recording is an implementation note (IN-01, IN-08).
 
@@ -1312,7 +1312,6 @@ Expected Results contain only what is approved. Anything else points to a `DN-xx
 | DN-34 | Confirmation that v2 rules untouched by v3 decisions carry over (OrderItem snapshot immutability, Cart identity Product + Variant, owner RLS, Wishlist ProductPost basis, History via Order, the cap "cumulative restock per refund item is at most the refunded quantity"). | all | analysis 2026-09-26 |
 | DN-38 | Orphan Payment detection: how it is detected, the time window, and the race with a late finalize. (Handling by a reversal without an Order is BR-44, BR-30, BR-32.) | Payment, Checkout | analysis 2026-09-26 |
 | DN-39 | Transient (technical) finalize failure: retry policy (the Client resubmits under BR-44), when to switch to reversal, and where the finalize-attempt state (attempt count, last error) is kept, since no reversal exists yet at that point. | Payment, Order | analysis 2026-09-26 |
-| DN-40 | Manual reconciliation: who may perform an administrative adjustment or reprocess a `FAILED` reversal, the procedure and its controls, and how a PG payment that the Mall has no record of would be registered (that is a Payment record, not a reversal). BR-24 forbids a default path without payment evidence; the reversal representation is BR-30. | Payment, Admin | analysis 2026-09-26 |
 | DN-41 | Zero-amount Orders (for example a Variant priced 0): whether a Payment record covers them so that "an Order implies a passed payment" holds. (Point payment is out of scope, BR-49.) | Payment, Order | analysis 2026-09-26 |
 | DN-42 | Refund window after `DELIVERED` (v2 has no time limit). | Refund | analysis 2026-09-26 |
 | DN-43 | Whether Admin may approve only part of the requested Refund quantity (v2 approval accepts or rejects the whole request). | Refund, Admin | analysis 2026-09-26 |
@@ -1329,6 +1328,7 @@ Resolved by approved rules and removed from the open registry.
 
 | Former ID | Decision | Resolved by | Remaining question |
 |---|---|---|---|
+| ~~DN-40~~ | Manual reconciliation: who may reprocess a `FAILED` reversal or create an administrative adjustment, and the minimal procedure. | User decision recorded with the Phase 3 implementation: retry (`FAILED` to `PENDING` on the same reversal) and `MANUAL_RECONCILIATION` creation are performed only at the trusted server (`service_role`) boundary, there is no Consumer path, and the acting Admin is recorded in `requested_by` (BR-24, BR-30) | The Admin screen and approval UX are decided in the phase that wires them (Phases 5 to 7). Registering a PG payment the Mall has no record of is a Payment record, not a reversal, and belongs with the orphan-payment decision (DN-38) |
 | ~~DN-25~~ | Whether a Consumer-visible `LOW_STOCK`-like status is allowed given that numeric shortage is internal. | User decision recorded with the Phase 2 implementation (`get_product_variant_sellability`): the Consumer sellability status is `AVAILABLE` / `SOLD_OUT` / `UNAVAILABLE`; there is no `LOW_STOCK`; the numeric stock level is never exposed to the Consumer (BR-18, BR-19, BR-20, BR-46) | Renaming the existing Consumer status type and mapping (`OUT_OF_STOCK` to `SOLD_OUT`) is a Phase 8 Consumer-contract item |
 | ~~DN-01~~ | Stock decrement timing, meaning of `current_stock`, release mapping, effect of a pre-shipment Refund. | BR-43 (physical `current_stock` + `reserved_stock`, consume at `PROCESSING` entry, restock increases `current_stock`), BR-40 | Synchronization and data conversion are implementation notes (IN-09) |
 | ~~DN-03~~ | Whether `reserved_stock` is used. | BR-43 (`reserved_stock` holds the allocations of `PENDING` Orders) | none |
@@ -1367,9 +1367,9 @@ Items that the user has assigned to implementation/audit design. They are record
 
 | ID | Note | Related rules |
 |---|---|---|
-| IN-01 | Retry history of a reversal: accumulate on the same row or keep a separate attempt table. | BR-26, BR-31, BR-39 |
+| IN-01 | Retry history of a reversal: accumulate on the same row or keep a separate attempt table. **Decided in Phase 3**: a retry reuses the existing `payment_reversals` row (`FAILED` to `PENDING`) and increments `attempt_count`; the initial v3 has no separate attempt history table. | BR-26, BR-31, BR-39 |
 | IN-02 | Whether to keep PG callback/webhook raw records in an append-only audit / de-duplication log. | BR-33, BR-45 |
-| IN-03 | Database enforcement of the reversal invariants: row lock, RPC transaction, constraint/check, idempotency key uniqueness. | BR-32, BR-34 |
+| IN-03 | Database enforcement of the reversal invariants: row lock, RPC transaction, constraint/check, idempotency key uniqueness. **Decided in Phase 3**: the Phase 1 database trigger stays the final guard (amount limit, `SUCCEEDED` Payment only); the reversal creation RPC takes the Payment row lock first, so concurrent requests are serialized and a repeated idempotency key returns the existing reversal. | BR-32, BR-34 |
 | IN-04 | Detailed reversal states beyond `PENDING` / `SUCCEEDED` / `FAILED`. | BR-31 |
 | IN-05 | Exact table and enum names (`payment_reversals` and the reason-type values are provisional). | BR-30 |
 | IN-06 | How the derived payment-level refund display is computed (query/view vs a maintained column) and what the Consumer may see. | BR-29 |
@@ -1539,3 +1539,4 @@ List only. This is not an implementation plan and does not order or schedule any
 - Draft 0.4 (2026-09-26): added BR-35 to BR-42 (Cancel only in `PENDING` and whole Order only; Refund eligibility and partial Refund; cumulative Refund quantity invariant; Refund approval and linked reversal in one transaction; Policy B; Refund does not change the Order status; no allocation decrease after `PROCESSING`); resolved DN-05, DN-06, DN-07, DN-08, DN-15, DN-28, DN-30; reduced DN-27; added DN-42 to DN-47; added IN-07 and IN-08; promoted VF-01 to CF-17 and added CF-16; updated CF-08, CF-09, CF-11, CF-14; added scenarios S-30 to S-36 and reworked S-18 to S-23; updated terminology, lifecycle, transitions, matrix, and impact index.
 - Draft 0.5 (2026-09-26): added BR-43 to BR-49 (stock model physical `current_stock` + `reserved_stock` with consume at `PROCESSING` entry; Stage 1 data stays with the Client and the server records only the Payment; finalize contract with server confirm primary, webhook auxiliary, one Order per `payment_id`, price mismatch rejected and reversed; Variant `is_sold_out` with `is_active` kept; Ware-less Variants orderable with full shortage; deterministic Multi-Ware order; initial v3 scope with Point payment and authorize/capture excluded and PWA limited to the core scope); resolved DN-01, DN-03, DN-09, DN-10, DN-11, DN-13, DN-16, DN-17, DN-18, DN-26, DN-33, DN-37; narrowed DN-02, DN-23, DN-24, DN-38, DN-39, DN-41; added DN-48 and DN-49; added IN-09 to IN-11; added CF-18 and updated CF-03, CF-04, CF-06, CF-09; added scenario S-37 and reworked S-01 to S-06, S-10, S-11, S-16, S-17, S-20, S-23 to S-26, S-30; updated terminology, audit, lifecycle, transitions (T-26), matrix, and impact index.
 - Draft 0.6 (2026-09-26): recorded the Phase 2 implementation decisions: resolved DN-25 (Consumer sellability `AVAILABLE` / `SOLD_OUT` / `UNAVAILABLE`, no `LOW_STOCK`, no numeric stock level to the Consumer) and noted the decided synchronization approach on IN-09; no rule was added or changed.
+- Draft 0.7 (2026-09-26): recorded the Phase 3 implementation decisions: resolved DN-40 (retry and `MANUAL_RECONCILIATION` creation only at the `service_role` boundary, actor in `requested_by`, Admin UX later) and noted the decided approaches on IN-01 (retry reuses the row, `attempt_count`, no attempt table) and IN-03 (Phase 1 trigger as final guard, Payment row lock in the creation RPC); no rule was added or changed.
