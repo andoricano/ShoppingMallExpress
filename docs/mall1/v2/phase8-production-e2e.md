@@ -302,44 +302,44 @@ Result: `PASS` (Order B number, the three stock numbers and the `CANCELLED` stat
 
 Use paid Order A.
 
-- [ ] Request refund for quantity `1`.
+- [x] Request refund. (deviation: quantity `4` — the full quantity — was requested, not quantity `1`, on a new test Order `ORD-20260926083620-FD4C6D7F`, Phase8 Test Product / Black × 4, total 40,000원; the planned partial refund on `ORD-20260926063003-133CC21B` was not used)
 
 Expected:
-- [ ] Refund request created.
-- [ ] Amount uses OrderItem snapshot price.
-- [ ] Stock remains `S - 2`.
+- [x] Refund request created. (status `REQUESTED`)
+- [ ] Amount uses OrderItem snapshot price. (not reported)
+- [ ] Stock unchanged by the request. (before/after the request not reported separately; stock was still `0` at the moment of APPROVED, see step 19)
 
-Result: `PASS / FAIL`
+Result: `PASS` (deviation: full quantity 4 instead of a partial quantity 1; refund amount and stock-at-request sub-items not reported)
 
 ## 19. Admin Refund APPROVED
 
-- [ ] Approve refund in user-web.
+- [x] Approve refund in user-web. (Order `ORD-20260926083620-FD4C6D7F`, refund quantity 4)
 
 Expected:
-- [ ] Refund becomes `APPROVED`.
-- [ ] Stock remains `S - 2`.
+- [x] Refund becomes `APPROVED`.
+- [x] Stock remains unchanged by the approval. (actual Ware stock was `0` right after APPROVED and stayed `0`; the `S - 2` formula is not used)
 
-Result: `PASS / FAIL`
+Result: `PASS` (Refund approval alone does not restock — Policy B)
 
 ## 20. Admin Restock
 
-- [ ] Select original allocation Ware.
-- [ ] Restock quantity `1`.
+- [ ] Select original allocation Ware. (not individually reported)
+- [x] Restock executed by Admin (deviation: the approved quantity here was 4, so the whole quantity was restored, not `1`).
 
 Expected:
-- [ ] Restock record is created.
-- [ ] Stock becomes `S - 1`.
-- [ ] Restock beyond approved quantity is rejected.
+- [x] Restock takes effect. (a `refund_item_restocks` row was not individually reported; the effect is the stock change below)
+- [x] Stock increases only at the restock moment: Ware stock `0` → `4`. (the `S - 1` formula is not used: extra Orders exist)
+- [ ] Restock beyond approved quantity is rejected. (UNVERIFIED — not tested yet; re-test before the final result, e.g. with another approved refund, or state explicitly that it is accepted as unverified)
 
-Result: `PASS / FAIL`
+Result: `PASS` (restock quantity 4 restored stock 0 → 4 exactly as approved; the over-restock rejection sub-item is UNVERIFIED)
 
 ## 21. Stock Verification
 URL: `https://shopping-mall-express-user-web-three.vercel.app/inventory`
 
-Expected final stock: `S - 1`
+Expected final stock: `S - 1` — not applicable: extra Orders (steps 11–20) changed the stock, so the `S = 10` formula cannot be used. The stock sequence was checked step by step instead.
 
-Observed stock:
-Result: `PASS / FAIL`
+Observed stock sequence (tester): before the refund / at APPROVED: `0` (Order `ORD-20260926083620-FD4C6D7F`, Black × 4, consumed the remaining stock); unchanged after APPROVED (`0`); after the Admin restock: `4` = the approved refund quantity. Stock changed only at the restock moment.
+Result: `PASS` (verified as a sequence: stock is restored only by the restock and by exactly the approved quantity; the `S - 1` formula is not applicable)
 
 ## 22. Wishlist
 
