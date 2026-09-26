@@ -1,6 +1,6 @@
 # Mall v3 — Business Logic and Scenarios
 
-Draft 0.5 · 2026-09-26 · Source of Truth candidate
+Draft 0.6 · 2026-09-26 · Source of Truth candidate
 
 This document is analysis and policy capture only. It is not an implementation plan and it does not define phases.
 
@@ -554,7 +554,7 @@ Format per area: Approved v3 policy · Current v2 implementation · Conflict · 
   - `[CODE]` Availability is derived from numeric stock: `get_product_variant_availability` returns `AVAILABLE` only if the sum of `greatest(current_stock - reserved_stock, 0)` over linked active Wares/Warehouses is greater than 0, otherwise `OUT_OF_STOCK` (`UNAVAILABLE` if inactive). A Variant with no linked Ware is therefore `OUT_OF_STOCK`. The shared type `ProductVariantStockStatus` lists `AVAILABLE`, `OUT_OF_STOCK`, `UNAVAILABLE`.
   - `[E2E]` Create Product/Option/Variant, publish ProductPost, Consumer list/detail, Variant selection, price shown, raw stock not displayed (v2 steps 3–8).
 - **Conflict**: CF-06, CF-07.
-- **Decision Needed**: DN-25, DN-34.
+- **Decision Needed**: DN-34.
 - **Affected**: RPC `get_product_variant_availability`, `list_product_posts`, `get_product_post_detail`, `get_product_detail`, `admin_*_product*`; tables `products`, `product_variants` (new `is_sold_out`), `product_posts`, `product_post_products`; shared types `product.ts`, `productPost.ts`, `cart.ts` (`isAvailable`, `stockStatus`); client-web purchase panel (`hooks/useProductPost.ts`); client-pwa `app/page.tsx` detail tab; user-web `app/(admin)/products/*`, `app/api/admin/products*`, `app/api/admin/product-posts*`.
 
 ### 4.2 Cart
@@ -719,7 +719,7 @@ Format per area: Approved v3 policy · Current v2 implementation · Conflict · 
   - `[CODE]` Whole-Cart order at `/order` → `/payment?orderId=` → confirm; `/success`; Order history and detail with cancel and refund cards; wishlist; Points; addresses. `OrderStatusCard` shows "결제하기" for `PENDING` and has a description for `PAID`. `toOrderErrorMessage` (`hooks/order/useClientOrder.ts`) turns `Insufficient stock` into "…의 재고가 부족합니다…", without a quantity. Cancel and refund eligibility helpers mirror the v2 RPC rules (`hooks/history/useOrderAfterSales.ts`).
   - `[E2E]` Full flow exercised during v2 Phase 8.
 - **Conflict**: CF-01 (shortage error message), CF-03, CF-05, CF-13.
-- **Decision Needed**: DN-24, DN-25.
+- **Decision Needed**: DN-24.
 - **Affected**: see 4.2, 4.3, 4.4, 4.8, 4.9, 4.12, 4.13.
 
 ### 4.16 client-pwa
@@ -1308,7 +1308,6 @@ Expected Results contain only what is approved. Anything else points to a `DN-xx
 | DN-20 | PG failure / abandonment: retry semantics and what the Client sees. (A server-side Payment record without an Order is allowed by BR-25.) | Payment, Checkout | analysis 2026-09-26 |
 | DN-23 | Cart ↔ Checkout relationship: server Cart lifecycle, when the Cart is cleared (the Client resubmits items at finalize, BR-44), selected-item orders, buy-now. | Cart, Checkout | analysis 2026-09-26 |
 | DN-24 | Whether an in-progress Payment (Stage 1) is shown to the Client in History or as an indicator. The server holds no other Stage 1 data (BR-44). | Checkout, client-web | analysis 2026-09-26 |
-| DN-25 | Whether a Consumer-visible `LOW_STOCK`-like status is allowed given that numeric shortage is internal (BR-20, BR-23). | Sellability, Consumer | analysis 2026-09-26 |
 | DN-27 | Refund amount derivation for the linked reversal when discounts or shipping fees exist (today both are 0, so the item total equals the payment amount). The reversal creation itself, its linkage, and the absence of stock and Order-status effects are approved (BR-39 to BR-41). | Refund, Payment | analysis 2026-09-26 |
 | DN-34 | Confirmation that v2 rules untouched by v3 decisions carry over (OrderItem snapshot immutability, Cart identity Product + Variant, owner RLS, Wishlist ProductPost basis, History via Order, the cap "cumulative restock per refund item is at most the refunded quantity"). | all | analysis 2026-09-26 |
 | DN-38 | Orphan Payment detection: how it is detected, the time window, and the race with a late finalize. (Handling by a reversal without an Order is BR-44, BR-30, BR-32.) | Payment, Checkout | analysis 2026-09-26 |
@@ -1330,6 +1329,7 @@ Resolved by approved rules and removed from the open registry.
 
 | Former ID | Decision | Resolved by | Remaining question |
 |---|---|---|---|
+| ~~DN-25~~ | Whether a Consumer-visible `LOW_STOCK`-like status is allowed given that numeric shortage is internal. | User decision recorded with the Phase 2 implementation (`get_product_variant_sellability`): the Consumer sellability status is `AVAILABLE` / `SOLD_OUT` / `UNAVAILABLE`; there is no `LOW_STOCK`; the numeric stock level is never exposed to the Consumer (BR-18, BR-19, BR-20, BR-46) | Renaming the existing Consumer status type and mapping (`OUT_OF_STOCK` to `SOLD_OUT`) is a Phase 8 Consumer-contract item |
 | ~~DN-01~~ | Stock decrement timing, meaning of `current_stock`, release mapping, effect of a pre-shipment Refund. | BR-43 (physical `current_stock` + `reserved_stock`, consume at `PROCESSING` entry, restock increases `current_stock`), BR-40 | Synchronization and data conversion are implementation notes (IN-09) |
 | ~~DN-03~~ | Whether `reserved_stock` is used. | BR-43 (`reserved_stock` holds the allocations of `PENDING` Orders) | none |
 | ~~DN-05~~ | Detailed Cancel vs Refund boundary. | BR-35 (Cancel only in `PENDING`; money return after `PROCESSING` is Refund), BR-37 | none |
@@ -1375,7 +1375,7 @@ Items that the user has assigned to implementation/audit design. They are record
 | IN-06 | How the derived payment-level refund display is computed (query/view vs a maintained column) and what the Consumer may see. | BR-29 |
 | IN-07 | Database enforcement of the cumulative Refund quantity invariant under concurrency: row lock on the Order/OrderItems, RPC transaction, or constraint. | BR-38 |
 | IN-08 | Transaction structure of Refund approval together with the linked reversal creation, so that both commit or neither does. | BR-39 |
-| IN-09 | Keeping `reserved_stock` synchronized with the allocation rows of `PENDING` Orders in the same transactions (allocate, additional allocation, cancel, `PROCESSING` entry), a verification query, and conversion of existing v2 stock values (net remainder) to physical values plus reservations. | BR-43 |
+| IN-09 | Keeping `reserved_stock` synchronized with the allocation rows of `PENDING` Orders in the same transactions (allocate, additional allocation, cancel, `PROCESSING` entry), a verification query, and conversion of existing v2 stock values (net remainder) to physical values plus reservations. **Decided in Phase 2**: allocation rows and `reserved_stock` change together inside the same database transaction (allocate, additional allocation, release, consume); there is no separate asynchronous synchronization. Consistency is verified by the invariants (`0 <= reserved_stock <= current_stock`, `reserved_stock` = allocations of `PENDING` Orders) and by the cutover verification (`supabase/cutover/v3_stock_consistency_check.sql`); the conversion of v2 stock values is `supabase/cutover/v3_stock_and_sellability.sql`, applied only at cutover. | BR-43 |
 | IN-10 | The structure that guarantees one Order per `payment_id` (unique link or lock-and-check), webhook signature verification and de-duplication, production PG confirm/cancel endpoints, and keeping the PG Test adapter as a development-only adapter. | BR-45 |
 | IN-11 | The job that detects orphan Payments and starts the reversal (trigger mechanism, schedule, locking against a late finalize). | BR-44 |
 
@@ -1431,7 +1431,7 @@ v2 documents are not modified. "Handling" is a recommendation for how this docum
 | `v2/PHASES.md` Stock expectations | Order creation deducts allocated stock; `PENDING` cancel restores exactly; refund approval never changes stock; restock only into original allocation Wares; restock beyond the refunded quantity or the Ware allocation fails. | Allocation may be partial (BR-07) and is held as `reserved_stock` (BR-43); cancel by Admin, idempotent, with a payment reversal (BR-16, BR-17, BR-26); refund approval does not restore stock and restock is explicit within the allocation (BR-40). | Cancel and stock deduction parts `CONFLICT` (CF-01, CF-02, CF-08, CF-14, CF-18); refund/restock parts `CONFIRMED` (BR-40) | rewrite in v3; preserve for history | `cancel_order`, `admin_restock_refund_item`, `order_item_ware_allocations` |
 | `v2/PHASES.md` Phase 6 client-web/pwa notes | `/order` orders the whole server Cart through `create_order_from_cart`. | Order is created at Stage 2 from resubmitted items (BR-44). | `CONFLICT` (CF-03) | rewrite in v3 | client-web `/order`, client-pwa Cart tab |
 | `v2/product-schema.md` §5 | Ware/Warehouse never exposed to Consumers. | BR-20. | `CONFIRMED` | keep | Consumer contracts |
-| `v2/product-schema.md` §6 | `stock <= 0` → sold out; stock below a threshold → `LOW_STOCK` may be shown; raw stock disclosure is a UI decision. | BR-18, BR-20, BR-46. | `CONFLICT` (CF-06, CF-07) / `DECISION NEEDED` (DN-25) | rewrite in v3 | availability RPC; Consumer types |
+| `v2/product-schema.md` §6 | `stock <= 0` → sold out; stock below a threshold → `LOW_STOCK` may be shown; raw stock disclosure is a UI decision. | BR-18, BR-20, BR-46. | `CONFLICT` (CF-06, CF-07); the `LOW_STOCK` question is resolved: no `LOW_STOCK` (former DN-25) | rewrite in v3 | availability RPC; Consumer types |
 | `v2/product-schema.md` §9 | Cart identity Product + Variant; the server checks stock through Ware. | Numeric stock is not a finalization gate (BR-04). | `CONFLICT` (CF-06) / `DECISION NEEDED` (DN-23) | rewrite in v3 | `add_cart_item`, `get_cart` |
 | `v2/product-schema.md` §10 | Order creation: Variant → Ware → stock check → stock deduction. | Shortage never blocks (BR-04); allocation is partial and reserved (BR-07, BR-09, BR-43). | `CONFLICT` (CF-01, CF-02, CF-18) | rewrite in v3 | `create_order_from_cart` |
 | `v2/product-schema.md` §11 | OrderItem snapshot. | none stated | `DECISION NEEDED` (DN-34) | keep; confirm carry-over | `order_items` |
@@ -1538,3 +1538,4 @@ List only. This is not an implementation plan and does not order or schedule any
 - Draft 0.3 (2026-09-26): added BR-29 to BR-34 (original payment vs `payment_reversals`, `payments.status` unchanged, reversal causes/fields/states/invariants, no generic event ledger, reversal amount invariant `SUM(PENDING + SUCCEEDED) <= payments.amount`); corrected BR-26 and BR-27 from "Payment `REFUND_PENDING` → `REFUNDED`" to "`payments.status` stays `SUCCEEDED` plus a reversal `PENDING` → `SUCCEEDED`"; resolved DN-35 and DN-36; added section 7.3 implementation notes IN-01 to IN-06; reworded CF-14 and added CF-15; narrowed DN-19, DN-27, DN-37 to DN-40; added scenario S-29.
 - Draft 0.4 (2026-09-26): added BR-35 to BR-42 (Cancel only in `PENDING` and whole Order only; Refund eligibility and partial Refund; cumulative Refund quantity invariant; Refund approval and linked reversal in one transaction; Policy B; Refund does not change the Order status; no allocation decrease after `PROCESSING`); resolved DN-05, DN-06, DN-07, DN-08, DN-15, DN-28, DN-30; reduced DN-27; added DN-42 to DN-47; added IN-07 and IN-08; promoted VF-01 to CF-17 and added CF-16; updated CF-08, CF-09, CF-11, CF-14; added scenarios S-30 to S-36 and reworked S-18 to S-23; updated terminology, lifecycle, transitions, matrix, and impact index.
 - Draft 0.5 (2026-09-26): added BR-43 to BR-49 (stock model physical `current_stock` + `reserved_stock` with consume at `PROCESSING` entry; Stage 1 data stays with the Client and the server records only the Payment; finalize contract with server confirm primary, webhook auxiliary, one Order per `payment_id`, price mismatch rejected and reversed; Variant `is_sold_out` with `is_active` kept; Ware-less Variants orderable with full shortage; deterministic Multi-Ware order; initial v3 scope with Point payment and authorize/capture excluded and PWA limited to the core scope); resolved DN-01, DN-03, DN-09, DN-10, DN-11, DN-13, DN-16, DN-17, DN-18, DN-26, DN-33, DN-37; narrowed DN-02, DN-23, DN-24, DN-38, DN-39, DN-41; added DN-48 and DN-49; added IN-09 to IN-11; added CF-18 and updated CF-03, CF-04, CF-06, CF-09; added scenario S-37 and reworked S-01 to S-06, S-10, S-11, S-16, S-17, S-20, S-23 to S-26, S-30; updated terminology, audit, lifecycle, transitions (T-26), matrix, and impact index.
+- Draft 0.6 (2026-09-26): recorded the Phase 2 implementation decisions: resolved DN-25 (Consumer sellability `AVAILABLE` / `SOLD_OUT` / `UNAVAILABLE`, no `LOW_STOCK`, no numeric stock level to the Consumer) and noted the decided synchronization approach on IN-09; no rule was added or changed.

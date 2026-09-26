@@ -132,7 +132,7 @@ Compared with the eight areas first proposed: allocation/shortage/SOLD_OUT moved
 
 **Preconditions**: Phase 1.
 
-**Decision Before Implementation**: DN-25 (whether a Consumer-visible `LOW_STOCK`-like status exists); IN-09 (how reservation and allocation rows are kept synchronized and how existing data is converted).
+**Decision Before Implementation** (decided in Phase 2): DN-25 — the Consumer sellability status is `AVAILABLE` / `SOLD_OUT` / `UNAVAILABLE`, there is no `LOW_STOCK`, and the numeric stock level is never exposed; IN-09 — allocation rows and `reserved_stock` change in the same database transaction (no asynchronous synchronization), consistency is verified by the invariants and the cutover verification, and the conversion of existing data is `supabase/cutover/v3_stock_and_sellability.sql` (applied only at cutover).
 
 **Completion criteria**
 - The stock example of S-37 (stock 10, orders 6 and 6) reproduces exactly at the database level.
@@ -334,7 +334,7 @@ Compared with the eight areas first proposed: allocation/shortage/SOLD_OUT moved
 
 **Preconditions**: Phases 1 to 7 are complete and their gates passed, so the v3 paths are verified; no client still uses a legacy path. Legacy contraction is performed only after that. Consumer/PWA alignment does not bring legacy removal forward: alignment is done on top of the v3 paths while the legacy objects still exist, and removal is the last step of this phase.
 
-**Decision Before Implementation**: DN-48 (how PWA Order creation works when a real Order exists only after PG success), DN-49 (fate of the existing Point top-up); DN-25 if not settled in Phase 2.
+**Decision Before Implementation**: DN-48 (how PWA Order creation works when a real Order exists only after PG success), DN-49 (fate of the existing Point top-up).
 
 **Completion criteria**
 - No source reference to `PAID`, `create_order_from_cart`, or `restock_order_item` remains (search-verified); all three apps typecheck.
@@ -344,7 +344,7 @@ Compared with the eight areas first proposed: allocation/shortage/SOLD_OUT moved
 
 **Verification**: `pnpm supabase db reset`; source search for removed names; targeted typecheck/lint/build of the three apps; local walkthrough of Consumer and PWA flows.
 
-**Related**: BR-20 to BR-24, BR-49 · CF-05, CF-06, CF-07, CF-11, CF-12, CF-13, CF-16 · DN-25, DN-48, DN-49.
+**Related**: BR-20 to BR-24, BR-49 · CF-05, CF-06, CF-07, CF-11, CF-12, CF-13, CF-16 · DN-48, DN-49.
 
 **Gate**: the v3 paths of Phases 1 to 7 are verified; the contraction migration is ready (not applied to production); no legacy references remain; user approval.
 
@@ -403,16 +403,16 @@ Compared with the eight areas first proposed: allocation/shortage/SOLD_OUT moved
 | Phase | Decide before implementation |
 |---|---|
 | Pre-1 | delivery strategy (2.4), DN-34, IN-05 |
-| 2 | DN-25, IN-09 |
+| 2 | DN-25, IN-09 (decided) |
 | 3 | DN-40, IN-01, IN-03 |
 | 4 | DN-19, DN-20, DN-23, DN-24, DN-38, DN-39, DN-41, IN-10, IN-11 |
 | 5 | DN-12, DN-19 |
 | 6 | DN-02, DN-04, DN-14 |
 | 7 | DN-27, DN-42, DN-43, DN-44, DN-45, DN-46, DN-47 |
-| 8 | DN-48, DN-49 (DN-25 if still open) |
+| 8 | DN-48, DN-49 |
 | 9 | none |
 
-Every open decision in the business document appears above at least once. DN-19 is needed in two phases (Phase 4 for finalize failure, Phase 5 for cancellation progress), and DN-25 is decided in Phase 2 with Phase 8 as the fallback.
+Every open decision in the business document appears above at least once. DN-19 is needed in two phases (Phase 4 for finalize failure, Phase 5 for cancellation progress), and DN-25 was decided in Phase 2.
 
 ### 4.3 Scenarios and the phase that first verifies them
 
