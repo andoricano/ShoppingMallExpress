@@ -1,6 +1,6 @@
 # Mall v3 — Business Logic and Scenarios
 
-Draft 0.9 · 2026-09-27 · Source of Truth candidate
+Draft 0.10 · 2026-09-27 · Source of Truth candidate
 
 This document is analysis and policy capture only. It is not an implementation plan and it does not define phases.
 
@@ -182,7 +182,7 @@ shortage_quantity  = OrderItem.quantity - allocated_quantity
 
 - Allocated quantity is held for the Order it was allocated to, as `reserved_stock` (BR-43).
 - A later Order cannot take stock that is already allocated.
-- How the demand of the unallocated part is counted is open (DN-02).
+- The Admin additional allocation is explicit and never automatic (former DN-02, decided in Phase 6).
 
 #### BR-11 Overselling at Order intake is allowed
 
@@ -224,7 +224,7 @@ stock 10
 - While any OrderItem has unallocated quantity, the Order cannot proceed to a real fulfillment stage.
 - At minimum, full allocation must be complete before `PROCESSING` / `SHIPPED`.
 - Refund eligibility and the Refund/Restock rules rely on this gate (BR-37, BR-42).
-- The remaining transition details are open (DN-14).
+- The transition details are decided (former DN-14, Phase 6): Admin only, one step forward, `PROCESSING` needs full allocation and payment evidence.
 
 ### 3.5 Cancel
 
@@ -602,7 +602,7 @@ Format per area: Approved v3 policy · Current v2 implementation · Conflict · 
   - `[CODE]` The refund flow does not change the Order status (agrees with BR-41).
   - `[E2E]` Creation (stock 10 → 8), payment → `PAID`, history shows only the tester's own Orders.
 - **Conflict**: CF-01, CF-02, CF-03, CF-05, CF-09, CF-13.
-- **Decision Needed**: DN-14, DN-34.
+- **Decision Needed**: DN-34.
 - **Affected**: tables `orders`, `order_items`, `order_item_ware_allocations`; RPC `create_order_from_cart`, `admin_transition_order_status`, `get_order_history`; user-web `app/(admin)/orders/page.tsx`, `component/order/*`, `app/api/admin/orders*`; client-web history and Order detail; shared type `order.ts`.
 
 ### 4.6 Warehouse / Ware
@@ -626,7 +626,7 @@ Format per area: Approved v3 policy · Current v2 implementation · Conflict · 
   - `[CODE]` No v2 path reduces allocation rows after creation; restock adds to `current_stock` and does not delete allocation rows (compatible with BR-42), but nothing checks full allocation before `PROCESSING`.
   - `[E2E]` Stock 10 → 8 on Order creation; PENDING cancel restored stock (numbers not reported); refund approval left stock unchanged; restock increased stock 0 → 4.
 - **Conflict**: CF-01, CF-02, CF-09, CF-10, CF-18.
-- **Decision Needed**: DN-02.
+- **Decision Needed**: none open (former DN-02 decided in Phase 6).
 - **Implementation notes**: IN-09.
 - **Affected**: tables `wares`, `order_item_ware_allocations`; RPC `create_order_from_cart`, `cancel_order`, `admin_transition_order_status`, `admin_restock_refund_item`, `restock_order_item`, reserve/release/consume RPCs, `adjust_ware_stock`, `set_ware_stock`, `transfer_ware_stock`; user-web inventory and Order screens.
 
@@ -640,7 +640,7 @@ Format per area: Approved v3 policy · Current v2 implementation · Conflict · 
   - `[E2E]` Client cancel of a `PENDING` Order restored stock (actual numbers were not reported). In v2 that Order was unpaid.
 - **Judgment**: the boundary (`PENDING` only) and the whole-Order scope agree with BR-35 and BR-36 (`CONFIRMED`, `[CODE]`). The Admin path, idempotency, payment reversal, and the stock mechanics (BR-43) do not (`CONFLICT`).
 - **Conflict**: CF-08, CF-14, CF-18.
-- **Decision Needed**: DN-04.
+- **Decision Needed**: none open (former DN-04 decided in Phase 6: no automatic expiry).
 - **Affected**: RPC `cancel_order`; tables `orders`, `payments` and the new reversal table; client-web `hooks/history/useOrderAfterSales.ts`, `components/mypage/history/order/content/OrderStatusCard.tsx`; user-web Order inspector and Route Handlers (`app/api/admin/orders/[orderId]/route.ts`).
 
 ### 4.9 Refund
@@ -789,7 +789,7 @@ Stage 2  real Order created as PENDING, Payment linked to it            [APPROVE
    v
 PENDING  (seller has a real, already-paid Order to process)             [APPROVED BR-05, BR-24]
    |   Consumer sees an ordinary PENDING, also when there is shortage  [APPROVED BR-23]
-   |-- Admin adds allocation to a shortage Order (reserved_stock up)   [APPROVED BR-13, BR-14, BR-43]; workflow [DN-02]
+   |-- Admin adds allocation to a shortage Order (reserved_stock up)   [APPROVED BR-13, BR-14, BR-43]; explicit, never automatic [decided in Phase 6]
    |-- available stock (current - reserved) increases: no auto-allocation to
    |   shortage Orders; a newer Order may take it before Admin acts    [APPROVED BR-28]
    |-- Cancel (whole Order only) by Client or Admin                    [APPROVED BR-16, BR-17, BR-35, BR-36]
@@ -800,7 +800,7 @@ PENDING  (seller has a real, already-paid Order to process)             [APPROVE
    |       PG failure/delay never repeats the cancel or the release    [APPROVED BR-26]
    |       who cancelled and why: recorded internally in order_cancellations, first cancel wins   [decided in Phase 5]
    |       what the Consumer sees of the reason / actor ......... [DN-19]
-   |-- PENDING expiry ............................................ [DN-04]
+   |-- PENDING expiry: none in the initial v3 ................... [decided in Phase 6]
    v
 PROCESSING entry                                                        [APPROVED BR-24, BR-15, BR-42, BR-43]
    full allocation required before entering
@@ -808,7 +808,7 @@ PROCESSING entry                                                        [APPROVE
    no allocation decrease/release after entering
    no Cancel from here on                                            [APPROVED BR-35]
    PENDING -> PROCESSING -> SHIPPED -> DELIVERED
-   remaining transition details ............................... [DN-14]
+   transition details: Admin only, one step forward, UNCHANGED on repeat   [decided in Phase 6]
    seller must stop an Order after PROCESSING ................. [DN-46]
    v
 Refund track (Orders in PROCESSING / SHIPPED / DELIVERED; not PENDING / CANCELLED)   [APPROVED BR-37]
@@ -850,14 +850,14 @@ Payment reversals (any cause)                                           [APPROVE
 | T-05 | PG success but business validation fails or the price does not match | server | explicit SOLD_OUT / sale disabled / unpublished / price mismatch / other business validation failure | no Order | `payments.status` stays `SUCCEEDED`; a reversal (`FINALIZE_FAILURE`) goes `PENDING` → `SUCCEEDED` | none | `APPROVED` (BR-27, BR-29 to BR-34, BR-45); Client-facing behavior `DECISION NEEDED` (DN-19) |
 | T-06 | PG success but transient technical failure | server | the finalize transaction rolls back | none | none (the Payment stays `SUCCEEDED`) | none | decided in Phase 4 (former DN-39): the Client retries; the orphan rule is the last fallback |
 | T-07 | PG success but Stage 2 never invoked (orphan Payment) | server / system | a `SUCCEEDED`, Order-less Payment older than the window (default 30 minutes) | none | handled by a reversal (`ORPHAN_PAYMENT`) without an Order (BR-44, BR-30, BR-32) | none | direction `APPROVED` (BR-27, BR-44); detection decided in Phase 4 (former DN-38, window is a default to confirm) |
-| T-08 | `PENDING` shortage Order gains allocation | Admin | available stock (`current_stock - reserved_stock`) exists; Admin chooses the Order | none | none | `reserved_stock` increases; shortage decreases | `APPROVED` (BR-13, BR-14, BR-28, BR-43); workflow `DECISION NEEDED` (DN-02) |
+| T-08 | `PENDING` shortage Order gains allocation | Admin | available stock (`current_stock - reserved_stock`) exists; Admin chooses the Order | none | none | `reserved_stock` increases; shortage decreases | `APPROVED` (BR-13, BR-14, BR-28, BR-43); explicit Admin action on an Order or OrderItem, takes what is available (decided in Phase 6, former DN-02) |
 | T-09 | `PENDING` → `CANCELLED` | Client | status is `PENDING`; whole Order; a repeated request is not an error | `CANCELLED` | `payments.status` stays `SUCCEEDED`; a reversal (`ORDER_CANCEL`) `PENDING` → `SUCCEEDED` | allocation released once: `reserved_stock` decreases (only the allocated part; shortage has nothing to release); released stock is not auto-allocated (BR-28) | `APPROVED` (BR-16, BR-17, BR-26, BR-28, BR-29 to BR-36, BR-43) |
 | T-10 | `PENDING` → `CANCELLED` (reject) | Admin | status is `PENDING`; whole Order; a repeated or concurrent request is not an error | `CANCELLED` | same as T-09 | same as T-09 | `APPROVED` (BR-16, BR-17, BR-26, BR-28, BR-29 to BR-36, BR-43); actor and reason are recorded internally (former DN-12, decided in Phase 5); what the Consumer sees is DN-19 |
 | T-11 | `CANCELLED` → `CANCELLED` (repeat) | Client / Admin | any | unchanged | no second reversal (idempotency key, BR-32) | no second release | `APPROVED` (BR-17, BR-26, BR-32, BR-35) |
 | T-12 | PG reversal fails or is delayed after cancel | server | not defined | stays `CANCELLED`; the cancel and the release are not repeated | `payments.status` stays `SUCCEEDED`; the reversal stays `PENDING` or becomes `FAILED`; a `FAILED` reversal frees its amount (BR-34) | none | direction `APPROVED` (BR-26, BR-29, BR-31, BR-34); retry history is an implementation note (IN-01); reprocessing procedure `DECISION NEEDED` (DN-40) |
 | T-13 | `PENDING` → `PROCESSING` | Admin | every OrderItem fully allocated (BR-15) | `PROCESSING` | none | the reservation is consumed: `current_stock` and `reserved_stock` decrease by the allocated quantity; from here on no allocation decrease/release (BR-42, BR-43) | `APPROVED` (BR-24, BR-15, BR-42, BR-43); remaining details `DECISION NEEDED` (DN-14) |
 | T-14 | `PROCESSING` → `SHIPPED` | Admin | every OrderItem fully allocated (already guaranteed by T-13) | `SHIPPED` | none | none | `APPROVED` (BR-24, BR-15); remaining details `DECISION NEEDED` (DN-14) |
-| T-15 | `SHIPPED` → `DELIVERED` | Admin | not defined beyond BR-24 | `DELIVERED` | none | none | lifecycle `APPROVED` (BR-24); conditions `DECISION NEEDED` (DN-14) |
+| T-15 | `SHIPPED` → `DELIVERED` | Admin | not defined beyond BR-24 | `DELIVERED` | none | none | lifecycle `APPROVED` (BR-24); no condition beyond the previous status (decided in Phase 6, former DN-14) |
 | T-16 | Cancel in `PROCESSING` / `SHIPPED` / `DELIVERED` | Client / Admin | not allowed | unchanged | none | none | `APPROVED` (BR-35); a seller-side stop after `PROCESSING` is `DECISION NEEDED` (DN-46) |
 | T-17 | partial Cancel (some OrderItems or some quantity) | Client / Admin | not supported in the initial v3 | unchanged | none | none | `APPROVED` (BR-36) |
 | T-18 | Refund request | Client | Order is `PROCESSING` / `SHIPPED` / `DELIVERED`; not `PENDING` / `CANCELLED`; cumulative valid quantity per OrderItem within `OrderItem.quantity` | none (BR-41) | none | none | `APPROVED` (BR-37, BR-38, BR-41); window `DECISION NEEDED` (DN-42); status set `DECISION NEEDED` (DN-47) |
@@ -1054,7 +1054,7 @@ Expected Results contain only what is approved. Anything else points to a `DN-xx
 - **Consumer Visibility**: an ordinary `PENDING` Order; no numbers (BR-20, BR-23).
 - **Admin Visibility**: per-Order/OrderItem shortage before and after (BR-12).
 - **Current v2 behavior**: no shortage and no Admin allocation feature exist `[CODE]`; `adjust_ware_stock` changes Ware stock only.
-- **v3 Status**: `APPROVED` (principle); workflow `DECISION NEEDED` (DN-02).
+- **v3 Status**: `APPROVED`; the workflow is decided in Phase 6 (former DN-02).
 
 #### S-17 New stock arrives
 
@@ -1186,7 +1186,7 @@ Expected Results contain only what is approved. Anything else points to a `DN-xx
 - **Consumer Visibility**: both are ordinary `PENDING` Orders (BR-23).
 - **Admin Visibility**: shortage per Order (BR-12).
 - **Current v2 behavior**: not applicable; shortage Orders do not exist `[CODE]`.
-- **v3 Status**: `APPROVED` (BR-28); the Admin workflow for this case is `DECISION NEEDED` (DN-02).
+- **v3 Status**: `APPROVED` (BR-28); the Admin workflow is decided in Phase 6 (former DN-02).
 
 #### S-29 Reversal amount limit
 
@@ -1301,9 +1301,6 @@ Expected Results contain only what is approved. Anything else points to a `DN-xx
 
 | ID | Decision needed | Domains | Origin |
 |---|---|---|---|
-| DN-02 | Admin additional-allocation workflow: screen and RPC semantics (an additional allocation increases `reserved_stock`, BR-43), partial allocation, handling several short Orders, and an Admin allocation that finds less stock than expected because a newer Order took it (BR-28). | Stock, Admin, Order | CLAUDE.md |
-| DN-04 | `PENDING` expiration policy (since `PENDING` is an already-paid Order the seller must process, first decide whether any automatic expiry is needed). | Order, Stock | CLAUDE.md |
-| DN-14 | Remaining Order status transition details beyond the base lifecycle of BR-24 and the Cancel boundary of BR-35: who may perform each transition, its conditions, and the full fulfillment gate of BR-15. | Order | CLAUDE.md |
 | DN-19 | Client-facing behavior after a finalize failure or a cancellation, narrowed: the Cancel API and domain contract are fixed (Phase 5: the response carries only the outcome and the order id, no reversal detail); the Consumer wording and display are decided in Phase 8, including whether a cancel reason or actor is shown. Client-facing behavior: what the Client sees, whether and how much reversal/refund progress is shown to the Consumer, how failure reasons are categorized. (The reversals themselves are BR-26, BR-27, BR-30.) | Payment, Order, Consumer | analysis 2026-09-26 |
 | DN-20 | PG failure / abandonment: retry semantics and what the Client sees. (A server-side Payment record without an Order is allowed by BR-25.) | Payment, Checkout | analysis 2026-09-26 |
 | DN-23 | Cart ↔ Checkout relationship, narrowed: `finalize` does not touch the server Cart (decided with Phase 4). Still open: when and by whom the Cart is cleared after a purchase, selected-item orders, buy-now. Decided with the Consumer surfaces in Phase 8. | Cart, Checkout | analysis 2026-09-26 |
@@ -1325,6 +1322,9 @@ Resolved by approved rules and removed from the open registry.
 
 | Former ID | Decision | Resolved by | Remaining question |
 |---|---|---|---|
+| ~~DN-14~~ | Remaining Order status transition details: who performs each transition, its conditions, and the fulfillment gate. | User decision recorded with the Phase 6 implementation: only the trusted server (Admin) performs the transitions; one step forward at a time (`PENDING` to `PROCESSING` to `SHIPPED` to `DELIVERED`); a request for the status the Order already has returns `UNCHANGED`; skipping a step, going back, `PAID`, and `CANCELLED` are refused (Cancel is its own path, BR-35); `PROCESSING` needs full allocation (BR-15) and payment evidence (BR-24), and consumes the reservation once (BR-43); `SHIPPED` and `DELIVERED` need no condition beyond the previous status | none |
+| ~~DN-02~~ | Admin additional-allocation workflow. | User decision recorded with the Phase 6 implementation: the Phase 2 allocation functions are reused; the Admin runs the allocation explicitly for an Order or one OrderItem; it takes what is currently available (possibly nothing, not an error), never takes stock held by another Order, and is never automatic (BR-13, BR-28) | The Admin screen is a Phase 8 surface item |
+| ~~DN-04~~ | `PENDING` expiration policy. | User decision recorded with the Phase 6 implementation: the initial v3 has no automatic `PENDING` expiry; a `PENDING` Order is an already-paid Order the seller processes or cancels | none |
 | ~~DN-12~~ | Seller rejection reason/state model: reason, actor recording, and which actor is kept when Client and Admin cancel concurrently. | User decision recorded with the Phase 5 implementation: who cancelled (`CLIENT` or `ADMIN`, and the user id) and an optional reason (at most 500 characters) are recorded in the internal table `order_cancellations`, one row per Order; the first cancel is kept and a later or concurrent cancel never overwrites it (BR-16, BR-17). The table has no Consumer access | What the Consumer sees of the reason or actor is decided in Phase 8 with DN-19; a structured rejection-reason code list is not part of the initial v3 |
 | ~~DN-38~~ | Orphan Payment detection, time window, and the race with a late finalize. | User decision recorded with the Phase 4 implementation: a `SUCCEEDED`, Order-less `ORDER_PAYMENT` older than a window (default 30 minutes) with no closing reversal becomes an `ORPHAN_PAYMENT` reversal target; the reversal is created under the Payment row lock (`SKIP LOCKED`), so it cannot race a finalize, and a late finalize then returns `ALREADY_CLOSED` (BR-27, BR-44) | The 30 minutes is a default parameter, to be confirmed; the schedule that runs the job is a deployment matter (Phase 9); what the Client or Admin sees is DN-19 |
 | ~~DN-39~~ | Transient (technical) finalize failure: retry policy and where attempt state is kept. | User decision recorded with the Phase 4 implementation: the whole finalize transaction rolls back and the Payment stays `SUCCEEDED` with no Order and no reversal; the Client retries (it holds the items, BR-44); if it never does, the orphan rule (DN-38) is the final fallback; no attempt state is stored | none |
@@ -1544,3 +1544,4 @@ List only. This is not an implementation plan and does not order or schedule any
 - Draft 0.7 (2026-09-26): recorded the Phase 3 implementation decisions: resolved DN-40 (retry and `MANUAL_RECONCILIATION` creation only at the `service_role` boundary, actor in `requested_by`, Admin UX later) and noted the decided approaches on IN-01 (retry reuses the row, `attempt_count`, no attempt table) and IN-03 (Phase 1 trigger as final guard, Payment row lock in the creation RPC); no rule was added or changed.
 - Draft 0.8 (2026-09-26): recorded the Phase 4 implementation decisions: resolved DN-38 (orphan detection by scan job, default window 30 minutes), DN-39 (rollback, Client retry, orphan fallback), DN-41 (no zero-amount Orders in the initial v3); narrowed DN-23 (finalize does not touch the Cart); DN-19, DN-20, DN-24 stay open for Phase 8; noted the decided approaches on IN-10 and IN-11; added IN-12 (the known limitation that the server verifies a resubmitted checkout only by its total); no rule was added or changed.
 - Draft 0.9 (2026-09-27): recorded the Phase 5 implementation decisions: resolved DN-12 (actor and reason in `order_cancellations`, one row per Order, first cancel kept); narrowed DN-19 (the Cancel API/domain contract is fixed in Phase 5, Consumer display and wording go to Phase 8); no rule was added or changed.
+- Draft 0.10 (2026-09-27): recorded the Phase 6 implementation decisions: resolved DN-14 (Admin-only, one-step transitions, `UNCHANGED` on repeat, `PROCESSING` needs full allocation and payment evidence), DN-02 (explicit Admin additional allocation reusing the Phase 2 functions, never automatic), DN-04 (no automatic `PENDING` expiry); no rule was added or changed.

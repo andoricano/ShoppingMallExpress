@@ -269,7 +269,7 @@ Compared with the eight areas first proposed: allocation/shortage/SOLD_OUT moved
 
 **Preconditions**: Phases 2 and 4 (Phase 5 for the race check).
 
-**Decision Before Implementation**: DN-14 (remaining transition details), DN-02 (additional-allocation workflow), DN-04 (whether any `PENDING` expiry is needed).
+**Decision Before Implementation** (decided in Phase 6): DN-14 — only the trusted server (Admin) performs the transitions, one step forward at a time, a repeat of the current status is `UNCHANGED`, skipping a step / going back / `PAID` / `CANCELLED` are refused, and `PROCESSING` needs full allocation plus payment evidence; DN-02 — the Admin additional allocation reuses the Phase 2 functions, is explicit per Order or OrderItem, and is never automatic; DN-04 — no automatic `PENDING` expiry in the initial v3.
 
 **Completion criteria**
 - An Order with shortage cannot enter `PROCESSING`; a fully allocated Order can, and the reservation is consumed exactly once.
@@ -407,7 +407,7 @@ Compared with the eight areas first proposed: allocation/shortage/SOLD_OUT moved
 | 3 | DN-40, IN-01, IN-03 (decided) |
 | 4 | DN-38, DN-39, DN-41, IN-10, IN-11 (decided); DN-19, DN-20, DN-23, DN-24 carried to Phase 8 |
 | 5 | DN-12 (decided); DN-19 carried to Phase 8 |
-| 6 | DN-02, DN-04, DN-14 |
+| 6 | DN-02, DN-04, DN-14 (decided) |
 | 7 | DN-27, DN-42, DN-43, DN-44, DN-45, DN-46, DN-47 |
 | 8 | DN-48, DN-49, and from Phase 4: DN-19, DN-20, DN-23, DN-24 |
 | 9 | none |
