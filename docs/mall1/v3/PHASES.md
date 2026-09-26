@@ -334,7 +334,7 @@ Compared with the eight areas first proposed: allocation/shortage/SOLD_OUT moved
 
 **Preconditions**: Phases 1 to 7 are complete and their gates passed, so the v3 paths are verified; no client still uses a legacy path. Legacy contraction is performed only after that. Consumer/PWA alignment does not bring legacy removal forward: alignment is done on top of the v3 paths while the legacy objects still exist, and removal is the last step of this phase.
 
-**Decision Before Implementation**: DN-48 (how PWA Order creation works when a real Order exists only after PG success), DN-49 (fate of the existing Point top-up); carried over from Phase 4: DN-19, DN-20, DN-24 (what the Client sees for finalize failures, PG failure retry, in-progress Payments) and DN-23 (Cart clearing after a purchase, selected-item orders, buy-now).
+**Decision Before Implementation** (decided in Phase 8): DN-48 — PWA ordering is handed off to the client-web checkout, and the PWA keeps product list/detail, Cart, and Order lookup by order number; DN-49 — the Point top-up UI is hidden and the Point data and RPCs are kept initially; DN-20 — a failed Payment ends there and a retry is a new Payment; DN-24 — an in-progress Payment is not shown in the history and a reload resumes from the held checkout data; DN-19 — only a general cancellation / finalize-failure message, with no reversal state, amount, actor, or reason; DN-23 — the Client removes only the purchased Cart lines after the Order exists, and selected-item orders and buy-now are not supported initially. DN-46 (seller-initiated Refund) is carried to Phase 9.
 
 **Completion criteria**
 - No source reference to `PAID`, `create_order_from_cart`, or `restock_order_item` remains (search-verified); all three apps typecheck.
@@ -409,7 +409,7 @@ Compared with the eight areas first proposed: allocation/shortage/SOLD_OUT moved
 | 5 | DN-12 (decided); DN-19 carried to Phase 8 |
 | 6 | DN-02, DN-04, DN-14 (decided) |
 | 7 | DN-27, DN-43, DN-44, DN-45, DN-47 (decided); DN-42 carried to Phase 9; DN-46 carried to Phase 8/9 |
-| 8 | DN-48, DN-49, and from Phase 4: DN-19, DN-20, DN-23, DN-24 |
+| 8 | DN-48, DN-49, DN-19, DN-20, DN-23, DN-24 (decided); DN-46 carried to Phase 9 |
 | 9 | none |
 
 Every open decision in the business document appears above at least once. DN-19 is needed in two phases (Phase 4 for finalize failure, Phase 5 for cancellation progress), and DN-25 was decided in Phase 2.

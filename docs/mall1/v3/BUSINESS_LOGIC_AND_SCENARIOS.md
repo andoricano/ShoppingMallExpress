@@ -1,6 +1,6 @@
 # Mall v3 — Business Logic and Scenarios
 
-Draft 0.11 · 2026-09-27 · Source of Truth candidate
+Draft 0.12 · 2026-09-27 · Source of Truth candidate
 
 This document is analysis and policy capture only. It is not an implementation plan and it does not define phases.
 
@@ -537,7 +537,7 @@ REQUESTED
 - Authorize/capture is excluded: the initial v3 uses single-step approval, where PG success means the payment is approved and captured. A finalize failure is handled by a reversal (BR-27).
 - client-pwa keeps only the current core scope: product list/detail, Cart, and Order creation/lookup.
 - A separate PG payment UI in client-pwa and full feature parity with client-web are excluded from the initial v3.
-- How PWA Order creation relates to BR-05 (a real Order exists only after PG success) is open (DN-48). The fate of the existing v2 Point top-up feature is open (DN-49).
+- PWA ordering is handed off to the client-web checkout (former DN-48, decided in Phase 8). The existing v2 Point top-up UI is hidden and its data and RPCs are retained (former DN-49, decided in Phase 8).
 
 ---
 
@@ -565,7 +565,7 @@ Format per area: Approved v3 policy · Current v2 implementation · Conflict · 
   - `[CODE]` The Cart is locked and cleared inside `create_order_from_cart`.
   - `[E2E]` Add and view Cart items confirmed; merge, quantity update, and remove were not individually reported.
 - **Conflict**: CF-03 (Cart is consumed at Order creation), CF-06 (availability from numeric stock).
-- **Decision Needed**: DN-23, DN-34.
+- **Decision Needed**: DN-34.
 - **Affected**: RPC `add_cart_item`, `update_cart_item_quantity`, `remove_cart_item`, `get_cart`, `get_or_create_cart`; tables `carts`, `cart_items`; client-web `hooks/user/useCart.ts`, `app/cart/page.tsx`, `components/cart/*`; client-pwa Cart tab.
 
 ### 4.3 Checkout (Stage 1)
@@ -575,7 +575,7 @@ Format per area: Approved v3 policy · Current v2 implementation · Conflict · 
   - `[CODE]` No Checkout stage exists. The `/order` page collects the shipping address and calls `create_order_from_cart`, which creates the Order immediately (status `PENDING`). Payment is a later step.
   - `[E2E]` Order creation redirected to `/payment?orderId=...`.
 - **Conflict**: CF-03.
-- **Decision Needed**: DN-23, DN-24.
+- **Decision Needed**: none open (former DN-23, DN-24 decided in Phase 8).
 - **Affected**: client-web `app/order/page.tsx`, `components/order/*`, `hooks/order/useOrderSection.tsx`, `hooks/order/useClientOrder.ts`; client-pwa Cart-tab order form; table `client_addresses`.
 
 ### 4.4 PG / Payment
@@ -588,7 +588,7 @@ Format per area: Approved v3 policy · Current v2 implementation · Conflict · 
   - `[E2E]` Failure → payment `FAILED`, Order stays `PENDING`; retry on the same Order then succeeded → `SUCCEEDED`, Order `PAID`, `payment_reference` = payment id; PG Test Monitor records matched. The first attempt failed because client-web Production lacked `SUPABASE_SECRET_KEY` (configuration only).
   - `[E2E]` Not verified: payment success leaves Ware stock unchanged.
 - **Conflict**: CF-03, CF-04, CF-05, CF-13, CF-14, CF-15.
-- **Decision Needed**: DN-19, DN-20.
+- **Decision Needed**: none open (former DN-19, DN-20 decided in Phase 8).
 - **Implementation notes**: IN-01 to IN-06, IN-08, IN-10, IN-11.
 - **Affected**: RPC `create_payment`, `complete_payment`; table `payments` (and the new reversal table); client-web `app/api/payments/route.ts`, `app/api/payments/[paymentId]/confirm/route.ts`, `lib/payment/server.ts`, `lib/payment/pgTest.ts`, `hooks/payment/usePaymentApi.ts`, `app/payment/page.tsx`, `app/success/page.tsx`, `components/payment/*`.
 
@@ -686,7 +686,7 @@ Format per area: Approved v3 policy · Current v2 implementation · Conflict · 
   - `[E2E]` Failed top-up: no ledger row, no balance change. Successful top-up: one ledger row (`amount` 30000, `balance_after` 30000). UI refresh behavior was not reported.
   - `[LEGACY]` The Point PRD describes Points as a payment method (`USE`), accrual, and restoration on cancel/refund, with the Point deduction happening together with final Order creation in one transaction.
 - **Conflict**: none against an approved rule.
-- **Decision Needed**: DN-49 (fate of the existing top-up feature).
+- **Decision Needed**: none open (former DN-49 decided in Phase 8).
 - **Affected**: tables `point_balances`, `point_ledger`; RPC `complete_payment`; client-web `app/mypage/point/page.tsx`, `components/mypage/point/*`, `hooks/point/usePoint.ts`; shared type `point.ts`.
 
 ### 4.13 Wishlist
@@ -719,7 +719,7 @@ Format per area: Approved v3 policy · Current v2 implementation · Conflict · 
   - `[CODE]` Whole-Cart order at `/order` → `/payment?orderId=` → confirm; `/success`; Order history and detail with cancel and refund cards; wishlist; Points; addresses. `OrderStatusCard` shows "결제하기" for `PENDING` and has a description for `PAID`. `toOrderErrorMessage` (`hooks/order/useClientOrder.ts`) turns `Insufficient stock` into "…의 재고가 부족합니다…", without a quantity. Cancel and refund eligibility helpers mirror the v2 RPC rules (`hooks/history/useOrderAfterSales.ts`).
   - `[E2E]` Full flow exercised during v2 Phase 8.
 - **Conflict**: CF-01 (shortage error message), CF-03, CF-05, CF-13.
-- **Decision Needed**: DN-24.
+- **Decision Needed**: none open (former DN-24 decided in Phase 8).
 - **Affected**: see 4.2, 4.3, 4.4, 4.8, 4.9, 4.12, 4.13.
 
 ### 4.16 client-pwa
@@ -730,7 +730,7 @@ Format per area: Approved v3 policy · Current v2 implementation · Conflict · 
   - `[E2E]` Step 24: list, detail, Variant, Cart, Order (quantity 1) worked; the Order ended as `PENDING` with `payment_reference` null; the UI showed the UUID as the order number. An earlier Production env pointing to a non-existent Supabase project (configuration issue) had blocked the product list.
   - `CLAUDE.md`: do not broadly rewrite client-pwa before the business logic and the final PWA scope are approved.
 - **Conflict**: CF-12, CF-03, CF-01.
-- **Decision Needed**: DN-23, DN-48.
+- **Decision Needed**: none open (former DN-23, DN-48 decided in Phase 8).
 - **Affected**: client-pwa `app/page.tsx`, `lib/api.ts`, `lib/auth.ts`, `app/auth/callback/route.ts`.
 
 ### 4.17 Idempotency / Concurrency
@@ -758,8 +758,8 @@ Stage 1  Client-held checkout state (not a database Order)             [APPROVED
    |   PG interaction; may stay open for a long time
    |   the server records only the Payment of the PG attempt           [APPROVED BR-25, BR-44]
    |       payments.status: PENDING / SUCCEEDED / FAILED               [APPROVED BR-29]
-   |   whether an in-progress Payment is shown to the Client ..... [DN-24]
-   |   PG failure: retry rules .................................. [DN-20]
+   |   an in-progress Payment is not shown in the Consumer history; a reload resumes from the held data   [decided in Phase 8]
+   |   PG failure: the Payment ends there; a retry is a new Payment   [decided in Phase 8]
    v
 PG completion reaches the server                                        [APPROVED BR-05, BR-45]
    |   primary: server confirm (server verifies the result with the PG)
@@ -777,7 +777,7 @@ Server revalidation (Client resubmits items/address)                    [APPROVE
    |       payment reversal (FINALIZE_FAILURE) PENDING -> SUCCEEDED
    |       payments.status stays SUCCEEDED                             [APPROVED BR-29, BR-30]
    |       reversal amount within the payment amount                   [APPROVED BR-34]
-   |       Client-facing behavior ............................... [DN-19]
+   |       Client-facing behavior: a general message only   [decided in Phase 8]
    |--- transient technical failure: rollback, Client retries, orphan rule as the last fallback   [decided in Phase 4]
    v
 Stage 2  real Order created as PENDING, Payment linked to it            [APPROVED BR-05, BR-25]
@@ -799,7 +799,7 @@ PENDING  (seller has a real, already-paid Order to process)             [APPROVE
    |       payments.status stays SUCCEEDED                             [APPROVED BR-29]
    |       PG failure/delay never repeats the cancel or the release    [APPROVED BR-26]
    |       who cancelled and why: recorded internally in order_cancellations, first cancel wins   [decided in Phase 5]
-   |       what the Consumer sees of the reason / actor ......... [DN-19]
+   |       the Consumer sees no reason / actor / reversal detail   [decided in Phase 8]
    |-- PENDING expiry: none in the initial v3 ................... [decided in Phase 6]
    v
 PROCESSING entry                                                        [APPROVED BR-24, BR-15, BR-42, BR-43]
@@ -930,10 +930,10 @@ Expected Results contain only what is approved. Anything else points to a `DN-xx
 - **Flow**: time passes; the Client later completes or abandons.
 - **Expected Result**: no `orders` row exists meanwhile and Admin sees no Order (BR-01); the server stores only the Payment (BR-44); revalidation applies at Stage 2 (BR-03).
 - **Stock/Allocation Effect**: none while in Stage 1 (nothing is held).
-- **Consumer Visibility**: whether an in-progress Payment is shown to the Client is open (DN-24).
+- **Consumer Visibility**: an in-progress Payment is not shown in the history; a reload resumes from the checkout data the Client holds (former DN-24, decided in Phase 8).
 - **Admin Visibility**: none.
 - **Current v2 behavior**: no Stage 1. `[CODE]` an unpaid `PENDING` Order holds deducted stock indefinitely; no expiry exists (DN-04).
-- **v3 Status**: `APPROVED` (BR-01, BR-44); visibility `DECISION NEEDED` (DN-24).
+- **v3 Status**: `APPROVED` (BR-01, BR-44); visibility decided in Phase 8 (former DN-24).
 
 #### S-06 Price changes before Stage 2
 
@@ -941,7 +941,7 @@ Expected Results contain only what is approved. Anything else points to a `DN-xx
 - **Flow**: PG completes; the server recomputes the total at finalize.
 - **Expected Result**: the recomputed total does not equal the Payment amount, so the finalize is rejected and the full payment is reversed (cause `FINALIZE_FAILURE`); no Order is created (BR-03, BR-27, BR-45). A Client-sent price is never trusted (BR-44).
 - **Stock/Allocation Effect**: none.
-- **Consumer Visibility**: what the Client sees is open (DN-19).
+- **Consumer Visibility**: only a general message; no reversal detail (former DN-19, decided in Phase 8).
 - **Admin Visibility**: the Payment with its reversal record (BR-30).
 - **Current v2 behavior**: `[CODE]` the price is read from the database at Order creation and the payment amount equals the Order total, so P1 vs P2 cannot arise after payment.
 - **v3 Status**: `APPROVED` (BR-27, BR-45); `CONFLICT` CF-14.
@@ -952,21 +952,21 @@ Expected Results contain only what is approved. Anything else points to a `DN-xx
 - **Flow**: Stage 2 revalidation runs.
 - **Expected Result**: explicit SOLD_OUT blocks Order creation (BR-03, BR-04, BR-46); no Order exists; a payment reversal (cause `FINALIZE_FAILURE`) is created `PENDING` and becomes `SUCCEEDED` after the PG reversal, and `payments.status` stays `SUCCEEDED` (BR-27, BR-29, BR-30).
 - **Stock/Allocation Effect**: none.
-- **Consumer Visibility**: what the Client sees is open (DN-19).
+- **Consumer Visibility**: only a general message; no reversal detail (former DN-19, decided in Phase 8).
 - **Admin Visibility**: the Payment with its reversal record (BR-30).
 - **Current v2 behavior**: not applicable. `[CODE]` `complete_payment` marks a payment `FAILED` ("Order is no longer payable") if the Order is no longer `PENDING`, with no reversal.
-- **v3 Status**: `APPROVED` (BR-27); `CONFLICT` CF-14, CF-15; Client-facing behavior `DECISION NEEDED` (DN-19).
+- **v3 Status**: `APPROVED` (BR-27); `CONFLICT` CF-14, CF-15; Client-facing behavior decided in Phase 8 (former DN-19).
 
 #### S-08 PG failure
 
 - **Preconditions**: Stage 1 in progress.
 - **Flow**: the PG reports failure.
-- **Expected Result**: no Order is created (BR-05); the failed attempt is recorded server-side as a Payment record without an Order, `payments.status` `FAILED` (BR-25, BR-29). Retry rules and what the Client sees are open (DN-20).
+- **Expected Result**: no Order is created (BR-05); the failed attempt is recorded server-side as a Payment record without an Order, `payments.status` `FAILED` (BR-25, BR-29). The Payment ends there and a retry is a new Payment (former DN-20, decided in Phase 8).
 - **Stock/Allocation Effect**: none (no Order exists at Stage 1).
-- **Consumer Visibility**: not defined (DN-20).
+- **Consumer Visibility**: a general failure message; the retry starts a new Payment (former DN-20, Phase 8).
 - **Admin Visibility**: PG failures are not Orders (BR-01).
 - **Current v2 behavior**: `[E2E]` payment `FAILED` with a failure reason, Order stays `PENDING`, PG Test Monitor shows `isSuccess=false`; retry on the same Order works; UI text says the Order stays awaiting payment.
-- **v3 Status**: recording `APPROVED` (BR-25, BR-29); retry `DECISION NEEDED` (DN-20); `CONFLICT` CF-03, CF-04.
+- **v3 Status**: recording `APPROVED` (BR-25, BR-29); retry decided in Phase 8 (former DN-20); `CONFLICT` CF-03, CF-04.
 
 #### S-09 PG success but finalize fails (business validation)
 
@@ -974,10 +974,10 @@ Expected Results contain only what is approved. Anything else points to a `DN-xx
 - **Flow**: finalization is attempted and rejected.
 - **Expected Result**: a payment reversal (cause `FINALIZE_FAILURE`) is created and goes `PENDING` → `SUCCEEDED`; `payments.status` stays `SUCCEEDED`. The state "PG success + no Order + no follow-up" never persists (BR-27). Numeric shortage is not a valid failure reason (BR-04).
 - **Stock/Allocation Effect**: none (no Order was created).
-- **Consumer Visibility**: not defined (DN-19).
+- **Consumer Visibility**: only a general message; no reversal detail (former DN-19, decided in Phase 8).
 - **Admin Visibility**: the Payment with its reversal record (BR-30).
 - **Current v2 behavior**: not applicable; the Order exists before payment `[CODE]`.
-- **v3 Status**: `APPROVED` (BR-27, BR-29 to BR-34, BR-45); `CONFLICT` CF-14, CF-15; Client-facing behavior `DECISION NEEDED` (DN-19).
+- **v3 Status**: `APPROVED` (BR-27, BR-29 to BR-34, BR-45); `CONFLICT` CF-14, CF-15; Client-facing behavior decided in Phase 8 (former DN-19).
 
 #### S-10 Duplicate finalize request
 
@@ -1007,7 +1007,7 @@ Expected Results contain only what is approved. Anything else points to a `DN-xx
 - **Flow**: the Client cancels.
 - **Expected Result**: the whole Order becomes `CANCELLED`; its allocation is released once; a payment reversal (cause `ORDER_CANCEL`) is created `PENDING` and becomes `SUCCEEDED` after the PG cancellation, while `payments.status` stays `SUCCEEDED` (BR-16, BR-26, BR-29, BR-30, BR-35, BR-36). A repeated cancel is not an error and creates no second reversal (BR-17, BR-32).
 - **Stock/Allocation Effect**: `reserved_stock` decreases by the allocated quantity; `current_stock` is unchanged; the freed stock becomes available, is not auto-allocated to any shortage Order, and a newer Order may take it (BR-28, BR-43).
-- **Consumer Visibility**: status `CANCELLED`; whether and how much refund/reversal progress is shown is open (DN-19, Phase 8); no stock numbers (BR-20).
+- **Consumer Visibility**: status `CANCELLED`; no refund/reversal progress, reason, or actor is shown (former DN-19, decided in Phase 8); no stock numbers (BR-20).
 - **Admin Visibility**: the cancelled Order and its reversal; the actor and reason are recorded in `order_cancellations`, one row per Order, the first cancel kept (former DN-12).
 - **Current v2 behavior**: `[CODE]` `cancel_order` (owner, `PENDING` only) restores the allocation total to `current_stock` and does not touch `payments`. `[E2E]` a `PENDING` Order was cancelled and stock was restored (numbers not reported). In v2 a `PENDING` Order is unpaid.
 - **v3 Status**: `APPROVED` (BR-16, BR-17, BR-26, BR-28, BR-29 to BR-36, BR-43); `CONFLICT` CF-08, CF-14, CF-18.
@@ -1018,7 +1018,7 @@ Expected Results contain only what is approved. Anything else points to a `DN-xx
 - **Flow**: Admin cancels/rejects it.
 - **Expected Result**: the whole Order becomes `CANCELLED`; allocation released once; a payment reversal (`ORDER_CANCEL`) goes `PENDING` → `SUCCEEDED`; `payments.status` stays `SUCCEEDED` (BR-16, BR-26, BR-29, BR-30, BR-35); a repeated request is not an error (BR-17). Reason/state model open (DN-12).
 - **Stock/Allocation Effect**: same as S-12 (BR-28, BR-43).
-- **Consumer Visibility**: status `CANCELLED`; whether a reason is shown is open (DN-19, Phase 8).
+- **Consumer Visibility**: status `CANCELLED`; no reason or actor is shown (former DN-19, decided in Phase 8).
 - **Admin Visibility**: the action and its actor, recorded in `order_cancellations` (former DN-12).
 - **Current v2 behavior**: `[CODE]` no Admin cancel RPC, Route Handler, or UI.
 - **v3 Status**: `APPROVED` (BR-16, BR-26, BR-35); `CONFLICT` CF-08, CF-14; the recording of actor and reason is decided (former DN-12).
@@ -1137,23 +1137,23 @@ Expected Results contain only what is approved. Anything else points to a `DN-xx
 
 - **Preconditions**: a Client with a Point balance.
 - **Flow**: the Client tries to pay an Order with Points.
-- **Expected Result**: not supported in the initial v3 (BR-49). The fate of the existing top-up feature is open (DN-49).
+- **Expected Result**: not supported in the initial v3 (BR-49). The existing top-up UI is hidden and its data and RPCs are retained (former DN-49, decided in Phase 8).
 - **Stock/Allocation Effect**: none.
-- **Consumer Visibility**: Point balance and history remain a v2 feature until DN-49 is decided.
+- **Consumer Visibility**: The Point UI is hidden; the Point data and RPCs are retained (former DN-49, decided in Phase 8).
 - **Admin Visibility**: not defined.
 - **Current v2 behavior**: `[E2E]` failed top-up leaves no ledger row; successful top-up creates one `TOPUP` ledger row and increases the balance once. `[CODE]` no spending. `[LEGACY]` Points as a payment method, accrual, restoration.
-- **v3 Status**: `APPROVED` (scope exclusion, BR-49); `DECISION NEEDED` (DN-49).
+- **v3 Status**: `APPROVED` (scope exclusion, BR-49); decided in Phase 8 (former DN-49).
 
 #### S-25 PWA order
 
 - **Preconditions**: a Client in client-pwa with items in the Cart.
 - **Flow**: create an Order from the Cart.
-- **Expected Result**: the PWA keeps its core scope (product list/detail, Cart, Order creation/lookup) and has no separate PG payment UI (BR-49). How Order creation works there, given that a real Order exists only after PG success (BR-05), is open (DN-48). The order number shown to the Consumer is `orders.order_number`, never the UUID (BR-22).
+- **Expected Result**: the PWA keeps its core scope (product list/detail, Cart, Order creation/lookup) and has no separate PG payment UI (BR-49). Ordering there is handed off to the client-web checkout, because a real Order exists only after PG success (BR-05) and the PWA has no PG UI (former DN-48, decided in Phase 8). The order number shown to the Consumer is `orders.order_number`, never the UUID (BR-22).
 - **Stock/Allocation Effect**: same as any Order once created.
 - **Consumer Visibility**: order number and status; no internal information (BR-20).
 - **Admin Visibility**: the Order like any other.
 - **Current v2 behavior**: `[E2E]` quantity 1 Order created as `PENDING`, `payment_reference` null, no payment step in the PWA, the UI displayed the UUID as the order number. The PWA-created Order can only be paid in client-web `[CODE]`.
-- **v3 Status**: `APPROVED` (BR-22, BR-49); `DECISION NEEDED` (DN-48); `CONFLICT` CF-12, CF-03.
+- **v3 Status**: `APPROVED` (BR-22, BR-49); the hand-off is decided in Phase 8 (former DN-48); `CONFLICT` CF-12, CF-03.
 
 #### S-26 Orphan Payment (PG success, Stage 2 never invoked)
 
@@ -1161,7 +1161,7 @@ Expected Results contain only what is approved. Anything else points to a `DN-xx
 - **Flow**: no finalize request reaches the server; the server holds no checkout data (BR-44).
 - **Expected Result**: the state "PG success + no Order + no follow-up" must not persist (BR-27). The payment is handled by a reversal (cause `ORPHAN_PAYMENT`) without an Order, not by a server-side finalize (BR-44, BR-30, BR-32). It is detected by a scan job after a window (default 30 minutes, decided in Phase 4 as former DN-38).
 - **Stock/Allocation Effect**: none (no Order exists).
-- **Consumer Visibility**: not defined (DN-19).
+- **Consumer Visibility**: only a general message; no reversal detail (former DN-19, decided in Phase 8).
 - **Admin Visibility**: not defined.
 - **Current v2 behavior**: not applicable; the Order exists before payment `[CODE]`. Not exercised in `[E2E]`.
 - **v3 Status**: direction `APPROVED` (BR-27, BR-44, BR-30, BR-32); detection decided in Phase 4 (former DN-38); job design is an implementation note (IN-11).
@@ -1172,7 +1172,7 @@ Expected Results contain only what is approved. Anything else points to a `DN-xx
 - **Flow**: the Order is `CANCELLED`; the `ORDER_CANCEL` reversal is `PENDING` (or becomes `FAILED`); the PG call does not succeed yet.
 - **Expected Result**: the Order stays `CANCELLED`; the Order cancellation and the allocation release are not repeated; a repeated cancel request stays idempotent (BR-17, BR-26). `payments.status` stays `SUCCEEDED` (BR-29, BR-32). A `FAILED` reversal frees its amount for a new reversal request (BR-34). How retries are recorded is an implementation note (IN-01); the Admin reprocessing procedure is open (DN-40).
 - **Stock/Allocation Effect**: none beyond the single release already done.
-- **Consumer Visibility**: whether refund progress is shown is open (DN-19).
+- **Consumer Visibility**: only the Refund status; no reversal progress (former DN-19, decided in Phase 8).
 - **Admin Visibility**: the reversal and its failure; retry only at the trusted server boundary, actor recorded (former DN-40); the Admin screen is open.
 - **Current v2 behavior**: not applicable; no payment reversal exists `[CODE]`; the PG Test service has no cancel API.
 - **v3 Status**: direction `APPROVED` (BR-26, BR-29, BR-31, BR-34); `CONFLICT` CF-14; the reprocessing boundary is decided (former DN-40).
@@ -1194,7 +1194,7 @@ Expected Results contain only what is approved. Anything else points to a `DN-xx
 - **Flow**: a new reversal of 30,000 is requested; then the 50,000 reversal fails; then a new reversal of 30,000 is requested again.
 - **Expected Result**: the first new request is not allowed, because 30,000 + 50,000 + 30,000 exceeds 100,000; at most 20,000 could be requested. After the 50,000 reversal becomes `FAILED`, it no longer occupies amount, so the second request (30,000 + 30,000) is allowed (BR-34).
 - **Stock/Allocation Effect**: none.
-- **Consumer Visibility**: not defined (DN-19).
+- **Consumer Visibility**: only a general message; no reversal detail (former DN-19, decided in Phase 8).
 - **Admin Visibility**: the reversals of the Payment and their statuses (BR-30).
 - **Current v2 behavior**: not applicable; no reversal exists `[CODE]`.
 - **v3 Status**: `APPROVED` (BR-34); enforcement is an implementation note (IN-03); `CONFLICT` CF-14.
@@ -1249,7 +1249,7 @@ Expected Results contain only what is approved. Anything else points to a `DN-xx
 - **Flow**: Admin approves; the transaction commits with the linked reversal `PENDING`; the PG reversal then fails.
 - **Expected Result**: the Refund stays `APPROVED` and is never moved back to `REQUESTED`; the reversal becomes `FAILED` or a retry target and is reprocessed in the reversal domain; `payments.status` stays `SUCCEEDED` (BR-39, BR-29, BR-32). If the reversal row could not be created inside the transaction, the Refund would not have been approved at all (BR-39). A `FAILED` reversal frees its amount (BR-34).
 - **Stock/Allocation Effect**: none (BR-40).
-- **Consumer Visibility**: whether reversal progress is shown is open (DN-19).
+- **Consumer Visibility**: no reversal progress is shown (former DN-19, decided in Phase 8).
 - **Admin Visibility**: the approved Refund with a failed reversal; reprocessing is a trusted-server operation with the actor recorded (former DN-40); the Admin screen is open.
 - **Current v2 behavior**: `[CODE]` approval creates no reversal.
 - **v3 Status**: `APPROVED` (BR-39); `CONFLICT` CF-14; retry recording is an implementation note (IN-01, IN-08).
@@ -1301,16 +1301,10 @@ Expected Results contain only what is approved. Anything else points to a `DN-xx
 
 | ID | Decision needed | Domains | Origin |
 |---|---|---|---|
-| DN-19 | Client-facing behavior after a finalize failure or a cancellation, narrowed: the Cancel API and domain contract are fixed (Phase 5: the response carries only the outcome and the order id, no reversal detail); the Consumer wording and display are decided in Phase 8, including whether a cancel reason or actor is shown. Client-facing behavior: what the Client sees, whether and how much reversal/refund progress is shown to the Consumer, how failure reasons are categorized. (The reversals themselves are BR-26, BR-27, BR-30.) | Payment, Order, Consumer | analysis 2026-09-26 |
-| DN-20 | PG failure / abandonment: retry semantics and what the Client sees. (A server-side Payment record without an Order is allowed by BR-25.) | Payment, Checkout | analysis 2026-09-26 |
-| DN-23 | Cart ↔ Checkout relationship, narrowed: `finalize` does not touch the server Cart (decided with Phase 4). Still open: when and by whom the Cart is cleared after a purchase, selected-item orders, buy-now. Decided with the Consumer surfaces in Phase 8. | Cart, Checkout | analysis 2026-09-26 |
-| DN-24 | Whether an in-progress Payment (Stage 1) is shown to the Client in History or as an indicator. The server holds no other Stage 1 data (BR-44). | Checkout, client-web | analysis 2026-09-26 |
 | DN-27 | Refund amount derivation for the linked reversal when discounts or shipping fees exist, narrowed: the current rule (decided in Phase 7) is the immutable OrderItem snapshot unit price times the refunded quantity; it is to be reviewed when discount or shipping is introduced (today both are 0, so the item total equals the payment amount). The reversal creation itself, its linkage, and the absence of stock and Order-status effects are approved (BR-39 to BR-41). | Refund, Payment | analysis 2026-09-26 |
 | DN-34 | Confirmation that v2 rules untouched by v3 decisions carry over (OrderItem snapshot immutability, Cart identity Product + Variant, owner RLS, Wishlist ProductPost basis, History via Order, the cap "cumulative restock per refund item is at most the refunded quantity"). | all | analysis 2026-09-26 |
 | DN-42 | Refund window after `DELIVERED` (v2 has no time limit; none is enforced in the initial v3 implementation; carried to Phase 9). | Refund | analysis 2026-09-26 |
 | DN-46 | (Carried to Phase 8/9.) Seller-initiated Refund / seller-failure workflow: the Admin path when an Order must be stopped after `PROCESSING`. Re-allowing Cancel after `PROCESSING` breaks the Cancel/Refund boundary (BR-35) and is not a preferred candidate; candidates are an Admin-created/approved Refund or a separate seller-failure workflow. | Refund, Cancel, Admin | analysis 2026-09-26 |
-| DN-48 | How PWA Order creation works when a real Order exists only after PG success (BR-05) and the PWA has no separate PG payment UI (BR-49). Examples of what must be decided: a hand-off to the client-web checkout, or PWA ordering not being offered. | client-pwa, Order, Payment | analysis 2026-09-26 |
-| DN-49 | Fate of the existing Point top-up feature (v2 `POINT_TOPUP`) now that paying with Points is excluded from the initial v3. | Point, client-web | analysis 2026-09-26 |
 
 ### 7.2 Resolved decisions
 
@@ -1318,6 +1312,12 @@ Resolved by approved rules and removed from the open registry.
 
 | Former ID | Decision | Resolved by | Remaining question |
 |---|---|---|---|
+| ~~DN-20~~ | PG failure / abandonment: retry semantics and what the Client sees. | User decision recorded with the Phase 8 implementation: a PG failure ends that Payment (`FAILED`, terminal); a retry creates a new Payment from the checkout data the Client holds; there is no automatic retry | none |
+| ~~DN-24~~ | Whether an in-progress Payment is shown to the Client. | User decision recorded with the Phase 8 implementation: it is not shown in the Consumer history or as an indicator; after a reload the Client resumes from the checkout data it holds | A Payment whose held data was lost is handled by the orphan rule (DN-38) |
+| ~~DN-19~~ | Client-facing behavior after a finalize failure or a cancellation. | User decision recorded with the Phase 8 implementation: the Consumer sees only a general cancellation / finalize-failure message; the reversal state, amount, the cancelling actor, and the cancel reason are never shown (BR-20) | The exact wording is a display matter |
+| ~~DN-23~~ | Cart ↔ Checkout: clearing, selected-item orders, buy-now. | User decision recorded with the Phase 8 implementation: `finalize` does not touch the Cart; when the Order exists the Client removes only the purchased Cart lines; ordering selected items and buy-now are not supported in the initial v3 | none |
+| ~~DN-48~~ | How PWA Order creation works when a real Order exists only after PG success. | User decision recorded with the Phase 8 implementation: ordering in the PWA is handed off to the client-web checkout; the PWA keeps product list/detail, Cart, and Order lookup by order number (BR-22, BR-49) | none |
+| ~~DN-49~~ | Fate of the existing Point top-up feature. | User decision recorded with the Phase 8 implementation: the Point top-up UI is hidden; the existing Point data and RPCs are kept initially (BR-49) | When the Point data and RPCs are removed is decided after release |
 | ~~DN-47~~ | Refund request status set and the meaning of `COMPLETED` / `CANCELLED`. | User decision recorded with the Phase 7 implementation: the status set is `REQUESTED` / `APPROVED` / `REJECTED`; `COMPLETED` and `CANCELLED` are not used in the initial v3; a valid request for BR-38 is `REQUESTED` or `APPROVED` (BR-38, BR-39) | Removing the unused values from the shared type is part of the Phase 8 contraction |
 | ~~DN-43~~ | Whether Admin may approve only part of the requested Refund quantity. | User decision recorded with the Phase 7 implementation: partial approval is not supported; a request is approved or rejected as a whole | none |
 | ~~DN-44~~ | Whether the Client may withdraw a Refund request. | User decision recorded with the Phase 7 implementation: withdrawal is not supported in the initial v3, so there is no effect on the cumulative quantity of BR-38 | none |
@@ -1546,3 +1546,4 @@ List only. This is not an implementation plan and does not order or schedule any
 - Draft 0.9 (2026-09-27): recorded the Phase 5 implementation decisions: resolved DN-12 (actor and reason in `order_cancellations`, one row per Order, first cancel kept); narrowed DN-19 (the Cancel API/domain contract is fixed in Phase 5, Consumer display and wording go to Phase 8); no rule was added or changed.
 - Draft 0.10 (2026-09-27): recorded the Phase 6 implementation decisions: resolved DN-14 (Admin-only, one-step transitions, `UNCHANGED` on repeat, `PROCESSING` needs full allocation and payment evidence), DN-02 (explicit Admin additional allocation reusing the Phase 2 functions, never automatic), DN-04 (no automatic `PENDING` expiry); no rule was added or changed.
 - Draft 0.11 (2026-09-27): recorded the Phase 7 implementation decisions: resolved DN-47 (status set `REQUESTED` / `APPROVED` / `REJECTED`, valid = `REQUESTED` or `APPROVED`), DN-43 (no partial approval), DN-44 (no withdrawal), DN-45 (`ALREADY_*` on the same decision, refusal on the opposite, no duplicate reversal); narrowed DN-27 (snapshot unit price times quantity, review when discount/shipping exists); DN-42 carried to Phase 9 and DN-46 carried to Phase 8/9; no rule was added or changed.
+- Draft 0.12 (2026-09-27): recorded the Phase 8 implementation decisions: resolved DN-20 (a failed Payment ends there, a retry is a new Payment), DN-24 (an in-progress Payment is not shown, a reload resumes from the held data), DN-19 (only a general message, no reversal detail / actor / reason), DN-23 (finalize does not touch the Cart, the Client removes the purchased lines, no selected-item order or buy-now), DN-48 (PWA ordering handed off to client-web), DN-49 (Point UI hidden, data and RPCs kept); DN-46 carried to Phase 9; no rule was added or changed.
