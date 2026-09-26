@@ -38,8 +38,8 @@
 - [ ] `PG_TEST_API_KEY`
 
 ### client-pwa
-- [ ] `NEXT_PUBLIC_SUPABASE_URL`
-- [ ] `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- [x] `NEXT_PUBLIC_SUPABASE_URL` (was pointing to a non-existent project; corrected to the production project and redeployed during step 24)
+- [x] `NEXT_PUBLIC_SUPABASE_ANON_KEY` (corrected together with the URL)
 
 `API_URL` is no longer required.
 
@@ -374,20 +374,26 @@ Result: `PASS` (on the listed screens)
 ## 24. client-pwa Smoke Test
 URL: `https://shopping-mall-express-client-pwa-teal.vercel.app/`
 
-- [ ] Google login.
-- [ ] ProductPost list.
-- [ ] Product detail.
-- [ ] Variant selection.
-- [ ] Add/remove Cart item.
-- [ ] Create Order.
+- [ ] Google login. (not individually reported; an authenticated session was necessarily used, since `create_order_from_cart` runs with the browser session)
+- [x] ProductPost list.
+- [x] Product detail.
+- [x] Variant selection.
+- [x] Add/remove Cart item. (reported as "Cart 정상"; add and remove not individually itemized)
+- [x] Create Order. (quantity 1)
 
 Expected:
-- [ ] Core Consumer flow works.
-- [ ] PWA Order ends as `PENDING`.
-- [ ] PWA has no Payment.
-- [ ] Ware/Warehouse internals are not exposed.
+- [x] Core Consumer flow works.
+- [x] PWA Order ends as `PENDING`.
+- [x] PWA has no Payment. (no payment step in the UI; code has no payment path and does not use `PG_TEST_*`; a `payments`-row count SQL for this Order was not run)
+- [ ] Ware/Warehouse internals are not exposed. (not reported for client-pwa)
 
-Result: `PASS / FAIL`
+PWA Order: id `9b0eb35d-37c4-42d4-b173-c5153b076d7f`, `order_number` `ORD-20260926105646-D3B1D14E`, `status` `PENDING`, `payment_reference` null, `total_amount` 10000.
+
+Configuration issue found and fixed (no code change): the first attempt was BLOCKED — the home product list never loaded. The client-pwa Vercel Production env pointed to a Supabase project that no longer exists (`NEXT_PUBLIC_SUPABASE_URL` host was NXDOMAIN; the anon key belonged to that project as well). After the env was corrected to the production project (same as client-web) and redeployed, the list loaded and the flow worked. client-pwa uses only `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` (browser RPC calls with the authenticated session; no `SUPABASE_SECRET_KEY`, `PG_TEST_ENDPOINT_URL` or `PG_TEST_API_KEY`).
+
+UX follow-up (non-blocker, not fixed): after creating an Order, the PWA shows the UUID `orders.id` as the "주문 번호" (`주문이 생성되었습니다. 주문 번호: <uuid>`), whereas the real order number is `order_number` (`ORD-...`).
+
+Result: `PASS` (Google login and PWA Ware-non-exposure sub-items not individually reported)
 
 # Final Phase 8 Result
 

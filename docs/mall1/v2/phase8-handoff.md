@@ -28,7 +28,7 @@ Phase 8 is **NOT COMPLETE**. `PHASES.md` stays `NOT STARTED` until the whole E2E
 | 21 Stock verification | PASS as a sequence (`0` → `0` → `4`; changes only at restock, by exactly the approved quantity); the `S - 1` formula does not apply because of extra Orders |
 | 22 Wishlist | PASS (toggle UI: add / list / remove confirmed; no separate "duplicate add" test — the UI is a toggle, DB unique constraint is reference only; re-add not individually reported) |
 | 23 Consumer Ware non-exposure | PASS on the inspected screens (Product/Post detail, Cart, Order/History detail, Refund, Wishlist, Point): no stock/Ware/Warehouse/allocation/restock internals, no direct reads of the internal tables; only availability level. Home/product list, Variant selection, `/order`, `/payment` not listed as inspected |
-| 24 | Not started |
+| 24 client-pwa smoke test | PASS: list / detail / Variant / Cart / Order (quantity 1) OK; Order `ORD-20260926105646-D3B1D14E` (id `9b0eb35d-37c4-42d4-b173-c5153b076d7f`) `PENDING`, `payment_reference` null, 10000; no payment step. First attempt was BLOCKED by a wrong client-pwa Production env (non-existent Supabase project), fixed via env + redeploy. Google login and PWA Ware-non-exposure sub-items not individually reported |
 
 Steps 9 and 10 were reported PASS by the tester; some sub-items were not individually reported and are left unchecked in the checklist.
 Step 7: "Ware/Warehouse not exposed" is left unchecked; it is verified systematically in step 23.
@@ -56,7 +56,11 @@ Root cause: client-web Production was missing `SUPABASE_SECRET_KEY`; added + red
 - **client-web Production env has not been confirmed** (asked at step 6, never reported).
 - client-pwa redirect URL `https://shopping-mall-express-client-pwa-teal.vercel.app/auth/callback` in Supabase is not yet confirmed (needed for step 24).
 
+3. **client-pwa Production env pointed to a non-existent Supabase project** (`NEXT_PUBLIC_SUPABASE_URL` host NXDOMAIN, anon key of that project) → the product list never loaded (step 24 BLOCKED). Corrected to the production project values and redeployed; no code change.
+
 ## Non-blocker issues (unfixed; collect after the E2E)
+
+- client-pwa shows the UUID `orders.id` as the "주문 번호" after Order creation instead of `order_number` (`ORD-...`). UX only; not fixed.
 
 - Product create modal pre-fills "상품명" with the selected Ware's name (`emptyProductAddForm(ware.name)`). UX default, not a payload bug. Not fixed.
 - No unlink UI for Variant↔Ware (`unlink_product_variant_ware` is SQL-only). Not fixed.
