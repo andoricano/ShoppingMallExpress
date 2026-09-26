@@ -199,7 +199,7 @@ Compared with the eight areas first proposed: allocation/shortage/SOLD_OUT moved
 
 **Preconditions**: Phases 1, 2, 3.
 
-**Decision Before Implementation**: DN-20 (PG failure retry), DN-23 (Cart ↔ Checkout), DN-38 (orphan detection and window), DN-39 (transient finalize failure), DN-41 (zero-amount Orders), DN-19 and DN-24 (Client-facing behavior for failures and in-progress Payments); IN-10 and IN-11 designs.
+**Decision Before Implementation** (decided in Phase 4): DN-38 / IN-11 — an Order-less `SUCCEEDED` Payment becomes an `ORPHAN_PAYMENT` reversal target after a default window of 30 minutes, created under the Payment row lock; DN-39 — a transient finalize failure rolls back and the Client retries, with the orphan rule as the last fallback; DN-41 — no zero-amount Orders in the initial v3; DN-23 (narrowed) — `finalize` does not touch the Cart; IN-10 — one Order per Payment through the Payment row lock and the unique `orders.payment_id`, with `payments.order_id` set in the same transaction. Not settled and carried to Phase 8: DN-19, DN-20, DN-24 (Client-facing behavior), and the rest of DN-23 (Cart clearing, selected-item orders, buy-now). Known limitation of the handoff structure, not a blocker: IN-12.
 
 **Completion criteria**
 - **Minimum integration scenarios** (all five must pass before the gate):
@@ -334,7 +334,7 @@ Compared with the eight areas first proposed: allocation/shortage/SOLD_OUT moved
 
 **Preconditions**: Phases 1 to 7 are complete and their gates passed, so the v3 paths are verified; no client still uses a legacy path. Legacy contraction is performed only after that. Consumer/PWA alignment does not bring legacy removal forward: alignment is done on top of the v3 paths while the legacy objects still exist, and removal is the last step of this phase.
 
-**Decision Before Implementation**: DN-48 (how PWA Order creation works when a real Order exists only after PG success), DN-49 (fate of the existing Point top-up).
+**Decision Before Implementation**: DN-48 (how PWA Order creation works when a real Order exists only after PG success), DN-49 (fate of the existing Point top-up); carried over from Phase 4: DN-19, DN-20, DN-24 (what the Client sees for finalize failures, PG failure retry, in-progress Payments) and DN-23 (Cart clearing after a purchase, selected-item orders, buy-now).
 
 **Completion criteria**
 - No source reference to `PAID`, `create_order_from_cart`, or `restock_order_item` remains (search-verified); all three apps typecheck.
@@ -405,11 +405,11 @@ Compared with the eight areas first proposed: allocation/shortage/SOLD_OUT moved
 | Pre-1 | delivery strategy (2.4), DN-34, IN-05 |
 | 2 | DN-25, IN-09 (decided) |
 | 3 | DN-40, IN-01, IN-03 (decided) |
-| 4 | DN-19, DN-20, DN-23, DN-24, DN-38, DN-39, DN-41, IN-10, IN-11 |
+| 4 | DN-38, DN-39, DN-41, IN-10, IN-11 (decided); DN-19, DN-20, DN-23, DN-24 carried to Phase 8 |
 | 5 | DN-12, DN-19 |
 | 6 | DN-02, DN-04, DN-14 |
 | 7 | DN-27, DN-42, DN-43, DN-44, DN-45, DN-46, DN-47 |
-| 8 | DN-48, DN-49 |
+| 8 | DN-48, DN-49, and from Phase 4: DN-19, DN-20, DN-23, DN-24 |
 | 9 | none |
 
 Every open decision in the business document appears above at least once. DN-19 is needed in two phases (Phase 4 for finalize failure, Phase 5 for cancellation progress), and DN-25 was decided in Phase 2.
@@ -444,3 +444,4 @@ S-23 (Multi-Ware) is verified at the database level in Phase 2 and again in Phas
 - Phase contents change only when the business document or the user's decisions change.
 - When a decision listed in 4.2 is made, it moves into the business document first; the phase then drops it from its "Decision Before Implementation" list.
 - v2 documents are not edited.
+- Versioning: the repository version `1.1.0` marks the first integrated v3 milestone (the Phase 4 Stage 2 finalize gate). It does not mean that the production cutover happened: production still runs the v2 runtime, and the v3 migrations and cutover are applied only on the user's explicit instruction (2.3).

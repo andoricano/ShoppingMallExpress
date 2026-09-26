@@ -1,6 +1,6 @@
 # Mall v3 — Business Logic and Scenarios
 
-Draft 0.7 · 2026-09-26 · Source of Truth candidate
+Draft 0.8 · 2026-09-26 · Source of Truth candidate
 
 This document is analysis and policy capture only. It is not an implementation plan and it does not define phases.
 
@@ -588,7 +588,7 @@ Format per area: Approved v3 policy · Current v2 implementation · Conflict · 
   - `[E2E]` Failure → payment `FAILED`, Order stays `PENDING`; retry on the same Order then succeeded → `SUCCEEDED`, Order `PAID`, `payment_reference` = payment id; PG Test Monitor records matched. The first attempt failed because client-web Production lacked `SUPABASE_SECRET_KEY` (configuration only).
   - `[E2E]` Not verified: payment success leaves Ware stock unchanged.
 - **Conflict**: CF-03, CF-04, CF-05, CF-13, CF-14, CF-15.
-- **Decision Needed**: DN-19, DN-20, DN-38, DN-39, DN-41.
+- **Decision Needed**: DN-19, DN-20.
 - **Implementation notes**: IN-01 to IN-06, IN-08, IN-10, IN-11.
 - **Affected**: RPC `create_payment`, `complete_payment`; table `payments` (and the new reversal table); client-web `app/api/payments/route.ts`, `app/api/payments/[paymentId]/confirm/route.ts`, `lib/payment/server.ts`, `lib/payment/pgTest.ts`, `hooks/payment/usePaymentApi.ts`, `app/payment/page.tsx`, `app/success/page.tsx`, `components/payment/*`.
 
@@ -602,7 +602,7 @@ Format per area: Approved v3 policy · Current v2 implementation · Conflict · 
   - `[CODE]` The refund flow does not change the Order status (agrees with BR-41).
   - `[E2E]` Creation (stock 10 → 8), payment → `PAID`, history shows only the tester's own Orders.
 - **Conflict**: CF-01, CF-02, CF-03, CF-05, CF-09, CF-13.
-- **Decision Needed**: DN-14, DN-34, DN-41.
+- **Decision Needed**: DN-14, DN-34.
 - **Affected**: tables `orders`, `order_items`, `order_item_ware_allocations`; RPC `create_order_from_cart`, `admin_transition_order_status`, `get_order_history`; user-web `app/(admin)/orders/page.tsx`, `component/order/*`, `app/api/admin/orders*`; client-web history and Order detail; shared type `order.ts`.
 
 ### 4.6 Warehouse / Ware
@@ -740,7 +740,7 @@ Format per area: Approved v3 policy · Current v2 implementation · Conflict · 
   - `[CODE]` `create_order_from_cart` locks the Cart row and locks Ware rows in `w.id` order; a duplicate submission from the same Client sees an empty Cart and raises `Cart is empty`. `cancel_order` locks the Order and then Wares in `ware_id` order. `complete_payment` locks the payment (and Order); a completed payment is returned unchanged; `payments_order_succeeded_uidx` and `point_ledger_payment_unique` back this up. `create_payment` takes no lock, so several `PENDING` payments per Order are possible. `request_refund` takes no lock and has no cross-request constraint (CF-17). `admin_restock_refund_item` locks the refund item, the allocation row, and the Ware. Wishlist has a unique key.
   - `[E2E]` No concurrency scenario was exercised.
 - **Conflict**: CF-08 (non-idempotent cancel), CF-14 (no payment reversal to make idempotent), CF-17 (Refund quantity invariant not guaranteed under concurrency).
-- **Decision Needed**: DN-38, DN-39, DN-45.
+- **Decision Needed**: DN-45.
 - **Implementation notes**: IN-03, IN-07, IN-08, IN-10.
 - **Verification items**: VF-06.
 - **Affected**: RPC `create_order_from_cart`, `cancel_order`, `create_payment`, `complete_payment`, `request_refund`, `admin_restock_refund_item`; client-web `app/api/payments/*`.
@@ -767,7 +767,7 @@ PG completion reaches the server                                        [APPROVE
    |   one Order per payment_id; repeated finalize returns the existing Order   [APPROVED BR-45]
    |   PG success but Stage 2 never invoked (orphan Payment):
    |       handled by a reversal, not by a server-side finalize        [APPROVED BR-44, BR-30]
-   |       detection / time window ............................... [DN-38]
+   |       detection: scan job, default window 30 minutes; a late finalize cannot resurrect it   [decided in Phase 4]
    v
 Server revalidation (Client resubmits items/address)                    [APPROVED BR-03, BR-44]
    |   explicit SOLD_OUT (is_sold_out) / sale disabled (is_active) / unpublished / validity   [APPROVED BR-46]
@@ -778,14 +778,14 @@ Server revalidation (Client resubmits items/address)                    [APPROVE
    |       payments.status stays SUCCEEDED                             [APPROVED BR-29, BR-30]
    |       reversal amount within the payment amount                   [APPROVED BR-34]
    |       Client-facing behavior ............................... [DN-19]
-   |--- transient technical failure ............................. [DN-39]
+   |--- transient technical failure: rollback, Client retries, orphan rule as the last fallback   [decided in Phase 4]
    v
 Stage 2  real Order created as PENDING, Payment linked to it            [APPROVED BR-05, BR-25]
    |   allocate only what can currently be secured                     [APPROVED BR-09]
    |   allocation increases reserved_stock; current_stock unchanged    [APPROVED BR-43]
    |   deterministic Ware order; a Variant with no Ware: all shortage  [APPROVED BR-47, BR-48]
    |   shortage_quantity = quantity - allocated_quantity               [APPROVED BR-08]
-   |   zero-amount Orders ....................................... [DN-41]
+   |   zero-amount Orders are not created in the initial v3          [decided in Phase 4]
    v
 PENDING  (seller has a real, already-paid Order to process)             [APPROVED BR-05, BR-24]
    |   Consumer sees an ordinary PENDING, also when there is shortage  [APPROVED BR-23]
@@ -847,8 +847,8 @@ Payment reversals (any cause)                                           [APPROVE
 | T-03 | PG failure | PG / server | none | none | failure is recorded on the Payment (`FAILED`) | none | recording `APPROVED` (BR-25, BR-29); retry rules `DECISION NEEDED` (DN-20) |
 | T-04 | PG success → server confirm → revalidation passes → Order `PENDING` | server | BR-03 passes; recomputed total equals the Payment amount; numeric shortage does not block; one Order per `payment_id` | Order created as `PENDING` (or the existing Order is returned on repeat) | Payment linked to the Order | allocate what can be secured: `reserved_stock` increases, remainder is shortage (BR-09, BR-10, BR-43) | `APPROVED` (BR-03, BR-05, BR-25, BR-43, BR-44, BR-45) |
 | T-05 | PG success but business validation fails or the price does not match | server | explicit SOLD_OUT / sale disabled / unpublished / price mismatch / other business validation failure | no Order | `payments.status` stays `SUCCEEDED`; a reversal (`FINALIZE_FAILURE`) goes `PENDING` → `SUCCEEDED` | none | `APPROVED` (BR-27, BR-29 to BR-34, BR-45); Client-facing behavior `DECISION NEEDED` (DN-19) |
-| T-06 | PG success but transient technical failure | server | not defined | not defined | not defined | not defined | `DECISION NEEDED` (DN-39) |
-| T-07 | PG success but Stage 2 never invoked (orphan Payment) | server / system | detection and time window not defined | none | handled by a reversal (`ORPHAN_PAYMENT`) without an Order (BR-44, BR-30, BR-32) | none | direction `APPROVED` (BR-27, BR-44); detection and time window `DECISION NEEDED` (DN-38) |
+| T-06 | PG success but transient technical failure | server | the finalize transaction rolls back | none | none (the Payment stays `SUCCEEDED`) | none | decided in Phase 4 (former DN-39): the Client retries; the orphan rule is the last fallback |
+| T-07 | PG success but Stage 2 never invoked (orphan Payment) | server / system | a `SUCCEEDED`, Order-less Payment older than the window (default 30 minutes) | none | handled by a reversal (`ORPHAN_PAYMENT`) without an Order (BR-44, BR-30, BR-32) | none | direction `APPROVED` (BR-27, BR-44); detection decided in Phase 4 (former DN-38, window is a default to confirm) |
 | T-08 | `PENDING` shortage Order gains allocation | Admin | available stock (`current_stock - reserved_stock`) exists; Admin chooses the Order | none | none | `reserved_stock` increases; shortage decreases | `APPROVED` (BR-13, BR-14, BR-28, BR-43); workflow `DECISION NEEDED` (DN-02) |
 | T-09 | `PENDING` → `CANCELLED` | Client | status is `PENDING`; whole Order; a repeated request is not an error | `CANCELLED` | `payments.status` stays `SUCCEEDED`; a reversal (`ORDER_CANCEL`) `PENDING` → `SUCCEEDED` | allocation released once: `reserved_stock` decreases (only the allocated part; shortage has nothing to release); released stock is not auto-allocated (BR-28) | `APPROVED` (BR-16, BR-17, BR-26, BR-28, BR-29 to BR-36, BR-43) |
 | T-10 | `PENDING` → `CANCELLED` (reject) | Admin | status is `PENDING`; whole Order; a repeated or concurrent request is not an error | `CANCELLED` | same as T-09 | same as T-09 | `APPROVED` (BR-16, BR-17, BR-26, BR-28, BR-29 to BR-36, BR-43); reason/actor model `DECISION NEEDED` (DN-12) |
@@ -1158,12 +1158,12 @@ Expected Results contain only what is approved. Anything else points to a `DN-xx
 
 - **Preconditions**: the PG payment succeeded; the Client closed the tab or lost the network before Stage 2 was invoked.
 - **Flow**: no finalize request reaches the server; the server holds no checkout data (BR-44).
-- **Expected Result**: the state "PG success + no Order + no follow-up" must not persist (BR-27). The payment is handled by a reversal (cause `ORPHAN_PAYMENT`) without an Order, not by a server-side finalize (BR-44, BR-30, BR-32). How the situation is detected and after what time window is open (DN-38).
+- **Expected Result**: the state "PG success + no Order + no follow-up" must not persist (BR-27). The payment is handled by a reversal (cause `ORPHAN_PAYMENT`) without an Order, not by a server-side finalize (BR-44, BR-30, BR-32). It is detected by a scan job after a window (default 30 minutes, decided in Phase 4 as former DN-38).
 - **Stock/Allocation Effect**: none (no Order exists).
-- **Consumer Visibility**: not defined (DN-19, DN-38).
-- **Admin Visibility**: not defined (DN-38).
+- **Consumer Visibility**: not defined (DN-19).
+- **Admin Visibility**: not defined.
 - **Current v2 behavior**: not applicable; the Order exists before payment `[CODE]`. Not exercised in `[E2E]`.
-- **v3 Status**: direction `APPROVED` (BR-27, BR-44, BR-30, BR-32); detection `DECISION NEEDED` (DN-38); job design is an implementation note (IN-11).
+- **v3 Status**: direction `APPROVED` (BR-27, BR-44, BR-30, BR-32); detection decided in Phase 4 (former DN-38); job design is an implementation note (IN-11).
 
 #### S-27 Payment reversal fails or is delayed after a cancellation
 
@@ -1306,13 +1306,10 @@ Expected Results contain only what is approved. Anything else points to a `DN-xx
 | DN-14 | Remaining Order status transition details beyond the base lifecycle of BR-24 and the Cancel boundary of BR-35: who may perform each transition, its conditions, and the full fulfillment gate of BR-15. | Order | CLAUDE.md |
 | DN-19 | Client-facing behavior after a finalize failure or a cancellation: what the Client sees, whether and how much reversal/refund progress is shown to the Consumer, how failure reasons are categorized. (The reversals themselves are BR-26, BR-27, BR-30.) | Payment, Order, Consumer | analysis 2026-09-26 |
 | DN-20 | PG failure / abandonment: retry semantics and what the Client sees. (A server-side Payment record without an Order is allowed by BR-25.) | Payment, Checkout | analysis 2026-09-26 |
-| DN-23 | Cart ↔ Checkout relationship: server Cart lifecycle, when the Cart is cleared (the Client resubmits items at finalize, BR-44), selected-item orders, buy-now. | Cart, Checkout | analysis 2026-09-26 |
+| DN-23 | Cart ↔ Checkout relationship, narrowed: `finalize` does not touch the server Cart (decided with Phase 4). Still open: when and by whom the Cart is cleared after a purchase, selected-item orders, buy-now. Decided with the Consumer surfaces in Phase 8. | Cart, Checkout | analysis 2026-09-26 |
 | DN-24 | Whether an in-progress Payment (Stage 1) is shown to the Client in History or as an indicator. The server holds no other Stage 1 data (BR-44). | Checkout, client-web | analysis 2026-09-26 |
 | DN-27 | Refund amount derivation for the linked reversal when discounts or shipping fees exist (today both are 0, so the item total equals the payment amount). The reversal creation itself, its linkage, and the absence of stock and Order-status effects are approved (BR-39 to BR-41). | Refund, Payment | analysis 2026-09-26 |
 | DN-34 | Confirmation that v2 rules untouched by v3 decisions carry over (OrderItem snapshot immutability, Cart identity Product + Variant, owner RLS, Wishlist ProductPost basis, History via Order, the cap "cumulative restock per refund item is at most the refunded quantity"). | all | analysis 2026-09-26 |
-| DN-38 | Orphan Payment detection: how it is detected, the time window, and the race with a late finalize. (Handling by a reversal without an Order is BR-44, BR-30, BR-32.) | Payment, Checkout | analysis 2026-09-26 |
-| DN-39 | Transient (technical) finalize failure: retry policy (the Client resubmits under BR-44), when to switch to reversal, and where the finalize-attempt state (attempt count, last error) is kept, since no reversal exists yet at that point. | Payment, Order | analysis 2026-09-26 |
-| DN-41 | Zero-amount Orders (for example a Variant priced 0): whether a Payment record covers them so that "an Order implies a passed payment" holds. (Point payment is out of scope, BR-49.) | Payment, Order | analysis 2026-09-26 |
 | DN-42 | Refund window after `DELIVERED` (v2 has no time limit). | Refund | analysis 2026-09-26 |
 | DN-43 | Whether Admin may approve only part of the requested Refund quantity (v2 approval accepts or rejects the whole request). | Refund, Admin | analysis 2026-09-26 |
 | DN-44 | Whether the Client may withdraw a Refund request, and its effect on the cumulative quantity of BR-38. | Refund, Client | analysis 2026-09-26 |
@@ -1328,6 +1325,9 @@ Resolved by approved rules and removed from the open registry.
 
 | Former ID | Decision | Resolved by | Remaining question |
 |---|---|---|---|
+| ~~DN-38~~ | Orphan Payment detection, time window, and the race with a late finalize. | User decision recorded with the Phase 4 implementation: a `SUCCEEDED`, Order-less `ORDER_PAYMENT` older than a window (default 30 minutes) with no closing reversal becomes an `ORPHAN_PAYMENT` reversal target; the reversal is created under the Payment row lock (`SKIP LOCKED`), so it cannot race a finalize, and a late finalize then returns `ALREADY_CLOSED` (BR-27, BR-44) | The 30 minutes is a default parameter, to be confirmed; the schedule that runs the job is a deployment matter (Phase 9); what the Client or Admin sees is DN-19 |
+| ~~DN-39~~ | Transient (technical) finalize failure: retry policy and where attempt state is kept. | User decision recorded with the Phase 4 implementation: the whole finalize transaction rolls back and the Payment stays `SUCCEEDED` with no Order and no reversal; the Client retries (it holds the items, BR-44); if it never does, the orphan rule (DN-38) is the final fallback; no attempt state is stored | none |
+| ~~DN-41~~ | Zero-amount Orders and "an Order implies a passed payment". | User decision recorded with the Phase 4 implementation: the initial v3 creates no zero-amount Orders; a checkout total must be greater than zero (a Payment amount is always greater than zero) (BR-05, BR-24, BR-49) | Free items would need a later decision |
 | ~~DN-40~~ | Manual reconciliation: who may reprocess a `FAILED` reversal or create an administrative adjustment, and the minimal procedure. | User decision recorded with the Phase 3 implementation: retry (`FAILED` to `PENDING` on the same reversal) and `MANUAL_RECONCILIATION` creation are performed only at the trusted server (`service_role`) boundary, there is no Consumer path, and the acting Admin is recorded in `requested_by` (BR-24, BR-30) | The Admin screen and approval UX are decided in the phase that wires them (Phases 5 to 7). Registering a PG payment the Mall has no record of is a Payment record, not a reversal, and belongs with the orphan-payment decision (DN-38) |
 | ~~DN-25~~ | Whether a Consumer-visible `LOW_STOCK`-like status is allowed given that numeric shortage is internal. | User decision recorded with the Phase 2 implementation (`get_product_variant_sellability`): the Consumer sellability status is `AVAILABLE` / `SOLD_OUT` / `UNAVAILABLE`; there is no `LOW_STOCK`; the numeric stock level is never exposed to the Consumer (BR-18, BR-19, BR-20, BR-46) | Renaming the existing Consumer status type and mapping (`OUT_OF_STOCK` to `SOLD_OUT`) is a Phase 8 Consumer-contract item |
 | ~~DN-01~~ | Stock decrement timing, meaning of `current_stock`, release mapping, effect of a pre-shipment Refund. | BR-43 (physical `current_stock` + `reserved_stock`, consume at `PROCESSING` entry, restock increases `current_stock`), BR-40 | Synchronization and data conversion are implementation notes (IN-09) |
@@ -1376,8 +1376,9 @@ Items that the user has assigned to implementation/audit design. They are record
 | IN-07 | Database enforcement of the cumulative Refund quantity invariant under concurrency: row lock on the Order/OrderItems, RPC transaction, or constraint. | BR-38 |
 | IN-08 | Transaction structure of Refund approval together with the linked reversal creation, so that both commit or neither does. | BR-39 |
 | IN-09 | Keeping `reserved_stock` synchronized with the allocation rows of `PENDING` Orders in the same transactions (allocate, additional allocation, cancel, `PROCESSING` entry), a verification query, and conversion of existing v2 stock values (net remainder) to physical values plus reservations. **Decided in Phase 2**: allocation rows and `reserved_stock` change together inside the same database transaction (allocate, additional allocation, release, consume); there is no separate asynchronous synchronization. Consistency is verified by the invariants (`0 <= reserved_stock <= current_stock`, `reserved_stock` = allocations of `PENDING` Orders) and by the cutover verification (`supabase/cutover/v3_stock_consistency_check.sql`); the conversion of v2 stock values is `supabase/cutover/v3_stock_and_sellability.sql`, applied only at cutover. | BR-43 |
-| IN-10 | The structure that guarantees one Order per `payment_id` (unique link or lock-and-check), webhook signature verification and de-duplication, production PG confirm/cancel endpoints, and keeping the PG Test adapter as a development-only adapter. | BR-45 |
-| IN-11 | The job that detects orphan Payments and starts the reversal (trigger mechanism, schedule, locking against a late finalize). | BR-44 |
+| IN-10 | The structure that guarantees one Order per `payment_id` (unique link or lock-and-check), webhook signature verification and de-duplication, production PG confirm/cancel endpoints, and keeping the PG Test adapter as a development-only adapter. **Decided in Phase 4**: one Order per Payment is guaranteed by the Payment row lock plus the unique `orders.payment_id`; `payments.order_id` is set in the same transaction so the two directions never disagree (its fate is decided in Phase 8); the auxiliary webhook route is not built because no PG webhook contract exists, and duplicate notifications are already safe through this database-level idempotency; production PG endpoints and signature verification remain open for the production integration. | BR-45 |
+| IN-11 | The job that detects orphan Payments and starts the reversal (trigger mechanism, schedule, locking against a late finalize). **Decided in Phase 4**: a database function (`reverse_orphan_payments`) scans for orphan Payments and creates the `ORPHAN_PAYMENT` reversals under the Payment row lock (`SKIP LOCKED`), so a finalize in flight is never raced; the scheduling mechanism is decided in Phase 9. | BR-44 |
+| IN-12 | **Known limitation of the Stage 1 / Stage 2 handoff structure (BR-44)**: because the server stores only the Payment, it verifies a resubmitted checkout only by its recomputed total. A Client can therefore resubmit a different combination of items with the same total as the paid amount and receive an Order for it. This is accepted for the initial v3 and is not a Phase 4 blocker; closing it would need the server to keep a digest of the checked-out items, which is a change to BR-44 and needs its own decision. | BR-44, BR-45 |
 
 ### 7.4 Non-policy verification items (not counted as decisions)
 
@@ -1540,3 +1541,4 @@ List only. This is not an implementation plan and does not order or schedule any
 - Draft 0.5 (2026-09-26): added BR-43 to BR-49 (stock model physical `current_stock` + `reserved_stock` with consume at `PROCESSING` entry; Stage 1 data stays with the Client and the server records only the Payment; finalize contract with server confirm primary, webhook auxiliary, one Order per `payment_id`, price mismatch rejected and reversed; Variant `is_sold_out` with `is_active` kept; Ware-less Variants orderable with full shortage; deterministic Multi-Ware order; initial v3 scope with Point payment and authorize/capture excluded and PWA limited to the core scope); resolved DN-01, DN-03, DN-09, DN-10, DN-11, DN-13, DN-16, DN-17, DN-18, DN-26, DN-33, DN-37; narrowed DN-02, DN-23, DN-24, DN-38, DN-39, DN-41; added DN-48 and DN-49; added IN-09 to IN-11; added CF-18 and updated CF-03, CF-04, CF-06, CF-09; added scenario S-37 and reworked S-01 to S-06, S-10, S-11, S-16, S-17, S-20, S-23 to S-26, S-30; updated terminology, audit, lifecycle, transitions (T-26), matrix, and impact index.
 - Draft 0.6 (2026-09-26): recorded the Phase 2 implementation decisions: resolved DN-25 (Consumer sellability `AVAILABLE` / `SOLD_OUT` / `UNAVAILABLE`, no `LOW_STOCK`, no numeric stock level to the Consumer) and noted the decided synchronization approach on IN-09; no rule was added or changed.
 - Draft 0.7 (2026-09-26): recorded the Phase 3 implementation decisions: resolved DN-40 (retry and `MANUAL_RECONCILIATION` creation only at the `service_role` boundary, actor in `requested_by`, Admin UX later) and noted the decided approaches on IN-01 (retry reuses the row, `attempt_count`, no attempt table) and IN-03 (Phase 1 trigger as final guard, Payment row lock in the creation RPC); no rule was added or changed.
+- Draft 0.8 (2026-09-26): recorded the Phase 4 implementation decisions: resolved DN-38 (orphan detection by scan job, default window 30 minutes), DN-39 (rollback, Client retry, orphan fallback), DN-41 (no zero-amount Orders in the initial v3); narrowed DN-23 (finalize does not touch the Cart); DN-19, DN-20, DN-24 stay open for Phase 8; noted the decided approaches on IN-10 and IN-11; added IN-12 (the known limitation that the server verifies a resubmitted checkout only by its total); no rule was added or changed.
