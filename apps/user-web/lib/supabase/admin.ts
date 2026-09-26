@@ -36,6 +36,14 @@ function createServiceRoleClient() {
  * user has been confirmed as an ADMIN through the user_profiles RLS contract.
  */
 export async function requireAdminServiceClient() {
+    return (await requireAdminServiceContext()).supabase;
+}
+
+/**
+ * Same boundary as requireAdminServiceClient(), and also returns the verified
+ * Admin's user id (for recording who performed an action).
+ */
+export async function requireAdminServiceContext() {
     const sessionClient = await createSessionClient();
     const {
         data: { user },
@@ -62,5 +70,5 @@ export async function requireAdminServiceClient() {
         );
     }
 
-    return createServiceRoleClient();
+    return { supabase: createServiceRoleClient(), adminId: user.id };
 }

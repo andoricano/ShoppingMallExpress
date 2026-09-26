@@ -27,6 +27,13 @@ export function checkoutErrorResponse(error: unknown) {
             );
         }
 
+        if (message.includes("Only PENDING Orders can be cancelled")) {
+            return NextResponse.json(
+                { message: "주문 접수 상태에서만 취소할 수 있습니다." },
+                { status: 409 },
+            );
+        }
+
         if (message.includes("has not succeeded")) {
             return NextResponse.json(
                 { message: "결제가 완료되지 않았습니다." },

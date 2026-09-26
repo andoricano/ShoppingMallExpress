@@ -52,3 +52,19 @@ export interface Order {
     updatedAt: string;
     items: OrderItem[];
 }
+
+/**
+ * Mall v3 whole-Order Cancel (migration 20260926170000_v3_phase5_order_cancel.sql).
+ * Only a `PENDING` Order can be cancelled, by its Client or an Admin; a repeat
+ * on a `CANCELLED` Order is a success, not an error.
+ */
+export interface CancelOrderInput {
+    /** Optional free text, at most 500 characters. */
+    reason?: string;
+}
+
+/** Consumer-safe result: no stock, allocation, or reversal detail. */
+export interface CancelOrderResult {
+    outcome: "CANCELLED" | "ALREADY_CANCELLED";
+    orderId: string;
+}
