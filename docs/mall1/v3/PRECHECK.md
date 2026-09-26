@@ -53,6 +53,38 @@ Result handling:
   the preview again just before the window: new Orders may have appeared).
 - **WARN**: read each; none blocks by itself, but each needs an explanation.
 
+### Reading the precheck result (command 2)
+
+Output columns: `check_name | level | count | detail`, sorted ACTION, BLOCKER, INFO, WARN.
+Paste back only these columns (counts and the short detail), never other row data.
+
+| Level | Row | Read it as | If not as expected |
+|---|---|---|---|
+| BLOCKER | duplicate `pg_callback_id` values | count must be 0 | stop; the user decides which duplicate keeps its reference; nothing is edited by the scripts |
+| BLOCKER | Refund requests with a status outside REQUESTED/APPROVED/REJECTED | 0 | stop; the Refund status CHECK would fail at the contraction |
+| BLOCKER | OrderItems whose valid cumulative refund quantity exceeds the ordered quantity | 0 | stop; a data error to decide first |
+| BLOCKER | Wares with `reserved_stock <> 0` | 0 | stop; v2 never reserves, so production is not the expected v2 baseline |
+| ACTION | PENDING/PAID Orders without a succeeded Payment | any count is allowed; `detail` lists up to 20 order numbers | must equal the preview (command 3); resolved at the cutover by decision #1 after the user has seen the list |
+| WARN | non-cancelled OrderItems whose allocation does not sum to the quantity | expected 0 | explain each before the cutover (the stock conversion assumes v2 full allocation) |
+| WARN | payments still PENDING | any count; `detail` shows the oldest | in flight at the cutover; they stay PENDING and are never finalized; note the number |
+| WARN | succeeded ORDER_PAYMENTs whose Order is CANCELLED | expected 0 | money taken and Order cancelled in v2; the user decides (no reversal is invented) |
+| WARN | Point balances that differ from their ledger | expected 0 | explain; Point data is kept as it is |
+| INFO | APPROVED / REQUESTED Refunds, Orders by status, Wares and total stock, Wares-less Variants, Point top-ups | context only | REQUESTED Refunds are approved the v3 way after the cutover; Ware-less Variants are orderable and fully short in v3 |
+
+Verdict rule: **any BLOCKER > 0 = stop.** No BLOCKER = the cutover may be scheduled once
+the ACTION list is accepted and every WARN is explained.
+
+Short form to report back:
+
+```text
+state:   last migration <version>; v3 objects <none/list>; reserved_stock rows <n>
+BLOCKER: dup-callback <n> | refund-status <n> | over-refund <n> | reserved-stock <n>
+ACTION:  unpaid PENDING/PAID Orders <n>  (preview: <n> Orders, <q> ordered, <q> returning to stock)
+WARN:    alloc-mismatch <n> | pending-payments <n> (oldest <ts>) | paid-but-cancelled <n> | point-mismatch <n>
+```
+
+---
+
 ## 3. Checklist (each line: the user confirms, with the evidence)
 
 Data (read-only SQL above)
