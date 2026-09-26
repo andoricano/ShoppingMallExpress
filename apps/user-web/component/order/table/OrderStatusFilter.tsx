@@ -5,6 +5,8 @@
 import React from "react";
 import type { OrderStatus } from "@mall/types";
 
+import { MALL_V3 } from "@/lib/mallVersion";
+
 interface OrderStatusFilterProps {
     value: OrderStatus;
     onChange: (status: OrderStatus) => void;
@@ -15,10 +17,10 @@ interface FilterItem {
     label: string;
 }
 
-const filterItems: FilterItem[] = [
+const ALL_FILTER_ITEMS: FilterItem[] = [
     {
         status: "PENDING",
-        label: "대기중",
+        label: MALL_V3 ? "처리 대기" : "대기중",
     },
     {
         status: "PAID",
@@ -41,6 +43,11 @@ const filterItems: FilterItem[] = [
         label: "취소",
     },
 ];
+
+// v3 has no PAID status.
+const filterItems: FilterItem[] = MALL_V3
+    ? ALL_FILTER_ITEMS.filter((item) => item.status !== "PAID")
+    : ALL_FILTER_ITEMS;
 
 export const OrderStatusFilter: React.FC<
     OrderStatusFilterProps

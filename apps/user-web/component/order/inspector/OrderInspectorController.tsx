@@ -4,6 +4,8 @@
 
 import type { Order, OrderStatus } from "@mall/types";
 
+import { MALL_V3 } from "@/lib/mallVersion";
+
 interface OrderInspectorControllerProps {
     order: Order;
 
@@ -14,12 +16,20 @@ export function OrderInspectorController({
     order,
     onTransition,
 }: OrderInspectorControllerProps) {
-    const nextStatus: Partial<Record<OrderStatus, OrderStatus>> = {
-        PENDING: "PAID",
-        PAID: "PROCESSING",
-        PROCESSING: "SHIPPED",
-        SHIPPED: "DELIVERED",
-    };
+    // v3: an Order exists only after its payment, so there is no PAID step;
+    // PROCESSING needs full allocation (the server refuses it otherwise).
+    const nextStatus: Partial<Record<OrderStatus, OrderStatus>> = MALL_V3
+        ? {
+            PENDING: "PROCESSING",
+            PROCESSING: "SHIPPED",
+            SHIPPED: "DELIVERED",
+        }
+        : {
+            PENDING: "PAID",
+            PAID: "PROCESSING",
+            PROCESSING: "SHIPPED",
+            SHIPPED: "DELIVERED",
+        };
     const next = nextStatus[order.status];
 
     return (
@@ -55,7 +65,7 @@ export function OrderInspectorController({
                 </div>
             )}
 
-            {order.status === "PENDING" && (
+            {!MALL_V3 && order.status === "PENDING" && (
                 <p className="mt-3 text-xs text-slate-400">
                     취소는 주문 소유자의 Consumer 취소 RPC에서만 처리됩니다.
                 </p>

@@ -15,6 +15,7 @@ import type {
 } from "@mall/types";
 
 import { createClient } from "@/lib/supabase/client";
+import { MALL_V3 } from "@/lib/mallVersion";
 
 // Lifecycle rules owned by the RPCs; the UI only mirrors them.
 /** cancel_order(): "Only PENDING orders may be cancelled". */
@@ -26,9 +27,15 @@ const NON_REFUNDABLE_STATUSES: readonly OrderStatus[] = ["PENDING", "CANCELLED"]
 /** request_refund() ignores these requests when summing refunded quantity. */
 const INACTIVE_REFUND_STATUSES: readonly RefundStatus[] = ["REJECTED", "CANCELLED"];
 
-/** create_payment(): only PENDING orders are payable (ORDER_PAYMENT). */
+/** v3 (BR-37): Refund is possible only for PROCESSING, SHIPPED, and DELIVERED. */
+const V3_REFUNDABLE_STATUSES: readonly OrderStatus[] = ["PROCESSING", "SHIPPED", "DELIVERED"];
+
+/**
+ * v2: create_payment() pays an existing PENDING Order. v3: an Order exists only
+ * after the payment (payment first), so there is nothing to pay on an Order.
+ */
 export function canPayOrder(status: OrderStatus) {
-    return status === "PENDING";
+    return !MALL_V3 && status === "PENDING";
 }
 
 export function canCancelOrder(status: OrderStatus) {
@@ -36,7 +43,9 @@ export function canCancelOrder(status: OrderStatus) {
 }
 
 export function canRequestRefund(status: OrderStatus) {
-    return !NON_REFUNDABLE_STATUSES.includes(status);
+    return MALL_V3
+        ? V3_REFUNDABLE_STATUSES.includes(status)
+        : !NON_REFUNDABLE_STATUSES.includes(status);
 }
 
 /** Remaining refundable quantity per OrderItem id. */
@@ -78,6 +87,8 @@ function toAfterSalesErrorMessage(error: unknown, fallback: string) {
             ? String((error as { message: unknown }).message)
             : "";
 
+    // v3 Route Handlers already answer in user language.
+    if (/[가-힣]/.test(message)) return message;
     if (message.includes("Authentication required")) return "로그인이 필요합니다.";
     if (message.includes("Order not found")) return "주문을 찾을 수 없습니다.";
     if (message.includes("Only PENDING orders may be cancelled")) return "주문 접수 상태에서만 취소할 수 있습니다.";
@@ -89,7 +100,33 @@ function toAfterSalesErrorMessage(error: unknown, fallback: string) {
     return fallback;
 }
 
-/** cancel_order() and request_refund() for the caller's own Orders. */
+/** v3 Route Handler call in the same shape as an RPC result. */
+async function postOrderRoute(path: string, body: unknown): Promise<{ error: unknown }> {
+    try {
+        const response = await fetch(path, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+        });
+
+        if (response.ok) {
+            return { error: null };
+        }
+
+        const result = await response.json().catch(() => null) as { message?: string } | null;
+
+        return { error: { message: result?.message ?? "" } };
+    } catch {
+        return { error: { message: "" } };
+    }
+}
+
+/**
+ * Cancel and Refund request for the caller's own Orders. v2: browser RPCs
+ * (cancel_order, request_refund). v3: the Route Handlers, which cancel the whole
+ * PENDING Order with its payment reversal and create partial Refund requests
+ * priced at the immutable snapshot.
+ */
 export function useOrderAfterSales() {
     const [loading, setLoading] =
         useState(false);
@@ -127,7 +164,9 @@ export function useOrderAfterSales() {
     const requestCancel = useCallback(
         (orderId: string) =>
             run(
-                () => createClient().rpc("cancel_order", { p_order_id: orderId }),
+                () => MALL_V3
+                    ? postOrderRoute(`/api/orders/${encodeURIComponent(orderId)}/cancel`, {})
+                    : createClient().rpc("cancel_order", { p_order_id: orderId }),
                 "주문을 취소하지 못했습니다.",
             ),
         [run],
@@ -136,11 +175,16 @@ export function useOrderAfterSales() {
     const requestRefund = useCallback(
         (orderId: string, items: RefundItemInput[], reason: string | null) =>
             run(
-                () => createClient().rpc("request_refund", {
-                    p_order_id: orderId,
-                    p_items: items,
-                    p_reason: reason,
-                }),
+                () => MALL_V3
+                    ? postOrderRoute(
+                        `/api/orders/${encodeURIComponent(orderId)}/refund`,
+                        { items, ...(reason ? { reason } : {}) },
+                    )
+                    : createClient().rpc("request_refund", {
+                        p_order_id: orderId,
+                        p_items: items,
+                        p_reason: reason,
+                    }),
                 "환불을 요청하지 못했습니다.",
             ),
         [run],

@@ -3,6 +3,7 @@
 import { useCallback, useState } from "react";
 
 import type { MyPageSidebarItem } from "@/components/mypage/MyPageSidbar";
+import { MALL_V3 } from "@/lib/mallVersion";
 
 export const MY_PAGE_SECTION = {
     INFO: "info",
@@ -78,7 +79,11 @@ export function useMyPage() {
     );
 
     return {
-        sidebarItems: DEFAULT_SIDEBAR_ITEMS,
+        // v3 (BR-49): Point payment is out of the initial scope, so the Point
+        // menu is hidden (the data and RPCs stay; removal is decided after release).
+        sidebarItems: MALL_V3
+            ? DEFAULT_SIDEBAR_ITEMS.filter((item) => item.id !== MY_PAGE_SECTION.POINT)
+            : DEFAULT_SIDEBAR_ITEMS,
         selectedId,
         selectSection,
     };

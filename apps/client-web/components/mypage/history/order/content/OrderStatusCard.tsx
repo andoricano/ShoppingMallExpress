@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { OrderStatus } from "@mall/types";
 
 import { getOrderStatusLabel } from "@/utils/orderUtils";
+import { MALL_V3 } from "@/lib/mallVersion";
 import {
     canCancelOrder,
     canPayOrder,
@@ -27,6 +28,17 @@ const STATUS_DESCRIPTION: Record<OrderStatus, string> = {
 };
 
 /**
+ * v3: an Order exists only after its payment, so PENDING means "received,
+ * waiting to be prepared". No payment-progress or reversal detail is shown
+ * (BR-20, DN-19): a cancelled Order only says the payment cancellation follows.
+ */
+const V3_STATUS_DESCRIPTION: Record<OrderStatus, string> = {
+    ...STATUS_DESCRIPTION,
+    PENDING: "주문이 접수되어 상품 준비를 기다리고 있습니다.",
+    CANCELLED: "주문이 취소되었습니다. 결제 취소는 순차적으로 처리됩니다.",
+};
+
+/**
  * Order status. Pay (create_payment) and cancel (cancel_order) are offered
  * only for PENDING orders, as the RPCs enforce.
  */
@@ -45,7 +57,7 @@ export default function OrderStatusCard({
             </h2>
 
             <p className="mt-2 text-sm text-slate-500">
-                {STATUS_DESCRIPTION[status]}
+                {MALL_V3 ? V3_STATUS_DESCRIPTION[status] : STATUS_DESCRIPTION[status]}
             </p>
 
             {(canPayOrder(status) || (canCancelOrder(status) && onCancel)) && (

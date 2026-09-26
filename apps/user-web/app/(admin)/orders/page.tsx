@@ -150,6 +150,13 @@ export default function AdminOrdersPage() {
                         <OrderInspector
                             order={selectedOrder}
                             onTransition={handleTransition}
+                            onChanged={() => {
+                                if (selectedOrder) {
+                                    void fetchOrder(selectedOrder.id);
+                                }
+
+                                void fetchOrders();
+                            }}
                         />
                     </aside>
                 </div>

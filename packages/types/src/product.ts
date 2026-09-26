@@ -1,9 +1,14 @@
 export type JsonObject = Record<string, unknown>;
 
-/** Consumer-safe variant availability returned by Mall v2 RPCs. */
+/**
+ * Consumer-safe variant availability. `OUT_OF_STOCK` is the v2 name; the v3
+ * contract calls the explicit sold-out state `SOLD_OUT` (never derived from
+ * stock). Both are accepted until the legacy name is removed at the v3 cutover.
+ */
 export type ProductVariantStockStatus =
     | "AVAILABLE"
     | "OUT_OF_STOCK"
+    | "SOLD_OUT"
     | "UNAVAILABLE";
 
 /**

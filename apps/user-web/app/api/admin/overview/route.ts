@@ -13,7 +13,10 @@ const LOW_STOCK_THRESHOLD = 5;
 
 // Orders paid but not yet shipped under the v2 lifecycle
 // PENDING → PAID → PROCESSING → SHIPPED → DELIVERED.
-const PENDING_FULFILLMENT_STATUSES = ["PAID", "PROCESSING"];
+// v3 has no PAID: a PENDING Order is already paid and waiting to be processed.
+const PENDING_FULFILLMENT_STATUSES = process.env.NEXT_PUBLIC_MALL_V3 === "true"
+    ? ["PENDING", "PROCESSING"]
+    : ["PAID", "PROCESSING"];
 
 type WareRow = {
     id: string;

@@ -7,7 +7,8 @@ import type { CartItem, Order, ProductPostDetail, ProductPostSummary } from "@ma
 import { HeroBanner, mainPageMock } from "@mall/mall-page-viewer";
 import { ChevronLeft, ChevronRight, ShoppingCart, UserRound } from "lucide-react";
 import { authProfile, getAuth } from "../lib/auth";
-import { shopApi } from "../lib/api";
+import { orderStatusLabel, shopApi } from "../lib/api";
+import { CLIENT_WEB_URL, MALL_V3 } from "../lib/mallVersion";
 import InstallControl from "./components/InstallControl";
 
 type Tab = "shop" | "cart" | "order";
@@ -212,6 +213,15 @@ export default function Home() {
         </div>
         {cart.length > 0 && <section className="mt-6 rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
           <p className="flex items-center justify-between"><span className="text-sm text-slate-500">총 상품 금액</span><span className="text-2xl font-bold text-slate-900">{money(cart.reduce((sum, item) => sum + item.price * item.quantity, 0))}</span></p>
+          {MALL_V3 ? (
+          <div className="space-y-4 border-t border-neutral-200 pt-5">
+            <h2 className="text-lg font-semibold">주문 · 결제</h2>
+            <p className="text-sm leading-6 text-neutral-600">주문과 결제는 웹 쇼핑몰에서 진행합니다. 결제가 완료된 뒤에 주문이 접수되며, 이 앱에서는 주문 번호로 주문을 조회할 수 있습니다.</p>
+            {CLIENT_WEB_URL
+              ? <a className="action inline-flex min-h-11 w-full items-center justify-center" href={`${CLIENT_WEB_URL}/order`} target="_blank" rel="noopener noreferrer">웹에서 주문하기</a>
+              : <p role="status" className="text-sm text-amber-700">웹 주문 주소가 설정되지 않아 지금은 주문할 수 없습니다.</p>}
+          </div>
+          ) : (
           <form key={addressVersion} className="space-y-4 border-t border-neutral-200 pt-5" onSubmit={(event) => {
             event.preventDefault();
             if (submitted) return;
@@ -226,9 +236,9 @@ export default function Home() {
                 });
                 if (epoch !== authEpoch.current) return;
                 if (!createdOrderId) throw new Error("주문 결과에 주문 번호가 없습니다.");
-                setCart([]); setOrderId(createdOrderId); setTab("order"); setNotice(`주문이 생성되었습니다. 주문 번호: ${createdOrderId}`);
+                setCart([]); setTab("order"); setNotice("주문이 생성되었습니다.");
                 const confirmed = await shopApi.order(createdOrderId);
-                if (epoch === authEpoch.current) setOrder(confirmed);
+                if (epoch === authEpoch.current) { setOrder(confirmed); setOrderId(confirmed?.orderNumber ?? createdOrderId); setNotice(`주문이 생성되었습니다. 주문 번호: ${confirmed?.orderNumber ?? "-"}`); }
               } catch (cause) {
                 throw new Error(`${cause instanceof Error ? cause.message : "주문 요청 실패"} 주문이 접수되었을 수 있으므로 재시도 전 관리자에게 확인해 주세요.`);
               }
@@ -240,14 +250,15 @@ export default function Home() {
             {submitted && <p role="status">주문 요청이 전송되었습니다. 중복 방지를 위해 추가 전송을 막았습니다. 주문 조회 또는 관리자 확인 후 새로 방문해 주세요.</p>}
             <button className="action min-h-11 w-full" disabled={busy || !online || submitted}>주문 생성</button>
           </form>
+          )}
         </section>}
       </>}
     </section>}
 
     {tab === "order" && <section className="mx-auto max-w-3xl">
-      <header className="border-b border-neutral-200 pb-6"><p className="text-xs font-medium tracking-[.18em] text-neutral-500">ORDER HISTORY</p><h1 className="mt-2 text-3xl font-semibold tracking-tight">내 주문 조회</h1><p className="mt-2 text-sm leading-6 text-neutral-600">주문 번호로 로그인한 계정의 주문을 확인합니다. 결제 대기(PENDING) 주문은 결제 완료를 의미하지 않습니다.</p></header>
+      <header className="border-b border-neutral-200 pb-6"><p className="text-xs font-medium tracking-[.18em] text-neutral-500">ORDER HISTORY</p><h1 className="mt-2 text-3xl font-semibold tracking-tight">내 주문 조회</h1><p className="mt-2 text-sm leading-6 text-neutral-600">{MALL_V3 ? "주문 번호로 로그인한 계정의 주문을 확인합니다." : "주문 번호로 로그인한 계정의 주문을 확인합니다. 결제 대기(PENDING) 주문은 결제 완료를 의미하지 않습니다."}</p></header>
       <form className="mt-6 flex flex-col gap-3 sm:flex-row" onSubmit={(event) => { event.preventDefault(); void run(async (epoch) => {
-        setOrder(null); await requireSession(); const result = await shopApi.order(orderId.trim());
+        setOrder(null); await requireSession(); const result = await shopApi.orderByRef(orderId.trim());
         if (!result) throw new Error("주문을 찾을 수 없습니다.");
         if (epoch === authEpoch.current) setOrder(result);
       }); }}>
@@ -256,7 +267,7 @@ export default function Home() {
       </form>
       {!session && <p className="mt-5 border border-dashed border-neutral-300 bg-white p-5 text-sm text-neutral-600">로그인 후 주문을 조회할 수 있습니다.</p>}
       {order && <article className="mt-6 space-y-4 border border-neutral-200 bg-white p-5 sm:p-6">
-        <h2 className="break-all font-semibold">주문 {order.id}</h2><p>상태: {order.status} · {money(order.totalAmount)}</p>
+        <h2 className="break-all font-semibold">주문 번호 {order.orderNumber ?? "-"}</h2><p>상태: {orderStatusLabel(order.status)} · {money(order.totalAmount)}</p>
         {order.items?.map((item) => <p key={item.id}>{[item.productNameSnapshot, item.variantLabelSnapshot].filter(Boolean).join(" / ")} · {item.quantity}개 · {money(item.lineTotal)}</p>)}
         {order.shippingAddress && <p>{String(order.shippingAddress.recipientName ?? "")} · {String(order.shippingAddress.address ?? "")} {String(order.shippingAddress.addressDetail ?? "")}</p>}
       </article>}

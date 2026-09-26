@@ -4,6 +4,8 @@
 
 import type { Order } from "@mall/types";
 
+import { MALL_V3 } from "@/lib/mallVersion";
+
 interface OrderInspectorHeaderProps {
     order: Order;
 }
@@ -12,7 +14,7 @@ const ORDER_STATUS_LABEL: Record<
     Order["status"],
     string
 > = {
-    PENDING: "대기중",
+    PENDING: MALL_V3 ? "처리 대기" : "대기중",
     PAID: "결제 완료",
     PROCESSING: "처리중",
     SHIPPED: "출고됨",

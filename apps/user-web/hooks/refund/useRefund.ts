@@ -8,6 +8,7 @@ import {
 } from "react";
 
 
+import { MALL_V3 } from "@/lib/mallVersion";
 import type {
     AdminRefundRequest,
     AdminRestockRefundItemInput,
@@ -101,11 +102,17 @@ export function useRefund() {
         setError(null);
 
         try {
-            const response = await fetch(`/api/admin/refunds/${refundId}`, {
-                method: "PATCH",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ status }),
-            });
+            // v3: approval and its reversal are one transaction (decision route).
+            const response = await fetch(
+                MALL_V3
+                    ? `/api/admin/refunds/${refundId}/decision`
+                    : `/api/admin/refunds/${refundId}`,
+                {
+                    method: MALL_V3 ? "POST" : "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(MALL_V3 ? { decision: status } : { status }),
+                },
+            );
             const payload = await response.json().catch(() => null) as {
                 message?: string;
             } | null;
@@ -129,6 +136,24 @@ export function useRefund() {
             setLoading(false);
         }
     }, [fetchRefunds]);
+
+    // ==========================================
+    // v3: 승인된 환불의 PG 환급 재처리 (Admin)
+    // ==========================================
+    const retryReversal = useCallback(async (
+        refundId: string,
+    ): Promise<{ ok: true } | { ok: false; message: string }> => {
+        try {
+            const response = await fetch(`/api/admin/refunds/${refundId}/reversal`, { method: "POST" });
+            const payload = await response.json().catch(() => null) as { message?: string } | null;
+
+            return response.ok
+                ? { ok: true }
+                : { ok: false, message: payload?.message ?? "환급 재처리에 실패했습니다." };
+        } catch {
+            return { ok: false, message: "환급 재처리에 실패했습니다." };
+        }
+    }, []);
 
     // ==========================================
     // 반품 확인 후 재고 복구 (Admin)
@@ -178,6 +203,7 @@ export function useRefund() {
 
         fetchRefunds,
         processRefund,
+        retryReversal,
         restockRefundItem,
     };
 }

@@ -6,9 +6,11 @@ import { useRouter, useSearchParams } from "next/navigation";
 
 import type { Order, PaymentTestResult } from "@mall/types";
 
+import { CheckoutPayment } from "@/components/payment/CheckoutPayment";
 import { PaymentTestResultPicker } from "@/components/payment/PaymentTestResultPicker";
 import { useClientOrder } from "@/hooks/order/useClientOrder";
 import { usePaymentApi } from "@/hooks/payment/usePaymentApi";
+import { MALL_V3 } from "@/lib/mallVersion";
 
 /**
  * ORDER_PAYMENT for an existing PENDING Order. The displayed total is the
@@ -129,7 +131,8 @@ export default function PaymentPage() {
             <div className="mx-auto max-w-2xl space-y-5">
                 <h1 className="text-2xl font-bold text-slate-900">결제</h1>
                 <Suspense fallback={null}>
-                    <OrderPayment />
+                    {/* v3: payment first, the Order is created at finalize; v2: pay an existing PENDING Order. */}
+                    {MALL_V3 ? <CheckoutPayment /> : <OrderPayment />}
                 </Suspense>
             </div>
         </main>

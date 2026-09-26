@@ -4,7 +4,20 @@
 
 import { useCallback, useState } from "react";
 
+import { MALL_V3 } from "@/lib/mallVersion";
 import type { Order } from "@mall/types";
+
+/** Re-reads an Order after a v3 transition (the route returns only the outcome). */
+async function fetchOrderAfterAdvance(orderId: string): Promise<Order> {
+    const res = await fetch(`/api/admin/orders/${orderId}`);
+    const result = await res.json().catch(() => null) as { data?: Order; message?: string } | null;
+
+    if (!res.ok || !result?.data) {
+        throw new Error(result?.message || "주문 상세 조회에 실패했습니다.");
+    }
+
+    return result.data;
+}
 
 export function useAdminOrders() {
     const [orderList, setOrderList] = useState<Order[]>([]);
@@ -123,10 +136,14 @@ export function useAdminOrders() {
                 setError(null);
 
                 try {
+                    // v3: one step forward through the fulfillment route (the
+                    // response is the transition outcome, so the Order is re-read).
                     const res =
-                        await fetch(`/api/admin/orders/${orderId}`,
+                        await fetch(MALL_V3
+                            ? `/api/admin/orders/${orderId}/advance`
+                            : `/api/admin/orders/${orderId}`,
                             {
-                                method: "PATCH",
+                                method: MALL_V3 ? "POST" : "PATCH",
                                 headers: {
                                     "Content-Type":
                                         "application/json",
@@ -152,8 +169,9 @@ export function useAdminOrders() {
                     const result =
                         await res.json();
 
-                    const updatedOrder =
-                        result.data as Order;
+                    const updatedOrder = MALL_V3
+                        ? await fetchOrderAfterAdvance(orderId)
+                        : result.data as Order;
 
                     setSelectedOrder(
                         updatedOrder,

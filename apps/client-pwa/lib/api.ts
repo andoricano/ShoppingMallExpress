@@ -64,6 +64,14 @@ export interface ShippingAddressInput {
   recipientName: string; phone: string; zonecode: string; address: string; addressDetail: string;
 }
 
+const ORDER_STATUS_LABEL: Record<OrderStatus, string> = {
+  PENDING: "주문 접수", PAID: "결제 완료", PROCESSING: "상품 준비 중",
+  SHIPPED: "배송 중", DELIVERED: "배송 완료", CANCELLED: "주문 취소",
+};
+export const orderStatusLabel = (status: OrderStatus) => ORDER_STATUS_LABEL[status] ?? status;
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export const shopApi = {
   posts: () => call<ProductPostSummary[] | null>(
     createClient().rpc("list_product_posts", { p_category_id: null, p_limit: 100, p_offset: 0 }),
@@ -91,6 +99,15 @@ export const shopApi = {
   order: async (id: string) => {
     const row = await call<OrderRow | null>(
       createClient().from("orders").select(ORDER_SELECT).eq("id", id).maybeSingle(),
+      "주문을 불러오지 못했습니다.",
+    );
+    return row ? toOrder(row) : null;
+  },
+  // Lookup by the order number (BR-22); an internal id is still accepted.
+  orderByRef: async (ref: string) => {
+    const column = UUID.test(ref) ? "id" : "order_number";
+    const row = await call<OrderRow | null>(
+      createClient().from("orders").select(ORDER_SELECT).eq(column, ref).maybeSingle(),
       "주문을 불러오지 못했습니다.",
     );
     return row ? toOrder(row) : null;

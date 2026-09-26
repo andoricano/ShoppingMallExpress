@@ -8,16 +8,21 @@ import { OrderInspectorController } from "./OrderInspectorController";
 import { OrderInspectorHeader } from "./OrderInspectorHeader";
 import { OrderInspectorItems } from "./OrderInspectorItems";
 import { OrderInspectorShipping } from "./OrderInspectorShipping";
+import { OrderFulfillmentPanel } from "./OrderFulfillmentPanel";
+import { MALL_V3 } from "@/lib/mallVersion";
 
 interface OrderInspectorProps {
     order: Order | null;
 
     onTransition?: (order: Order, nextStatus: OrderStatus) => void;
+    /** v3: called after an allocation or an Admin cancel changed the Order. */
+    onChanged?: () => void;
 }
 
 export function OrderInspector({
     order,
     onTransition,
+    onChanged,
 }: OrderInspectorProps) {
     if (!order) {
         return (
@@ -51,6 +56,13 @@ export function OrderInspector({
             <OrderInspectorShipping
                 order={order}
             />
+
+            {MALL_V3 && (
+                <OrderFulfillmentPanel
+                    order={order}
+                    onChanged={onChanged}
+                />
+            )}
 
             <OrderInspectorController
                 order={order}

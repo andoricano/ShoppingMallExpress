@@ -17,6 +17,7 @@ interface CartListItemProps {
 const UNAVAILABLE_LABEL: Record<ProductVariantStockStatus, string | null> = {
     AVAILABLE: null,
     OUT_OF_STOCK: "품절",
+    SOLD_OUT: "품절",
     UNAVAILABLE: "판매 중지",
 };
 

@@ -108,7 +108,7 @@ export function OrderSection({
                                         </p>
                                         {!item.isAvailable && (
                                             <p className="text-xs font-semibold text-rose-600">
-                                                {item.stockStatus === "OUT_OF_STOCK" ? "품절" : "판매 중지"}
+                                                {item.stockStatus === "OUT_OF_STOCK" || item.stockStatus === "SOLD_OUT" ? "품절" : "판매 중지"}
                                             </p>
                                         )}
                                     </div>

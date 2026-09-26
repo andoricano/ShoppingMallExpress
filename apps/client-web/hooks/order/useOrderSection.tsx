@@ -17,6 +17,8 @@ import {
     toOrderErrorMessage,
     useClientOrder,
 } from "@/hooks/order/useClientOrder";
+import { useCheckoutV3 } from "@/hooks/order/useCheckoutV3";
+import { MALL_V3 } from "@/lib/mallVersion";
 
 /**
  * Order shipping snapshot. Uses the ClientAddress field names (the shipping
@@ -51,7 +53,10 @@ function toShippingForm(address: ClientAddress): OrderShippingForm {
 export function useOrderSection() {
     const cartState = useCart();
     const { items, fetchCart } = cartState;
-    const { creating, createOrderFromCart } = useClientOrder();
+    const { creating: creatingV2, createOrderFromCart } = useClientOrder();
+    const checkout = useCheckoutV3();
+    const [startingV3, setStartingV3] = useState(false);
+    const creating = creatingV2 || startingV3;
 
     const [addresses, setAddresses] =
         useState<ClientAddress[]>([]);
@@ -140,6 +145,50 @@ export function useOrderSection() {
             return null;
         }
 
+        const shippingAddress = {
+            recipientName: shipping.recipientName.trim(),
+            phone: shipping.phone.trim(),
+            zonecode: shipping.zonecode.trim(),
+            address: shipping.address.trim(),
+            addressDetail: shipping.addressDetail.trim() || null,
+        };
+
+        if (MALL_V3) {
+            // v3: the Client keeps the checkout data; the server records only a Payment.
+            setStartingV3(true);
+
+            try {
+                const started = await checkout.start(
+                    items.map((item) => ({
+                        productId: item.productId,
+                        productVariantId: item.productVariantId,
+                        quantity: item.quantity,
+                    })),
+                    shippingAddress,
+                    items.map((item) => ({
+                        name: item.productName,
+                        label: item.variantLabel,
+                        quantity: item.quantity,
+                    })),
+                );
+
+                if (started.kind === "STARTED") {
+                    return "v3-checkout";
+                }
+
+                setOrderError(
+                    started.kind === "NOT_SELLABLE"
+                        ? "현재 구매할 수 없는 상품이 포함되어 있습니다. 장바구니에서 삭제해 주세요."
+                        : "주문을 시작하지 못했습니다.",
+                );
+                await fetchCart();
+
+                return null;
+            } finally {
+                setStartingV3(false);
+            }
+        }
+
         try {
             const orderId = await createOrderFromCart({
                 recipientName: shipping.recipientName.trim(),
@@ -161,7 +210,7 @@ export function useOrderSection() {
 
             return null;
         }
-    }, [createOrderFromCart, fetchCart, items, missingShipping, shipping]);
+    }, [checkout, createOrderFromCart, fetchCart, items, missingShipping, shipping]);
 
     return {
         cart: cartState,

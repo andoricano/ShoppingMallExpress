@@ -1,5 +1,6 @@
 "use client";
 
+import { MALL_V3 } from "@/lib/mallVersion";
 import { useRefund } from "@/hooks/refund/useRefund";
 import type { AdminRefundRequest } from "@mall/types";
 import { RefundItemRestockRow } from "@/component/refund/RefundItemRestockRow";
@@ -23,6 +24,7 @@ export default function RefundPage() {
         error,
         fetchRefunds,
         processRefund,
+        retryReversal,
         restockRefundItem,
     } = useRefund();
 
@@ -116,6 +118,21 @@ export default function RefundPage() {
                                                 <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-700">
                                                     {REFUND_STATUS_LABEL[refund.status]}
                                                 </span>
+                                                {MALL_V3 && refund.status === "APPROVED" && (
+                                                    <button
+                                                        type="button"
+                                                        disabled={isProcessing}
+                                                        onClick={() => void (async () => {
+                                                            setProcessingId(refund.id);
+                                                            const result = await retryReversal(refund.id);
+                                                            setProcessingId(null);
+                                                            window.alert(result.ok ? "환급을 다시 처리했습니다." : result.message);
+                                                        })()}
+                                                        className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 disabled:opacity-50"
+                                                    >
+                                                        환급 재처리
+                                                    </button>
+                                                )}
                                                 {canProcess && (
                                                     <>
                                                         <button
