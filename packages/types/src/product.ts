@@ -46,6 +46,11 @@ export interface ProductVariant {
     label: string | null;
     price: number;
     isActive: boolean;
+    /**
+     * v3 explicit sold-out state set by Admin; independent of stock.
+     * Absent until the v3 read paths return it (default false in the DB).
+     */
+    isSoldOut?: boolean;
     meta: JsonObject;
     createdAt: string;
     updatedAt: string;

@@ -46,3 +46,16 @@ export interface OrderItemWareAllocation {
     quantity: number;
     createdAt: string;
 }
+
+/**
+ * Internal Admin/trusted-server read model (v3). Shortage is computed, never
+ * stored: `shortageQuantity = quantity - allocatedQuantity`, where
+ * `allocatedQuantity` is the sum of the OrderItem's Ware allocations.
+ * Never include in Consumer payloads.
+ */
+export interface AdminOrderItemShortage {
+    orderItemId: string;
+    quantity: number;
+    allocatedQuantity: number;
+    shortageQuantity: number;
+}

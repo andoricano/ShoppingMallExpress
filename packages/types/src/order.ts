@@ -42,6 +42,11 @@ export interface Order {
     shippingAmount: number;
     totalAmount: number;
     paymentReference: string | null;
+    /**
+     * v3 canonical link to the Payment (one Order per Payment). Absent or
+     * null for v2 Orders. `Payment.orderId` is the v2 direction.
+     */
+    paymentId?: string | null;
     orderedAt: string;
     createdAt: string;
     updatedAt: string;
