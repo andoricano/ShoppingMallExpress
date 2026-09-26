@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
 # ============================================================
-# Local verification: Mall v3 Cancel Route Handler over HTTP and the reversal failure path
-# (apps/client-web/app/api/orders/[orderId]/cancel)
+# Local verification: Mall v3 Refund request Route Handler over HTTP and the refund reversal failure/retry path
+# (apps/client-web/app/api/orders/[orderId]/refund)
 #
-#   bash supabase/verification/v3_phase5_routes.sh
+#   bash supabase/verification/v3_phase7_routes.sh
 #
 # Runs `next dev` for client-web on port 3999 against the LOCAL Supabase stack
 # with a mock PG Test recorder (the real PG Test service is never called and no
 # production value is used: every environment variable the app needs is passed
 # explicitly). The local API URL and keys are read from
 # `pnpm supabase status -o env` into variables and are never printed.
-# Fixtures are committed (names start with "__v3p5routes", users are
-# v3p5-*@example.test) and removed on exit; `pnpm supabase db reset` restores
+# Fixtures are committed (names start with "__v3p7routes", users are
+# v3p7-*@example.test) and removed on exit; `pnpm supabase db reset` restores
 # the local DB if cleanup ever fails.
 # ============================================================
 set -uo pipefail
@@ -37,14 +37,17 @@ case "$LOCAL_API_URL" in
   *) echo "FAIL  refusing to run against a non-local API URL"; exit 1 ;;
 esac
 
-WH="" POST="" PRODUCT_NAME="__v3p5routes product"
+WH="" POST="" PRODUCT_NAME="__v3p7routes product"
 cleanup() {
   psqlq >/dev/null 2>&1 <<SQL
 begin;
 alter table public.order_item_ware_allocations disable trigger order_item_ware_allocations_freeze_after_processing;
-create temp table _u as select id from auth.users where email like 'v3p5-%@example.test';
-delete from public.order_cancellations where order_id in (select id from public.orders where client_id in (select id from _u));
+create temp table _u as select id from auth.users where email like 'v3p7-%@example.test';
 delete from public.payment_reversals where payment_id in (select id from public.payments where client_id in (select id from _u));
+delete from public.refund_item_restocks where refund_item_id in (select ri.id from public.refund_items ri join public.refund_requests rr on rr.id = ri.refund_request_id where rr.client_id in (select id from _u));
+delete from public.refund_items where refund_request_id in (select id from public.refund_requests where client_id in (select id from _u));
+delete from public.refund_requests where client_id in (select id from _u);
+delete from public.order_cancellations where order_id in (select id from public.orders where client_id in (select id from _u));
 delete from public.order_item_ware_allocations where order_item_id in
   (select oi.id from public.order_items oi join public.orders o on o.id = oi.order_id where o.client_id in (select id from _u));
 delete from public.order_items where order_id in (select id from public.orders where client_id in (select id from _u));
@@ -70,9 +73,9 @@ SQL
 }
 trap cleanup EXIT
 
-WH="$(sql "select public.create_warehouse('__v3p5routes warehouse')")"
-W1="$(sql "select public.create_ware('$WH', '__v3p5routes W1', null, 'GENERAL', 10)")"
-WS="$(sql "select public.create_ware('$WH', '__v3p5routes WS', null, 'GENERAL', 10)")"
+WH="$(sql "select public.create_warehouse('__v3p7routes warehouse')")"
+W1="$(sql "select public.create_ware('$WH', '__v3p7routes W1', null, 'GENERAL', 100)")"
+WS="$(sql "select public.create_ware('$WH', '__v3p7routes WS', null, 'GENERAL', 10)")"
 PJ="$(sql "select public.admin_create_product('{\"name\":\"$PRODUCT_NAME\"}', '[]', '[{\"price\":1000,\"skuCode\":\"__V3P4R-1\"},{\"price\":500,\"skuCode\":\"__V3P4R-2\"},{\"price\":100,\"skuCode\":\"__V3P4R-S\"}]')")"
 PRODUCT="$(sql "select ('$PJ'::jsonb ->> 'productId')")"
 V1="$(sql "select ('$PJ'::jsonb -> 'variantIds' ->> 0)")"
@@ -80,7 +83,7 @@ V2="$(sql "select ('$PJ'::jsonb -> 'variantIds' ->> 1)")"
 VS="$(sql "select ('$PJ'::jsonb -> 'variantIds' ->> 2)")"
 psqlq -c "select public.link_product_variant_ware('$V1','$W1')" >/dev/null
 psqlq -c "select public.link_product_variant_ware('$VS','$WS')" >/dev/null
-POST="$(sql "insert into public.product_posts (title, status) values ('__v3p5routes post','PUBLISHED') returning id")"
+POST="$(sql "insert into public.product_posts (title, status) values ('__v3p7routes post','PUBLISHED') returning id")"
 psqlq -c "insert into public.product_post_products (product_post_id, product_id) values ('$POST','$PRODUCT')" >/dev/null
 
 FX="{\"product\":\"$PRODUCT\",\"v1\":\"$V1\",\"vs\":\"$VS\",\"w1\":\"$W1\",\"ws\":\"$WS\"}"
@@ -93,4 +96,4 @@ fi
 echo "PASS  the user-web and client-web reversal executors are identical"
 
 cd "$ROOT" && LOCAL_API_URL="$LOCAL_API_URL" LOCAL_ANON_KEY="$LOCAL_ANON_KEY" LOCAL_SERVICE_KEY="$LOCAL_SERVICE_KEY" \
-  FX="$FX" node --no-warnings supabase/verification/v3_phase5_routes.mts
+  FX="$FX" node --no-warnings supabase/verification/v3_phase7_routes.mts

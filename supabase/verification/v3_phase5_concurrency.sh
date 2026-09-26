@@ -43,7 +43,8 @@ check() {
 CLIENT="" ADMIN="" WH="" POST="" PRODUCT_NAME="__v3p5conc product"
 cleanup() {
   psqlq >/dev/null 2>&1 <<SQL
-set session_replication_role = replica;
+begin;
+alter table public.order_item_ware_allocations disable trigger order_item_ware_allocations_freeze_after_processing;
 delete from public.order_cancellations where order_id in (select id from public.orders where client_id = nullif('$CLIENT','')::uuid);
 delete from public.payment_reversals where payment_id in (select id from public.payments where client_id = nullif('$CLIENT','')::uuid);
 delete from public.order_item_ware_allocations where order_item_id in
@@ -59,6 +60,8 @@ delete from public.wares where warehouse_id = nullif('$WH','')::uuid;
 delete from public.warehouses where id = nullif('$WH','')::uuid;
 delete from public.products where name = '$PRODUCT_NAME';
 delete from auth.users where id in (nullif('$CLIENT','')::uuid, nullif('$ADMIN','')::uuid);
+alter table public.order_item_ware_allocations enable trigger order_item_ware_allocations_freeze_after_processing;
+commit;
 SQL
   local leftovers
   leftovers="$(sql "select (select count(*) from public.wares where name like '__v3p5conc%') + (select count(*) from public.products where name like '__v3p5conc%') + (select count(*) from public.warehouses where name like '__v3p5conc%') + (select count(*) from public.payments where client_id = nullif('$CLIENT','')::uuid)")"

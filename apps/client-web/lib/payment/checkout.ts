@@ -34,6 +34,13 @@ export function checkoutErrorResponse(error: unknown) {
             );
         }
 
+        if (message.includes("Order cannot be refunded") || message.includes("Refund quantity exceeds")) {
+            return NextResponse.json(
+                { message: "환불을 요청할 수 없는 주문이거나 환불 가능 수량을 초과했습니다." },
+                { status: 409 },
+            );
+        }
+
         if (message.includes("has not succeeded")) {
             return NextResponse.json(
                 { message: "결제가 완료되지 않았습니다." },

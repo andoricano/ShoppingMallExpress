@@ -42,7 +42,8 @@ check() {
 CLIENT="" WH="" ORDER=""
 cleanup() {
   psqlq >/dev/null 2>&1 <<SQL
-set session_replication_role = replica;
+begin;
+alter table public.order_item_ware_allocations disable trigger order_item_ware_allocations_freeze_after_processing;
 delete from public.refund_item_restocks where refund_item_id in
   (select ri.id from public.refund_items ri join public.refund_requests rr on rr.id = ri.refund_request_id
     where rr.client_id = nullif('$CLIENT','')::uuid);
@@ -57,6 +58,8 @@ delete from public.wares where warehouse_id = nullif('$WH','')::uuid;
 delete from public.warehouses where id = nullif('$WH','')::uuid;
 delete from public.products where name like '__conc%';
 delete from auth.users where id = nullif('$CLIENT','')::uuid;
+alter table public.order_item_ware_allocations enable trigger order_item_ware_allocations_freeze_after_processing;
+commit;
 SQL
   local leftovers
   leftovers="$(sql "select (select count(*) from public.wares where name like '__conc%') + (select count(*) from public.products where name like '__conc%') + (select count(*) from public.warehouses where name like '__conc%')")"

@@ -10,6 +10,11 @@ const BLOCKED_MESSAGES = [
     "Invalid Order status transition",
     "no succeeded Payment",
     "Only a PENDING Order can hold allocation",
+    // Refund decisions (Phase 7)
+    "is already",
+    "no Payment to reverse",
+    "Reversal amount exceeds",
+    "Refund amount must be greater than zero",
 ];
 
 /**
@@ -22,7 +27,7 @@ export function fulfillmentErrorResponse(error: unknown) {
         ? error as { code?: string; message?: string }
         : {};
 
-    if (code === "P0001" && BLOCKED_MESSAGES.some((text) => message.includes(text))) {
+    if ((code === "P0001" || code === "23514") && BLOCKED_MESSAGES.some((text) => message.includes(text))) {
         return NextResponse.json({ message }, { status: 409 });
     }
 
