@@ -7,7 +7,7 @@ does not cut over, and does not turn `NEXT_PUBLIC_MALL_V3` on.
 It is run by the user (or by an agent only on the user's explicit instruction, which
 names that it reads production). The output is read with the levels in
 `supabase/cutover/v3_precheck_v2_baseline.sql`. Results are labelled
-`production read-only observed` once run; none has been run yet.
+`production read-only observed` once run. Run on 2026-09-27: BLOCKER 0, WARN 0, 3 unpaid PENDING Orders (approved as cutover targets); the result is recorded in `CUTOVER.md` section 3.1.
 
 ---
 

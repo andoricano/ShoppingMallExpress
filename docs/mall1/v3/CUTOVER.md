@@ -14,12 +14,12 @@ change run only on the user's explicit instruction. Results are labelled
 |---|---|
 | v3 domain paths (Phases 1 to 8) | verified locally; all suites pass |
 | Cutover scripts, precheck, post-check, rehearsal | verified on the local stack (`local rehearsal`: every step check plus the v3 suites on the cut-over database) |
-| Production data precheck | **not run** (needs the user to run `v3_precheck_v2_baseline.sql`, or an explicit instruction) |
+| Production data precheck | **run 2026-09-27, `production read-only observed`; approved by the user**: BLOCKER 0, WARN 0, the v2 baseline is as expected (section 3.1) |
 | Decisions #1 to #3 (business/data) | **approved by the user (2026-09-27)**; #1 needs the target list shown before it is applied (`v3_preview_unpaid_legacy_orders.sql`) |
 | PG reversal adapter | **only the PG Test simulation exists.** Not a blocker for the PG test cutover; **a blocker for a real-money production release** (no real PG adapter) |
 | Scheduler for the reconcile job | not configured (deployment setting; needs the user) |
 
-Verdict: **the Phase 9 gate is not PASS.** Remaining production blockers before the PG test cutover: the production precheck, the unpaid-legacy-Order target check, the production environment variables, the reconcile scheduler, Supabase backup availability, the v3 deployment, and the user's explicit cutover approval. The exact read-only procedure is `docs/mall1/v3/PRECHECK.md`. A **real-money launch stays FAIL** until a real PG reversal adapter exists.
+Verdict: **the Phase 9 gate is not PASS.** Remaining production blockers before the PG test cutover (the production precheck and the unpaid-legacy-Order target check are done, section 3.1): the production environment variables, the reconcile scheduler, Supabase backup availability, the v3 deployment, and the user's explicit cutover approval. The exact read-only procedure is `docs/mall1/v3/PRECHECK.md`. A **real-money launch stays FAIL** until a real PG reversal adapter exists.
 
 ---
 
@@ -61,7 +61,27 @@ stay PENDING and cannot be completed through the v3 path.
 | allocation not equal to quantity, PENDING payments, paid-but-cancelled, Point mismatch | WARN | look at each |
 | Orders by status, historical APPROVED Refunds, open Refunds, Wares, Ware-less Variants | INFO | context |
 
-Result on production: **not run.** The local rehearsal dataset produced 0 BLOCKER and 2 ACTION rows, as designed.
+Result on production (`production read-only observed`, 2026-09-27; the three read-only scripts of `PRECHECK.md`, each inside `begin read only; ... commit;`; approved by the user):
+
+| Item | Result |
+|---|---|
+| last migration | `20260925150000` (the expected v2 baseline); none of the 5 v3 objects exists; Wares with `reserved_stock <> 0`: 0 |
+| BLOCKER | 0 (duplicate `pg_callback_id`, refund status, over-refund, reserved stock: all 0) |
+| WARN | 0 (allocation mismatch, PENDING payments, paid-but-cancelled, Point mismatch: all 0) |
+| ACTION | 3 unpaid PENDING Orders (no PAID Order without a Payment) |
+| INFO | 7 Orders (CANCELLED 1, PAID 3, PENDING 3); 2 historical APPROVED Refunds, 0 open REQUESTED; 2 Wares, total `current_stock` 114; 0 Ware-less Variants; 2 Point top-ups |
+
+Approved cutover targets (decision #1, approved by the user 2026-09-27; all three cancelled, no Payment created, the existing allocation returned to `current_stock`):
+
+| Order | Status | Ordered | Allocated |
+|---|---|---|---|
+| `ORD-20260925165934-EBA4C2DF` | PENDING | 2 | 2 |
+| `ORD-20260926055734-4DD4F73E` | PENDING | 3 | 3 |
+| `ORD-20260926105646-D3B1D14E` | PENDING | 1 | 1 |
+
+Expected stock effect: 6 returns to `P8-WARE-1`, `current_stock` 3 → 9. Scope of the approval: these three Orders only. The preview is run again just before the window; any other unpaid Order that appears then needs its own approval, and a result that differs from this table (Orders, quantities, stock) is a stop.
+
+An earlier attempt failed on authentication because it used a credential from before the `.env` was updated; the current connection succeeded (not a data finding).
 
 ### 3.2 Environment (per app)
 
@@ -156,14 +176,14 @@ Accounts: 1 Admin and 2 Clients (A, B). Data: a test Product with 2 Variants (Va
 
 ## 8. Remaining blockers
 
-Before the PG test cutover (all open; the procedure is `PRECHECK.md`):
-1. The production precheck result (section 3.1).
-2. The unpaid legacy Order target check (list and quantities shown to the user).
-3. The production environment variables confirmed (section 3.2).
-4. The reconcile scheduler prepared (section 3.3).
-5. Supabase backup availability confirmed.
-6. The v3 deployment prepared, not promoted.
-7. The user's explicit cutover approval.
+Done (2026-09-27): the production precheck (BLOCKER 0, WARN 0) and the unpaid legacy Order target check (3 Orders, approved; section 3.1).
+
+Before the PG test cutover (open; the procedure is `PRECHECK.md`):
+1. The production environment variables confirmed (section 3.2).
+2. The reconcile scheduler prepared (section 3.3).
+3. Supabase backup availability confirmed.
+4. The v3 deployment prepared, not promoted.
+5. The user's explicit cutover approval.
 
 For a real-money production release only: **a real PG reversal adapter**. It is not a blocker for the PG test cutover.
 
