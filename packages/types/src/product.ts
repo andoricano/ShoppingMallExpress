@@ -6,6 +6,17 @@ export type ProductVariantStockStatus =
     | "OUT_OF_STOCK"
     | "UNAVAILABLE";
 
+/**
+ * Mall v3 Consumer-safe sellability (get_product_variant_sellability). Derived
+ * from Product/Variant `isActive` and the explicit Variant `isSoldOut`, never
+ * from stock (BR-18, BR-19, BR-46). There is deliberately no low-stock value:
+ * it would reveal stock levels (BR-20).
+ */
+export type ProductVariantSellabilityStatus =
+    | "AVAILABLE"
+    | "SOLD_OUT"
+    | "UNAVAILABLE";
+
 /** Product common data. Selling price belongs to ProductVariant. */
 export interface Product {
     id: string;

@@ -38,7 +38,7 @@ export const InventoryTable: React.FC<InventoryTableProps> = ({
             <th className="p-3 px-4">재고 ID</th>
             <th className="p-3 px-4">Ware 코드</th>
             <th className="p-3 px-4">메타 정보</th>
-            <th className="p-3 px-4">재고 수량</th>
+            <th className="p-3 px-4">물리 재고 / 예약</th>
             <th className="p-3 px-4">상태</th>
             <th className="p-3 px-4 text-right">관리</th>
           </tr>
@@ -102,8 +102,14 @@ export const InventoryTable: React.FC<InventoryTableProps> = ({
 
                 <td className="p-3 px-4">
                   <div className="flex items-center gap-2">
-                    <span className="font-bold text-slate-800">
+                    <span className="font-bold text-slate-800" title="물리 재고">
                       {item.currentStock.toLocaleString()}개
+                    </span>
+                    <span
+                      className="text-[11px] text-slate-500"
+                      title="예약 = 처리 대기(PENDING) 주문에 할당된 수량, 가용 = 물리 재고 - 예약"
+                    >
+                      예약 {item.reservedStock.toLocaleString()} · 가용 {(item.currentStock - item.reservedStock).toLocaleString()}
                     </span>
 
                     {onEditStock && (

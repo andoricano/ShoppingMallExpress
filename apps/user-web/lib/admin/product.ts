@@ -104,6 +104,23 @@ export async function loadAdminProductDetail(
     if (optionsResult.error) throw optionsResult.error;
     if (variantsResult.error) throw variantsResult.error;
 
+    // `is_sold_out` (Mall v3) is read on its own so that this Admin screen
+    // keeps working against a database that does not have the column yet
+    // (Postgres 42703); the flag is then simply absent.
+    const soldOutResult = await supabase
+        .from("product_variants")
+        .select("id, is_sold_out")
+        .eq("product_id", productId);
+    const soldOut = new Map<string, boolean>();
+
+    if (soldOutResult.error) {
+        if (soldOutResult.error.code !== "42703") throw soldOutResult.error;
+    } else {
+        for (const row of soldOutResult.data ?? []) {
+            soldOut.set(row.id as string, row.is_sold_out as boolean);
+        }
+    }
+
     const options = optionsResult.data as OptionRow[];
     const variants = variantsResult.data as VariantRow[];
 
@@ -161,6 +178,7 @@ export async function loadAdminProductDetail(
             label: variant.label,
             price: Number(variant.price),
             isActive: variant.is_active,
+            ...(soldOut.has(variant.id) ? { isSoldOut: soldOut.get(variant.id) } : {}),
             meta: variant.meta,
             createdAt: variant.created_at,
             updatedAt: variant.updated_at,

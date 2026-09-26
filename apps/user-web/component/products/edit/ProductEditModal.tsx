@@ -41,6 +41,12 @@ interface VariantDraft {
     label: string;
     price: number;
     isActive: boolean;
+    /** False while the database has no `is_sold_out` yet (the toggle is hidden). */
+    soldOutSupported: boolean;
+    /** Explicit sold-out state (persisted Variants only); saved separately from the structure. */
+    isSoldOut: boolean;
+    /** Persisted value, to detect a change on save. */
+    savedIsSoldOut: boolean;
     /** optionKey -> valueKey */
     combo: Record<string, string>;
     comboChanged: boolean;
@@ -90,6 +96,9 @@ function toDraft(detail: AdminProductDetail): ProductDraft {
             label: variant.label ?? "",
             price: variant.price,
             isActive: variant.isActive,
+            soldOutSupported: variant.isSoldOut !== undefined,
+            isSoldOut: variant.isSoldOut ?? false,
+            savedIsSoldOut: variant.isSoldOut ?? false,
             combo: Object.fromEntries(
                 variant.optionValueIds
                     .filter((valueId) => optionOfValue.has(valueId))
@@ -152,7 +161,7 @@ function toUpdateInput(draft: ProductDraft, imageUrls: string[]): ProductUpdateI
  * ones and combination changes). Deletion is not supported.
  */
 export function ProductEditModal({ productId, onSaved, onClose }: ProductEditModalProps) {
-    const { fetchProductDetail, updateProduct } = useAdminProducts();
+    const { fetchProductDetail, updateProduct, setVariantSoldOut } = useAdminProducts();
     const { uploadProductImages } = useImageApi();
     const [draft, setDraft] = useState<ProductDraft | null>(null);
     const [newValueText, setNewValueText] = useState<Record<string, string>>({});
@@ -264,7 +273,22 @@ export function ProductEditModal({ productId, onSaved, onClose }: ProductEditMod
             // Pending images are uploaded first; if any upload fails the
             // Product (including image_urls) is not updated.
             const imageUrls = await uploadProductImages(draft.images);
-            onSaved(await updateProduct(draft.id, toUpdateInput(draft, imageUrls)));
+            let saved = await updateProduct(draft.id, toUpdateInput(draft, imageUrls));
+
+            // Sold-out is an operational state, saved through its own RPC.
+            const soldOutChanges = draft.variants.filter(
+                (variant) => variant.id && variant.isSoldOut !== variant.savedIsSoldOut,
+            );
+
+            if (soldOutChanges.length > 0) {
+                for (const variant of soldOutChanges) {
+                    await setVariantSoldOut(draft.id, variant.id!, variant.isSoldOut);
+                }
+
+                saved = await fetchProductDetail(draft.id);
+            }
+
+            onSaved(saved);
         } catch (cause) {
             setError(cause instanceof Error ? cause.message : "상품 저장에 실패했습니다.");
         } finally {
@@ -402,6 +426,9 @@ export function ProductEditModal({ productId, onSaved, onClose }: ProductEditMod
                                                     label: "",
                                                     price: 0,
                                                     isActive: true,
+                                                    soldOutSupported: false,
+                                                    isSoldOut: false,
+                                                    savedIsSoldOut: false,
                                                     combo: {},
                                                     comboChanged: true,
                                                 },
@@ -458,6 +485,16 @@ export function ProductEditModal({ productId, onSaved, onClose }: ProductEditMod
                                         />
                                         활성
                                     </label>
+                                    {variant.id && variant.soldOutSupported && (
+                                        <label className="flex items-center gap-1 text-xs text-slate-600" title="재고와 무관한 명시적 품절 상태">
+                                            <input
+                                                type="checkbox"
+                                                checked={variant.isSoldOut}
+                                                onChange={(event) => updateVariant(variant.key, { isSoldOut: event.target.checked })}
+                                            />
+                                            품절
+                                        </label>
+                                    )}
                                     {!variant.id && <span className="text-xs text-blue-600">신규</span>}
                                 </div>
                             ))}

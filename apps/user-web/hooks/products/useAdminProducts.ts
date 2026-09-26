@@ -44,5 +44,19 @@ export function useAdminProducts() {
         [],
     );
 
-    return { searchProducts, fetchProductDetail, updateProduct };
+    /** Explicit Admin-decided sold-out state; independent of stock and isActive. */
+    const setVariantSoldOut = useCallback(
+        (productId: string, variantId: string, isSoldOut: boolean) =>
+            request<{ isSoldOut: boolean }>(
+                `/api/admin/products/${productId}/variants/${variantId}/sold-out`,
+                {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ isSoldOut }),
+                },
+            ),
+        [],
+    );
+
+    return { searchProducts, fetchProductDetail, updateProduct, setVariantSoldOut };
 }
