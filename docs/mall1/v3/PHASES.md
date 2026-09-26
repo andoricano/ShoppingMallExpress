@@ -302,7 +302,7 @@ Compared with the eight areas first proposed: allocation/shortage/SOLD_OUT moved
 
 **Preconditions**: Phases 3 and 6.
 
-**Decision Before Implementation**: DN-47 (Refund status set), DN-42 (window), DN-43 (partial approval), DN-44 (withdrawal), DN-45 (repeat idempotency), DN-46 (seller-initiated Refund / seller-failure workflow), DN-27 (amount with discount/shipping).
+**Decision Before Implementation** (decided in Phase 7): DN-47 — the Refund status set is `REQUESTED` / `APPROVED` / `REJECTED`, `COMPLETED` / `CANCELLED` are unused, and a valid request is `REQUESTED` or `APPROVED`; DN-43 — no partial approval; DN-44 — no Client withdrawal; DN-45 — the same decision again is `ALREADY_APPROVED` / `ALREADY_REJECTED`, the opposite is refused, and no duplicate reversal is created; DN-27 — the refund amount is the immutable OrderItem snapshot unit price times the refunded quantity, to be reviewed when discount or shipping is introduced. Carried over: DN-42 (refund window) to Phase 9 and DN-46 (seller-initiated Refund) to Phase 8/9.
 
 **Completion criteria**
 - S-18 to S-22 and S-33 to S-36 pass; S-19 also under concurrent requests (the cumulative limit holds).
@@ -408,7 +408,7 @@ Compared with the eight areas first proposed: allocation/shortage/SOLD_OUT moved
 | 4 | DN-38, DN-39, DN-41, IN-10, IN-11 (decided); DN-19, DN-20, DN-23, DN-24 carried to Phase 8 |
 | 5 | DN-12 (decided); DN-19 carried to Phase 8 |
 | 6 | DN-02, DN-04, DN-14 (decided) |
-| 7 | DN-27, DN-42, DN-43, DN-44, DN-45, DN-46, DN-47 |
+| 7 | DN-27, DN-43, DN-44, DN-45, DN-47 (decided); DN-42 carried to Phase 9; DN-46 carried to Phase 8/9 |
 | 8 | DN-48, DN-49, and from Phase 4: DN-19, DN-20, DN-23, DN-24 |
 | 9 | none |
 

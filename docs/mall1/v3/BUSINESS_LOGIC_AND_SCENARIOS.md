@@ -1,6 +1,6 @@
 # Mall v3 — Business Logic and Scenarios
 
-Draft 0.10 · 2026-09-27 · Source of Truth candidate
+Draft 0.11 · 2026-09-27 · Source of Truth candidate
 
 This document is analysis and policy capture only. It is not an implementation plan and it does not define phases.
 
@@ -429,14 +429,14 @@ SUM(amount of PENDING + SUCCEEDED payment_reversals) <= payments.amount
 - A Refund can be requested for an Order in `PROCESSING`, `SHIPPED`, or `DELIVERED`.
 - A Refund cannot be requested for an Order in `PENDING` or `CANCELLED`. In `PENDING`, Cancel is used instead.
 - Partial Refund is supported: some quantity of an OrderItem may be refunded, priced at the snapshot unit price of the OrderItem.
-- The Refund window after `DELIVERED` is not decided (DN-42).
+- The Refund window after `DELIVERED` is not enforced and stays open (DN-42, carried to Phase 9).
 
 #### BR-38 Cumulative Refund quantity invariant
 
 - For each OrderItem, the cumulative quantity of valid Refund requests/approvals never exceeds the original `OrderItem.quantity`.
 - Several partial Refund requests are allowed, but their valid cumulative quantity cannot exceed the ordered quantity.
 - Valid requests that exist at the same time (concurrently) must not push the total over the limit.
-- How `REJECTED` and withdrawn requests are excluded from the total follows the Refund status policy (DN-44, DN-47).
+- How `REJECTED` and withdrawn requests are excluded from the total follows the Refund status policy: only `REQUESTED` and `APPROVED` requests are valid; withdrawal is not supported (former DN-44, DN-47, decided in Phase 7).
 - Enforcing this under concurrency (row lock, RPC) is implementation design (IN-07). The current `request_refund` does not guarantee it (CF-17).
 
 #### BR-39 Refund approval and the linked reversal succeed or fail together
@@ -652,7 +652,7 @@ Format per area: Approved v3 policy · Current v2 implementation · Conflict · 
   - `[E2E]` A full-quantity (4 of 4) refund request on a fresh paid Order was created as `REQUESTED`. Partial refund was planned but not exercised.
 - **Judgment**: eligibility (after `PAID` is removed), partial quantity, and snapshot pricing agree with BR-37 (`CONFIRMED`, `[CODE]`). The concurrency guarantee (BR-38) and the payment link (BR-39) do not (`CONFLICT`).
 - **Conflict**: CF-14, CF-17.
-- **Decision Needed**: DN-27, DN-42, DN-43, DN-44, DN-45, DN-47.
+- **Decision Needed**: DN-27 (amount with discount/shipping only), DN-42.
 - **Affected**: RPC `request_refund`; tables `refund_requests`, `refund_items`; client-web `components/mypage/history/order/content/OrderRefundCard.tsx`, `hooks/history/useOrderAfterSales.ts`; shared types `refund.ts`, `adminRefund.ts`.
 
 ### 4.10 Refund Approval
@@ -663,7 +663,7 @@ Format per area: Approved v3 policy · Current v2 implementation · Conflict · 
   - `[E2E]` Approval left Ware stock unchanged (0 → 0).
 - **Judgment**: "approval does not change stock or Order status" agrees with BR-40 and BR-41 (`CONFIRMED`); "approval creates the linked reversal in the same transaction" does not (`CONFLICT`).
 - **Conflict**: CF-14.
-- **Decision Needed**: DN-43, DN-45, DN-46, DN-47.
+- **Decision Needed**: DN-46.
 - **Affected**: RPC `admin_transition_refund_status`; user-web `app/(admin)/refund/page.tsx`, `app/api/admin/refunds*`.
 
 ### 4.11 Restock
@@ -740,7 +740,7 @@ Format per area: Approved v3 policy · Current v2 implementation · Conflict · 
   - `[CODE]` `create_order_from_cart` locks the Cart row and locks Ware rows in `w.id` order; a duplicate submission from the same Client sees an empty Cart and raises `Cart is empty`. `cancel_order` locks the Order and then Wares in `ware_id` order. `complete_payment` locks the payment (and Order); a completed payment is returned unchanged; `payments_order_succeeded_uidx` and `point_ledger_payment_unique` back this up. `create_payment` takes no lock, so several `PENDING` payments per Order are possible. `request_refund` takes no lock and has no cross-request constraint (CF-17). `admin_restock_refund_item` locks the refund item, the allocation row, and the Ware. Wishlist has a unique key.
   - `[E2E]` No concurrency scenario was exercised.
 - **Conflict**: CF-08 (non-idempotent cancel), CF-14 (no payment reversal to make idempotent), CF-17 (Refund quantity invariant not guaranteed under concurrency).
-- **Decision Needed**: DN-45.
+- **Decision Needed**: none open (former DN-45 decided in Phase 7).
 - **Implementation notes**: IN-03, IN-07, IN-08, IN-10.
 - **Verification items**: VF-06.
 - **Affected**: RPC `create_order_from_cart`, `cancel_order`, `create_payment`, `complete_payment`, `request_refund`, `admin_restock_refund_item`; client-web `app/api/payments/*`.
@@ -819,12 +819,12 @@ Refund track (Orders in PROCESSING / SHIPPED / DELIVERED; not PENDING / CANCELLE
        if the reversal row cannot be created, APPROVED is not committed
        PG reversal SUCCEEDED, or FAILED / retry: the Refund stays APPROVED, never back to REQUESTED
        reversal amount within the payment amount                     [APPROVED BR-34]
-       the Admin approves only part of the quantity? ............ [DN-43]
+       the Admin approves only part of the quantity? ............ not supported [decided in Phase 7]
    REQUESTED --Admin--> REJECTED: no reversal, no Payment effect, no stock effect   [APPROVED BR-39]
-   Client withdraws the request ............................... [DN-44]
-   repeated approve/reject requests ........................... [DN-45]
-   Refund status set (COMPLETED / CANCELLED) .................. [DN-47]
-   Refund window after DELIVERED .............................. [DN-42]
+   Client withdraws the request ............................... not supported [decided in Phase 7]
+   repeated approve/reject requests ........................... ALREADY_* on the same decision, refused on the opposite [decided in Phase 7]
+   Refund status set: REQUESTED / APPROVED / REJECTED ......... [decided in Phase 7]
+   Refund window after DELIVERED .............................. [DN-42, Phase 9]
    Refund amount with discount / shipping ..................... [DN-27]
    APPROVED --(goods returned / inspected)--> Admin restock, explicit   [APPROVED BR-40, BR-43]
        approval alone never restores stock
@@ -866,7 +866,7 @@ Payment reversals (any cause)                                           [APPROVE
 | T-21 | new reversal request against a Payment | server | `SUM(PENDING + SUCCEEDED)` plus the new amount must not exceed `payments.amount` | none | a request beyond the limit is rejected; a `FAILED` reversal frees its amount | none | `APPROVED` (BR-34); enforcement is an implementation note (IN-03) |
 | T-22 | Refund `REQUESTED` → `APPROVED` | Admin | one transaction with creating the linked `REFUND` reversal (`PENDING`); if the reversal row cannot be created, no commit | unchanged (BR-41) | linked reversal `PENDING`; later `SUCCEEDED` or `FAILED`/retry; `payments.status` stays `SUCCEEDED`; the Refund is never moved back to `REQUESTED` | none (approval alone does not restore stock, BR-40) | `APPROVED` (BR-39, BR-40, BR-41, BR-32, BR-34); partial approval `DECISION NEEDED` (DN-43); repeated request `DECISION NEEDED` (DN-45); amount with discount/shipping `DECISION NEEDED` (DN-27); v2 behavior `CONFLICT` (CF-14) |
 | T-23 | Refund `REQUESTED` → `REJECTED` | Admin | none | unchanged | none; no reversal | none | `APPROVED` (BR-39); repeated request `DECISION NEEDED` (DN-45) |
-| T-24 | Client withdraws a Refund request | Client | not defined | unchanged | none | none | `DECISION NEEDED` (DN-44, DN-47) |
+| T-24 | Client withdraws a Refund request | Client | not supported in the initial v3 | unchanged | none | none | decided in Phase 7 (former DN-44, DN-47) |
 | T-25 | seller stops an Order after `PROCESSING` | Admin | not defined (re-allowing Cancel is not a preferred candidate) | not defined | not defined | not defined | `DECISION NEEDED` (DN-46) |
 | T-26 | Admin adds physical stock or adjusts it | Admin | `current_stock` never below `reserved_stock` | none | none | `current_stock` changes; available stock changes; no auto-allocation (BR-28) | `APPROVED` (BR-43, BR-28) |
 
@@ -1087,7 +1087,7 @@ Expected Results contain only what is approved. Anything else points to a `DN-xx
 - **Consumer Visibility**: refund status.
 - **Admin Visibility**: the requests with quantity and amount (snapshot unit price × quantity).
 - **Current v2 behavior**: `[CODE]` supported for a single flow: cumulative refunded quantity per OrderItem may not exceed the ordered quantity; `REJECTED`/`CANCELLED` requests are ignored in the sum. Not guaranteed under concurrent requests (CF-17). Not exercised in `[E2E]` (a full refund was used instead).
-- **v3 Status**: `APPROVED` (BR-37, BR-38); `CONFLICT` CF-17; partial approval `DECISION NEEDED` (DN-43).
+- **v3 Status**: `APPROVED` (BR-37, BR-38); `CONFLICT` CF-17; partial approval is not supported (former DN-43, decided in Phase 7).
 
 #### S-20 Refund approved, restock not yet done
 
@@ -1263,7 +1263,7 @@ Expected Results contain only what is approved. Anything else points to a `DN-xx
 - **Consumer Visibility**: refund status `REJECTED`.
 - **Admin Visibility**: the rejected request.
 - **Current v2 behavior**: `[CODE]` `admin_transition_refund_status` sets `REJECTED`; the sum in `request_refund` ignores `REJECTED` requests; a repeated request raises an error.
-- **v3 Status**: `APPROVED` (BR-39); `CONFIRMED` (`[CODE]`); repeated-request policy `DECISION NEEDED` (DN-45).
+- **v3 Status**: `APPROVED` (BR-39); `CONFIRMED` (`[CODE]`); the repeated-request policy is decided in Phase 7 (former DN-45).
 
 #### S-36 Seller must stop an Order after `PROCESSING`
 
@@ -1305,14 +1305,10 @@ Expected Results contain only what is approved. Anything else points to a `DN-xx
 | DN-20 | PG failure / abandonment: retry semantics and what the Client sees. (A server-side Payment record without an Order is allowed by BR-25.) | Payment, Checkout | analysis 2026-09-26 |
 | DN-23 | Cart ↔ Checkout relationship, narrowed: `finalize` does not touch the server Cart (decided with Phase 4). Still open: when and by whom the Cart is cleared after a purchase, selected-item orders, buy-now. Decided with the Consumer surfaces in Phase 8. | Cart, Checkout | analysis 2026-09-26 |
 | DN-24 | Whether an in-progress Payment (Stage 1) is shown to the Client in History or as an indicator. The server holds no other Stage 1 data (BR-44). | Checkout, client-web | analysis 2026-09-26 |
-| DN-27 | Refund amount derivation for the linked reversal when discounts or shipping fees exist (today both are 0, so the item total equals the payment amount). The reversal creation itself, its linkage, and the absence of stock and Order-status effects are approved (BR-39 to BR-41). | Refund, Payment | analysis 2026-09-26 |
+| DN-27 | Refund amount derivation for the linked reversal when discounts or shipping fees exist, narrowed: the current rule (decided in Phase 7) is the immutable OrderItem snapshot unit price times the refunded quantity; it is to be reviewed when discount or shipping is introduced (today both are 0, so the item total equals the payment amount). The reversal creation itself, its linkage, and the absence of stock and Order-status effects are approved (BR-39 to BR-41). | Refund, Payment | analysis 2026-09-26 |
 | DN-34 | Confirmation that v2 rules untouched by v3 decisions carry over (OrderItem snapshot immutability, Cart identity Product + Variant, owner RLS, Wishlist ProductPost basis, History via Order, the cap "cumulative restock per refund item is at most the refunded quantity"). | all | analysis 2026-09-26 |
-| DN-42 | Refund window after `DELIVERED` (v2 has no time limit). | Refund | analysis 2026-09-26 |
-| DN-43 | Whether Admin may approve only part of the requested Refund quantity (v2 approval accepts or rejects the whole request). | Refund, Admin | analysis 2026-09-26 |
-| DN-44 | Whether the Client may withdraw a Refund request, and its effect on the cumulative quantity of BR-38. | Refund, Client | analysis 2026-09-26 |
-| DN-45 | Idempotency policy for repeated Refund approval/rejection requests (v2 raises an error on a repeated request; BR-17 covers only Cancel). The linked reversal must in any case exist at most once (BR-32). | Refund, Concurrency | analysis 2026-09-26 |
-| DN-46 | Seller-initiated Refund / seller-failure workflow: the Admin path when an Order must be stopped after `PROCESSING`. Re-allowing Cancel after `PROCESSING` breaks the Cancel/Refund boundary (BR-35) and is not a preferred candidate; candidates are an Admin-created/approved Refund or a separate seller-failure workflow. | Refund, Cancel, Admin | analysis 2026-09-26 |
-| DN-47 | Refund request status set and the meaning of `COMPLETED` and `CANCELLED` (the shared type and client-web labels include them, but no RPC sets them). The definition of a "valid" request in BR-38 depends on it. | Refund | analysis 2026-09-26 |
+| DN-42 | Refund window after `DELIVERED` (v2 has no time limit; none is enforced in the initial v3 implementation; carried to Phase 9). | Refund | analysis 2026-09-26 |
+| DN-46 | (Carried to Phase 8/9.) Seller-initiated Refund / seller-failure workflow: the Admin path when an Order must be stopped after `PROCESSING`. Re-allowing Cancel after `PROCESSING` breaks the Cancel/Refund boundary (BR-35) and is not a preferred candidate; candidates are an Admin-created/approved Refund or a separate seller-failure workflow. | Refund, Cancel, Admin | analysis 2026-09-26 |
 | DN-48 | How PWA Order creation works when a real Order exists only after PG success (BR-05) and the PWA has no separate PG payment UI (BR-49). Examples of what must be decided: a hand-off to the client-web checkout, or PWA ordering not being offered. | client-pwa, Order, Payment | analysis 2026-09-26 |
 | DN-49 | Fate of the existing Point top-up feature (v2 `POINT_TOPUP`) now that paying with Points is excluded from the initial v3. | Point, client-web | analysis 2026-09-26 |
 
@@ -1322,6 +1318,10 @@ Resolved by approved rules and removed from the open registry.
 
 | Former ID | Decision | Resolved by | Remaining question |
 |---|---|---|---|
+| ~~DN-47~~ | Refund request status set and the meaning of `COMPLETED` / `CANCELLED`. | User decision recorded with the Phase 7 implementation: the status set is `REQUESTED` / `APPROVED` / `REJECTED`; `COMPLETED` and `CANCELLED` are not used in the initial v3; a valid request for BR-38 is `REQUESTED` or `APPROVED` (BR-38, BR-39) | Removing the unused values from the shared type is part of the Phase 8 contraction |
+| ~~DN-43~~ | Whether Admin may approve only part of the requested Refund quantity. | User decision recorded with the Phase 7 implementation: partial approval is not supported; a request is approved or rejected as a whole | none |
+| ~~DN-44~~ | Whether the Client may withdraw a Refund request. | User decision recorded with the Phase 7 implementation: withdrawal is not supported in the initial v3, so there is no effect on the cumulative quantity of BR-38 | none |
+| ~~DN-45~~ | Idempotency of repeated Refund approval/rejection requests. | User decision recorded with the Phase 7 implementation: the same decision again returns `ALREADY_APPROVED` / `ALREADY_REJECTED` (no error) and creates no second reversal (the reversal key is unique per request, BR-32); the opposite decision on a decided request is refused | none |
 | ~~DN-14~~ | Remaining Order status transition details: who performs each transition, its conditions, and the fulfillment gate. | User decision recorded with the Phase 6 implementation: only the trusted server (Admin) performs the transitions; one step forward at a time (`PENDING` to `PROCESSING` to `SHIPPED` to `DELIVERED`); a request for the status the Order already has returns `UNCHANGED`; skipping a step, going back, `PAID`, and `CANCELLED` are refused (Cancel is its own path, BR-35); `PROCESSING` needs full allocation (BR-15) and payment evidence (BR-24), and consumes the reservation once (BR-43); `SHIPPED` and `DELIVERED` need no condition beyond the previous status | none |
 | ~~DN-02~~ | Admin additional-allocation workflow. | User decision recorded with the Phase 6 implementation: the Phase 2 allocation functions are reused; the Admin runs the allocation explicitly for an Order or one OrderItem; it takes what is currently available (possibly nothing, not an error), never takes stock held by another Order, and is never automatic (BR-13, BR-28) | The Admin screen is a Phase 8 surface item |
 | ~~DN-04~~ | `PENDING` expiration policy. | User decision recorded with the Phase 6 implementation: the initial v3 has no automatic `PENDING` expiry; a `PENDING` Order is an already-paid Order the seller processes or cancels | none |
@@ -1545,3 +1545,4 @@ List only. This is not an implementation plan and does not order or schedule any
 - Draft 0.8 (2026-09-26): recorded the Phase 4 implementation decisions: resolved DN-38 (orphan detection by scan job, default window 30 minutes), DN-39 (rollback, Client retry, orphan fallback), DN-41 (no zero-amount Orders in the initial v3); narrowed DN-23 (finalize does not touch the Cart); DN-19, DN-20, DN-24 stay open for Phase 8; noted the decided approaches on IN-10 and IN-11; added IN-12 (the known limitation that the server verifies a resubmitted checkout only by its total); no rule was added or changed.
 - Draft 0.9 (2026-09-27): recorded the Phase 5 implementation decisions: resolved DN-12 (actor and reason in `order_cancellations`, one row per Order, first cancel kept); narrowed DN-19 (the Cancel API/domain contract is fixed in Phase 5, Consumer display and wording go to Phase 8); no rule was added or changed.
 - Draft 0.10 (2026-09-27): recorded the Phase 6 implementation decisions: resolved DN-14 (Admin-only, one-step transitions, `UNCHANGED` on repeat, `PROCESSING` needs full allocation and payment evidence), DN-02 (explicit Admin additional allocation reusing the Phase 2 functions, never automatic), DN-04 (no automatic `PENDING` expiry); no rule was added or changed.
+- Draft 0.11 (2026-09-27): recorded the Phase 7 implementation decisions: resolved DN-47 (status set `REQUESTED` / `APPROVED` / `REJECTED`, valid = `REQUESTED` or `APPROVED`), DN-43 (no partial approval), DN-44 (no withdrawal), DN-45 (`ALREADY_*` on the same decision, refusal on the opposite, no duplicate reversal); narrowed DN-27 (snapshot unit price times quantity, review when discount/shipping exists); DN-42 carried to Phase 9 and DN-46 carried to Phase 8/9; no rule was added or changed.
