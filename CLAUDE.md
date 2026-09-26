@@ -105,7 +105,7 @@ When sources disagree, report the disagreement.
 
 ---
 
-<!-- BEGIN SAFETY RULES (mirrored verbatim in AGENTS.md and CLAUDE.md) -->
+<!-- BEGIN SAFETY RULES (the same rules are kept in AGENTS.md; if the two ever differ, apply the stricter rule and report the difference) -->
 ## Safety Rules (non-negotiable)
 
 ### Working tree and scope
@@ -120,48 +120,43 @@ When sources disagree, report the disagreement.
 
 ### Git
 
-- Never run `git reset --hard`, `git clean -fd`, `git checkout -- .`, `git restore .`,
-  or any equivalent command that discards work.
+- Never run `git reset --hard`, `git clean -fd`, `git checkout -- .`, `git restore .`, or equivalent commands that discard work.
 - Do not amend, squash, rebase, force-push, rewrite history, or create/move tags unless explicitly requested.
-- Commit or push only when the user asks, or when the task explicitly includes it.
-  Commit only task-related files.
+- Commit only task-related files.
+- A Phase may be committed and pushed when its gate is PASS and the change is backward-compatible with the current production runtime and production DB.
+- Do not push without user approval if the change requires a production migration first, activates cutover, replaces an active production flow, changes existing production schema/RPC semantics, or performs destructive/contraction work.
 - A Git push does NOT authorize any database or Supabase operation.
 
 ### Database and migrations
 
-- Never run `supabase db push` (including `pnpm supabase db push`) unless the user explicitly
-  instructs it in the current task.
+- Never run `supabase db push` against production unless the user explicitly instructs it.
 - Never run `supabase db reset --linked`, or any reset against a remote or linked database.
-- Any Supabase CLI command that targets the linked/remote project
-  (`--linked`, a remote `--db-url`, `link`, `migration repair`, `db pull`, `functions deploy`, ...)
-  requires an explicit instruction. If such a command is read-only, say so before running it.
-- Applying a migration to production requires an explicit instruction that names the migration(s).
-  Preparing and validating a migration locally is not an instruction to apply it.
-- A successful local result (`pnpm supabase db reset`, local tests) is NOT approval to apply anything to production.
-- Treat applied migrations as immutable. Make changes as a new forward migration,
-  validate the full local chain with `pnpm supabase db reset`, then report the migration as ready.
-- Use the local Docker Supabase (`pnpm supabase start|stop|status`, `db reset`, `migration new`)
-  with local credentials only. Do not use the Dashboard SQL editor as the development workflow.
+- Any Supabase CLI command targeting the linked/remote project requires explicit instruction.
+- Applying a production migration requires explicit instruction.
+- Local validation is NOT approval to apply anything to production.
+- Treat applied migrations as immutable. Use new forward migrations and validate the full local chain with `pnpm supabase db reset`.
+- Use local Docker Supabase for development and verification.
 
 ### Production
 
-- No destructive or mutating production operation (data or schema) without explicit authorization.
-  This includes deleting or updating rows, changing publication state, stock, user roles,
-  or payment/refund records.
+- No destructive or mutating production operation without explicit authorization.
+- This includes data updates/deletes, publication state, stock, roles, payments, refunds, schema changes, migrations, and cutover.
 - Read-only production inspection only when requested. State what it reads.
-- For destructive SQL: explain what it changes, scope it narrowly, and wait for approval.
+- For destructive SQL, explain the scope and wait for approval.
 
 ### Secrets
 
 - Never invent, print, log, quote in reports, or commit secrets, keys, or tokens.
 - `NEXT_PUBLIC_*` variables hold browser-safe values only.
-  Privileged Supabase credentials are server-only.
-  Never create a privileged Supabase client in browser code.
-  Never copy production privileged credentials into local or browser-safe configuration.
+- Privileged Supabase credentials are server-only.
+- Never create a privileged Supabase client in browser code.
+- Never copy production privileged credentials into local or browser-safe configuration.
 
 ### Deployment
 
-- Do not trigger or modify production deployment settings unless the task requires it.
+- Production deployment is allowed only when the deployed code remains backward-compatible with the current production DB and does not activate an unapproved cutover.
+- Production deployment and production DB migration are separate approvals.
+
 <!-- END SAFETY RULES -->
 
 ---
@@ -928,7 +923,8 @@ For v3 docs:
 
 # Commit Rules
 
-Do not commit unless asked or unless the task explicitly includes commit/push.
+Commit or push only when the user asks, when the task explicitly includes it, or when the Phase rule in "Safety Rules > Git" applies
+(gate PASS and production-safe). Anything that rule excludes still needs explicit user approval to push.
 A Git push never authorizes a database operation (see "Safety Rules" above).
 
 Before commit:
