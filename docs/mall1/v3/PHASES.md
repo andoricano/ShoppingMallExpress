@@ -374,6 +374,10 @@ Compared with the eight areas first proposed: allocation/shortage/SOLD_OUT moved
 
 **Related**: all BR · CF-11 · DN-34.
 
+**Decision Before Implementation**: the production/cutover decisions are prepared in `docs/mall1/v3/CUTOVER.md` (legacy unpaid Orders, DN-42, DN-46, orphan window, reversal reprocessing, the PG reversal adapter, Point legacy, `payments.order_id`, the `pg_callback_id` check, the cutover order and rollback criteria); the business ones (unpaid legacy Orders, DN-42, DN-46) are recommendations awaiting the user's approval.
+
+**Status (2026-09-27)**: the cutover plan, the read-only precheck and post-check, the resolve script, and a local rehearsal exist and pass (`supabase/rehearsal/v3_cutover_rehearsal.sh`); nothing has been applied to production and the production precheck has not been run. Real-money launch is blocked on a real PG reversal adapter; the cutover into PG test mode is ready to be scheduled after the user's approvals.
+
 **Gate**: user sign-off on the final report.
 
 ---

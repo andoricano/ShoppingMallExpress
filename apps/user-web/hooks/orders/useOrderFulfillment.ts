@@ -77,5 +77,15 @@ export function useOrderFulfillment() {
         [run],
     );
 
-    return { items, busy, error, load, allocate, cancel };
+    /** Seller-initiated Refund (DN-46): the whole remaining quantity, created for the Client. */
+    const createRefund = useCallback(
+        (orderId: string, reason: string | null) =>
+            run(() => call<{ refundRequestId: string }>(
+                `/api/admin/orders/${orderId}/refund`,
+                post(reason ? { reason } : {}),
+            )),
+        [run],
+    );
+
+    return { items, busy, error, load, allocate, cancel, createRefund };
 }

@@ -56,6 +56,7 @@ const next = spawn("npx", ["--no-install", "next", "dev", "-p", String(APP_PORT)
         SUPABASE_SECRET_KEY: SERVICE,
         PG_TEST_ENDPOINT_URL: `http://127.0.0.1:${PG_PORT}/record`,
         PG_TEST_API_KEY: "local-mock",
+        PG_REVERSAL_ADAPTER: "simulated",
         NEXT_TELEMETRY_DISABLED: "1",
     },
     stdio: ["ignore", "pipe", "pipe"],

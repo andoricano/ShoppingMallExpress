@@ -191,3 +191,15 @@ export const productionPgReversalAdapter: PaymentReversalAdapter = {
         throw new Error("Production PG reversal is not configured.");
     },
 };
+
+/**
+ * Chooses the adapter from the environment. Only an explicit
+ * `PG_REVERSAL_ADAPTER=simulated` (PG test mode: the PG Test service has no
+ * cancel API and no real money moves) runs the simulated adapter. Anything else
+ * selects the production placeholder, whose outcome is always unknown, so a
+ * reversal stays PENDING and nothing is ever marked SUCCEEDED or FAILED by
+ * mistake until a real PG adapter is configured.
+ */
+export function selectReversalAdapter(mode: string | undefined): PaymentReversalAdapter {
+    return mode === "simulated" ? createSimulatedPgTestReversalAdapter() : productionPgReversalAdapter;
+}

@@ -1,6 +1,6 @@
 # Mall v3 — Business Logic and Scenarios
 
-Draft 0.12 · 2026-09-27 · Source of Truth candidate
+Draft 0.13 · 2026-09-27 · Source of Truth candidate
 
 This document is analysis and policy capture only. It is not an implementation plan and it does not define phases.
 
@@ -1303,8 +1303,8 @@ Expected Results contain only what is approved. Anything else points to a `DN-xx
 |---|---|---|---|
 | DN-27 | Refund amount derivation for the linked reversal when discounts or shipping fees exist, narrowed: the current rule (decided in Phase 7) is the immutable OrderItem snapshot unit price times the refunded quantity; it is to be reviewed when discount or shipping is introduced (today both are 0, so the item total equals the payment amount). The reversal creation itself, its linkage, and the absence of stock and Order-status effects are approved (BR-39 to BR-41). | Refund, Payment | analysis 2026-09-26 |
 | DN-34 | Confirmation that v2 rules untouched by v3 decisions carry over (OrderItem snapshot immutability, Cart identity Product + Variant, owner RLS, Wishlist ProductPost basis, History via Order, the cap "cumulative restock per refund item is at most the refunded quantity"). | all | analysis 2026-09-26 |
-| DN-42 | Refund window after `DELIVERED` (v2 has no time limit; none is enforced in the initial v3 implementation; carried to Phase 9). | Refund | analysis 2026-09-26 |
-| DN-46 | (Carried to Phase 8/9.) Seller-initiated Refund / seller-failure workflow: the Admin path when an Order must be stopped after `PROCESSING`. Re-allowing Cancel after `PROCESSING` breaks the Cancel/Refund boundary (BR-35) and is not a preferred candidate; candidates are an Admin-created/approved Refund or a separate seller-failure workflow. | Refund, Cancel, Admin | analysis 2026-09-26 |
+| DN-42 | Refund window after `DELIVERED` (v2 has no time limit; none is enforced in the initial v3 implementation). **Phase 9 recommendation, awaiting the user's approval**: no window at release (as in v2), revisit after release (docs/mall1/v3/CUTOVER.md #2). | Refund | analysis 2026-09-26 |
+| DN-46 | (Phase 9: **recommendation implemented, awaiting the user's approval**: the Admin creates the Refund request on behalf of the Client from PROCESSING on, `admin_create_refund_request`, then the ordinary approval, reversal, and explicit restock; Cancel stays refused; CUTOVER.md #3.) Seller-initiated Refund / seller-failure workflow: the Admin path when an Order must be stopped after `PROCESSING`. Re-allowing Cancel after `PROCESSING` breaks the Cancel/Refund boundary (BR-35) and is not a preferred candidate; candidates are an Admin-created/approved Refund or a separate seller-failure workflow. | Refund, Cancel, Admin | analysis 2026-09-26 |
 
 ### 7.2 Resolved decisions
 
@@ -1547,3 +1547,4 @@ List only. This is not an implementation plan and does not order or schedule any
 - Draft 0.10 (2026-09-27): recorded the Phase 6 implementation decisions: resolved DN-14 (Admin-only, one-step transitions, `UNCHANGED` on repeat, `PROCESSING` needs full allocation and payment evidence), DN-02 (explicit Admin additional allocation reusing the Phase 2 functions, never automatic), DN-04 (no automatic `PENDING` expiry); no rule was added or changed.
 - Draft 0.11 (2026-09-27): recorded the Phase 7 implementation decisions: resolved DN-47 (status set `REQUESTED` / `APPROVED` / `REJECTED`, valid = `REQUESTED` or `APPROVED`), DN-43 (no partial approval), DN-44 (no withdrawal), DN-45 (`ALREADY_*` on the same decision, refusal on the opposite, no duplicate reversal); narrowed DN-27 (snapshot unit price times quantity, review when discount/shipping exists); DN-42 carried to Phase 9 and DN-46 carried to Phase 8/9; no rule was added or changed.
 - Draft 0.12 (2026-09-27): recorded the Phase 8 implementation decisions: resolved DN-20 (a failed Payment ends there, a retry is a new Payment), DN-24 (an in-progress Payment is not shown, a reload resumes from the held data), DN-19 (only a general message, no reversal detail / actor / reason), DN-23 (finalize does not touch the Cart, the Client removes the purchased lines, no selected-item order or buy-now), DN-48 (PWA ordering handed off to client-web), DN-49 (Point UI hidden, data and RPCs kept); DN-46 carried to Phase 9; no rule was added or changed.
+- Draft 0.13 (2026-09-27): Phase 9 preparation: added the recommendations for DN-42 (no window at release) and DN-46 (Admin-created Refund, implemented) as pending the user's approval; the production/cutover decisions (legacy unpaid Orders, orphan window, reversal reprocessing, PG adapter, Point legacy, `payments.order_id`) are in CUTOVER.md; no approved rule was changed.

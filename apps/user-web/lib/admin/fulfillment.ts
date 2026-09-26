@@ -15,6 +15,8 @@ const BLOCKED_MESSAGES = [
     "no Payment to reverse",
     "Reversal amount exceeds",
     "Refund amount must be greater than zero",
+    "cannot be refunded",
+    "Refund quantity exceeds",
 ];
 
 /**

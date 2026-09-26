@@ -4,8 +4,8 @@ import { NextResponse } from "next/server";
 
 import { createServiceRoleClient } from "@/lib/supabase/admin";
 import {
-    createSimulatedPgTestReversalAdapter,
     executePaymentReversal,
+    selectReversalAdapter,
     type RpcCaller,
 } from "./reversal";
 import { paymentErrorResponse } from "./server";
@@ -55,11 +55,12 @@ export function checkoutErrorResponse(error: unknown) {
 }
 
 /**
- * Executes a payment reversal after the database transaction committed. The PG
- * Test service has no cancel API, so the development adapter simulates the PG;
- * replace it with the production adapter when production PG integration exists.
- * An unknown outcome leaves the reversal PENDING (see ./reversal.ts); this
- * never throws into the request.
+ * Executes a payment reversal after the database transaction committed. The
+ * adapter comes from `PG_REVERSAL_ADAPTER` (see selectReversalAdapter): only
+ * `simulated` (PG test mode) settles a reversal; without it the outcome is
+ * unknown and the reversal stays PENDING for the reconcile job. An unknown
+ * outcome leaves the reversal PENDING (see ./reversal.ts); this never throws
+ * into the request.
  */
 export async function runPaymentReversal(reversalId: string) {
     const supabase = createServiceRoleClient();
@@ -69,7 +70,7 @@ export async function runPaymentReversal(reversalId: string) {
         return await executePaymentReversal(
             rpc,
             reversalId,
-            createSimulatedPgTestReversalAdapter(),
+            selectReversalAdapter(process.env.PG_REVERSAL_ADAPTER),
         );
     } catch {
         return "UNKNOWN_OUTCOME" as const;

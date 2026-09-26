@@ -20,7 +20,7 @@ interface OrderFulfillmentPanelProps {
  * never automatic and never takes stock held by another Order.
  */
 export function OrderFulfillmentPanel({ order, onChanged }: OrderFulfillmentPanelProps) {
-    const { items, busy, error, load, allocate, cancel } = useOrderFulfillment();
+    const { items, busy, error, load, allocate, cancel, createRefund } = useOrderFulfillment();
 
     useEffect(() => {
         void load(order.id);
@@ -34,6 +34,21 @@ export function OrderFulfillmentPanel({ order, onChanged }: OrderFulfillmentPane
 
     const handleAllocate = async (orderItemId?: string) => {
         if (await allocate(order.id, orderItemId)) {
+            onChanged?.();
+        }
+    };
+
+    const canSellerRefund = ["PROCESSING", "SHIPPED", "DELIVERED"].includes(order.status);
+
+    const handleSellerRefund = async () => {
+        if (!window.confirm("판매자 사유로 이 주문의 전체 환불 요청을 생성하시겠습니까? 생성 후 환불 화면에서 승인해야 환급이 진행됩니다.")) {
+            return;
+        }
+
+        const reason = window.prompt("사유 (선택)") ?? "";
+
+        if (await createRefund(order.id, reason.trim() || null)) {
+            window.alert("환불 요청을 생성했습니다. 환불 요청 화면에서 승인하세요.");
             onChanged?.();
         }
     };
@@ -85,6 +100,19 @@ export function OrderFulfillmentPanel({ order, onChanged }: OrderFulfillmentPane
             )}
 
             {error && <p className="mt-3 text-xs text-rose-600">{error}</p>}
+
+            {canSellerRefund && (
+                <div className="mt-4">
+                    <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() => void handleSellerRefund()}
+                        className="rounded-lg border border-rose-200 bg-white px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-50 disabled:opacity-50"
+                    >
+                        판매자 사유 환불 요청 생성
+                    </button>
+                </div>
+            )}
 
             {isPending && (
                 <div className="mt-4 flex gap-2">
