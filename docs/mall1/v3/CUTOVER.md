@@ -15,11 +15,11 @@ change run only on the user's explicit instruction. Results are labelled
 | v3 domain paths (Phases 1 to 8) | verified locally; all suites pass |
 | Cutover scripts, precheck, post-check, rehearsal | verified on the local stack (`local rehearsal`: every step check plus the v3 suites on the cut-over database) |
 | Production data precheck | **not run** (needs the user to run `v3_precheck_v2_baseline.sql`, or an explicit instruction) |
-| Decisions #1 to #3 (business/data) | recommended below, **awaiting the user's approval** |
-| PG reversal adapter | **only the PG Test simulation exists.** Acceptable for PG test mode (no real money); **no real PG adapter**: a real-money launch is blocked |
+| Decisions #1 to #3 (business/data) | **approved by the user (2026-09-27)**; #1 needs the target list shown before it is applied (`v3_preview_unpaid_legacy_orders.sql`) |
+| PG reversal adapter | **only the PG Test simulation exists.** Not a blocker for the PG test cutover; **a blocker for a real-money production release** (no real PG adapter) |
 | Scheduler for the reconcile job | not configured (deployment setting; needs the user) |
 
-Verdict: the cutover into **PG test mode** is ready to be scheduled once the user approves decisions #1 to #3, runs the precheck, and configures the environment and scheduler in section 6. A **real-money launch is FAIL** until a real PG reversal adapter exists.
+Verdict: **the Phase 9 gate is not PASS.** Remaining production blockers before the PG test cutover: the production precheck, the unpaid-legacy-Order target check, the production environment variables, the reconcile scheduler, Supabase backup availability, the v3 deployment, and the user's explicit cutover approval. The exact read-only procedure is `docs/mall1/v3/PRECHECK.md`. A **real-money launch stays FAIL** until a real PG reversal adapter exists.
 
 ---
 
@@ -27,9 +27,9 @@ Verdict: the cutover into **PG test mode** is ready to be scheduled once the use
 
 | # | Decision | Status | Where |
 |---|---|---|---|
-| 1 | Legacy PENDING/PAID Orders without payment evidence (unpaid v2 Orders, hand-marked PAID) are **cancelled** at the cutover with the v2 stock semantics (the allocated quantity returns to `current_stock`) and an internal note; nothing is paid or invented. The precheck lists them first. A different resolution (for example registering a manual payment) needs the user's decision before the cutover | **recommended; needs approval** | `v3_resolve_unpaid_legacy_orders.sql` |
-| 2 | DN-42 Refund window: **none** in the initial v3 (as in v2); revisit after release | **recommended; needs approval** | no code |
-| 3 | DN-46 seller-initiated Refund: the **Admin creates the Refund request on behalf of the Client** (any status from PROCESSING on), then the ordinary approval + reversal + explicit restock. Cancel stays refused after PROCESSING. No separate seller-failure workflow | **recommended; needs approval; implemented** | `admin_create_refund_request`, `POST /api/admin/orders/[id]/refund`, Admin panel button |
+| 1 | Legacy PENDING/PAID Orders without payment evidence (unpaid v2 Orders, hand-marked PAID) are **cancelled** at the cutover with the v2 stock semantics (the allocated quantity returns to `current_stock`) and an internal note; **no Payment is created**. The target Orders and quantities are **shown to the user before anything is applied** (`v3_preview_unpaid_legacy_orders.sql`) | **approved 2026-09-27** | `v3_resolve_unpaid_legacy_orders.sql` |
+| 2 | DN-42 Refund window: **none** in the initial v3 (as in v2); re-reviewed after operation as a separate policy | **approved 2026-09-27** | no code |
+| 3 | DN-46 seller-initiated Refund: the **Admin creates the Refund request on behalf of the Client** (any status from PROCESSING on), then the ordinary approval + reversal + explicit restock. Cancel stays refused after PROCESSING. No separate seller-failure workflow. The Admin-initiated fact is kept (`refund_requests.initiated_by = 'ADMIN'`) | **approved 2026-09-27; implemented** | `admin_create_refund_request`, `POST /api/admin/orders/[id]/refund`, Admin panel button |
 | 4 | Orphan window: **30 minutes** (`ORPHAN_MIN_AGE_MINUTES`, default 30) | decided (operational) | reconcile job |
 | 5 | Reversal reprocessing: a **PENDING** reversal is executed automatically by the reconcile job (lease-guarded, at most 5 automatic attempts); a **FAILED** reversal is never retried automatically — an Admin retries it (actor recorded); reversals that need attention are listed by `GET /api/admin/reversals` | decided (operational); implemented | `POST /api/internal/reconcile` |
 | 6 | Production PG reversal adapter: the only PG today is the **PG Test recorder** (no cancel API). The adapter is chosen by `PG_REVERSAL_ADAPTER`: `simulated` (PG test mode) settles reversals locally; **unset** selects the production placeholder, whose outcome is unknown, so reversals stay PENDING and nothing is marked settled by mistake. A real PG adapter is a prerequisite for real money | decided; **real adapter: not ready** | `lib/payment/reversal.ts` |
@@ -92,11 +92,11 @@ Prepared in advance (no customer impact): the v3 deployment of `main` built with
 
 | Step | Action | Verify | Rehearsal time |
 |---|---|---|---|
-| T-1 | Precheck on production; the user approves decisions #1 to #3; the scheduler and secrets are ready | BLOCKER = 0 | |
+| T-1 | Read-only checks on production (`PRECHECK.md`: state, precheck, unpaid-Order preview); the scheduler and secrets are ready; the user approves the cutover | BLOCKER = 0; the unpaid-Order list is shown and accepted | |
 | 0 | Backup; restore it into a scratch database and compare counts | counts equal | ~2 s locally |
 | 1 | Apply the additive migrations (v2 keeps working; can be done days earlier) | v2 smoke passes; `v3_phase*` object checks | ~2 s |
 | — | **Window opens.** Announce; no new v2 orders | | |
-| 2 | `v3_resolve_unpaid_legacy_orders.sql` (review the printed Orders first) | unpaid count 0; stock restored | < 1 s |
+| 2 | `v3_resolve_unpaid_legacy_orders.sql` (the target list and quantities were shown at T-1 and re-run just before) | unpaid count 0; stock restored | < 1 s |
 | 3 | `v3_stock_and_sellability.sql`, then `v3_stock_consistency_check.sql` | the check returns no row | < 1 s |
 | 4 | `v3_legacy_contraction.sql` | refuses on any guard | < 1 s |
 | 5 | `v3_postcheck.sql` | every row ok | < 1 s |
@@ -156,8 +156,15 @@ Accounts: 1 Admin and 2 Clients (A, B). Data: a test Product with 2 Variants (Va
 
 ## 8. Remaining blockers
 
-1. The user's approval of decisions #1 to #3.
-2. The production precheck result (section 3.1).
-3. Environment and scheduler set up (sections 3.2, 3.3) and the v3 deployment prepared, not promoted.
-4. **A real PG reversal adapter** for any real-money launch (test-mode cutover does not need it).
-5. Backup availability confirmed on the Supabase plan.
+Before the PG test cutover (all open; the procedure is `PRECHECK.md`):
+1. The production precheck result (section 3.1).
+2. The unpaid legacy Order target check (list and quantities shown to the user).
+3. The production environment variables confirmed (section 3.2).
+4. The reconcile scheduler prepared (section 3.3).
+5. Supabase backup availability confirmed.
+6. The v3 deployment prepared, not promoted.
+7. The user's explicit cutover approval.
+
+For a real-money production release only: **a real PG reversal adapter**. It is not a blocker for the PG test cutover.
+
+Decisions #1 to #3 are approved (2026-09-27).

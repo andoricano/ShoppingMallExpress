@@ -374,9 +374,9 @@ Compared with the eight areas first proposed: allocation/shortage/SOLD_OUT moved
 
 **Related**: all BR · CF-11 · DN-34.
 
-**Decision Before Implementation**: the production/cutover decisions are prepared in `docs/mall1/v3/CUTOVER.md` (legacy unpaid Orders, DN-42, DN-46, orphan window, reversal reprocessing, the PG reversal adapter, Point legacy, `payments.order_id`, the `pg_callback_id` check, the cutover order and rollback criteria); the business ones (unpaid legacy Orders, DN-42, DN-46) are recommendations awaiting the user's approval.
+**Decision Before Implementation**: the production/cutover decisions are prepared in `docs/mall1/v3/CUTOVER.md` (legacy unpaid Orders, DN-42, DN-46, orphan window, reversal reprocessing, the PG reversal adapter, Point legacy, `payments.order_id`, the `pg_callback_id` check, the cutover order and rollback criteria); the business ones were **approved by the user (2026-09-27)**: legacy unpaid PENDING/PAID Orders are cancelled at the cutover with v2 stock semantics, no Payment is created for them, and the target Orders and quantities are shown before anything is applied; DN-42 (no Refund window after `DELIVERED` in the initial v3, re-reviewed later); DN-46 (the Admin creates the Refund request, then the existing approval, reversal, and explicit restock; the Admin-initiated fact is kept for audit).
 
-**Status (2026-09-27)**: the cutover plan, the read-only precheck and post-check, the resolve script, and a local rehearsal exist and pass (`supabase/rehearsal/v3_cutover_rehearsal.sh`); nothing has been applied to production and the production precheck has not been run. Real-money launch is blocked on a real PG reversal adapter; the cutover into PG test mode is ready to be scheduled after the user's approvals.
+**Status (2026-09-27)**: the cutover plan, the read-only precheck and post-check, the resolve script, and a local rehearsal exist and pass (`supabase/rehearsal/v3_cutover_rehearsal.sh`); nothing has been applied to production and the production precheck has not been run. The real PG reversal adapter is not a blocker for the PG test cutover; it stays a blocker for a real-money production release. Remaining production blockers before the cutover: the production precheck, the unpaid-legacy-Order target check, the production environment variables, the reconcile scheduler, Supabase backup availability, the v3 deployment, and the user's explicit cutover approval (`docs/mall1/v3/PRECHECK.md`). **The Phase 9 gate is not PASS.**
 
 **Gate**: user sign-off on the final report.
 
@@ -412,9 +412,9 @@ Compared with the eight areas first proposed: allocation/shortage/SOLD_OUT moved
 | 4 | DN-38, DN-39, DN-41, IN-10, IN-11 (decided); DN-19, DN-20, DN-23, DN-24 carried to Phase 8 |
 | 5 | DN-12 (decided); DN-19 carried to Phase 8 |
 | 6 | DN-02, DN-04, DN-14 (decided) |
-| 7 | DN-27, DN-43, DN-44, DN-45, DN-47 (decided); DN-42 carried to Phase 9; DN-46 carried to Phase 8/9 |
-| 8 | DN-48, DN-49, DN-19, DN-20, DN-23, DN-24 (decided); DN-46 carried to Phase 9 |
-| 9 | none |
+| 7 | DN-27, DN-43, DN-44, DN-45, DN-47 (decided); DN-42 and DN-46 decided in Phase 9 |
+| 8 | DN-48, DN-49, DN-19, DN-20, DN-23, DN-24 (decided) |
+| 9 | DN-42, DN-46 (decided 2026-09-27) |
 
 Every open decision in the business document appears above at least once. DN-19 is needed in two phases (Phase 4 for finalize failure, Phase 5 for cancellation progress), and DN-25 was decided in Phase 2.
 
