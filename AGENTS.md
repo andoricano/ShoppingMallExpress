@@ -1,147 +1,137 @@
 # AGENTS.md
 
-## General
+Repository rules for every coding agent working in ShoppingEx / Mall.
 
-* Modify only files required by the requested task.
-* Keep scope minimal and preserve existing user changes.
-* Do not fix or refactor unrelated issues; report them instead.
-* Prefer existing repository patterns.
-* Do not scan the entire repository unless required.
-* Refer to `ARCHITECTURE.md` for repository structure and boundaries.
+Mall v3 is in the business-rule definition stage. It is not an implementation phase.
+The v3 business-policy workflow and the approved v3 rules live in `CLAUDE.md` and `docs/mall1/v3/*`.
+Read `CLAUDE.md` before any non-trivial v3 work.
 
-Avoid generated/dependency directories unless necessary:
+The "Safety Rules" section below is mirrored verbatim in `CLAUDE.md`.
+If the two files ever differ, apply the stricter rule and report the difference.
 
-* `node_modules/`
-* `.next/`
-* `dist/`
-* `build/`
-* `coverage/`
-* `.turbo/`
+## Authority (v3)
 
-## Mall v2 Source of Truth
+Use this order when sources disagree:
 
-Use this priority:
+1. explicit user-approved business decisions
+2. `docs/mall1/v3/BUSINESS_LOGIC_AND_SCENARIOS.md` (once it exists)
+3. approved v3 domain contracts
+4. current schema / migrations / RPC / application code (evidence of existing behavior only)
+5. `docs/mall1/v2/*` (v2 history)
+6. legacy PRD (historical intent only)
 
-1. `docs/mall1/v2/product-schema.md`
-2. `docs/mall1/v2/sql/*.sql`
-3. `docs/mall1/v2/PHASES.md`
-4. `packages/types`
-5. current application contracts
+Rules:
 
-Legacy API docs, Inventory/SkuInventory structures, and deleted `apps/api` code must not override Mall v2.
+- Current code, existing v2 SQL, v2 docs, the legacy PRD, and old E2E successes are not approved v3 policy.
+- If no approved rule exists, the item is `DECISION NEEDED`.
+  Do not invent a rule and do not turn `DECISION NEEDED` into an implementation choice.
+- When sources disagree, report the disagreement (`CONFIRMED` / `CONFLICT` / `DECISION NEEDED`).
+- `docs/mall1/v2/*` is preserved as historical documentation.
+  Do not rewrite it to make it look like v3 rules were always intended.
+  v3 rules belong under `docs/mall1/v3/*`.
 
 ## Architecture
 
-Mall v2 uses:
-
 ```text
 Next.js
-+ Supabase
-+ RLS
-+ Supabase RPC
++ Supabase Auth / RLS / RPC
 + Next Route Handlers when server-only execution is required
 ```
 
-Do not restore the legacy Express architecture.
+- Do not reintroduce the legacy Express/API architecture.
+- Prefer direct Supabase + RLS for safe, user-owned data. Use RPC for transactional operations.
+  Use Route Handlers for privileged credentials, orchestration, or external integrations.
+- Do not move transactional database logic into client code.
+- `apps/user-web` is the Admin application. Privileged operations run in a trusted server context.
+- Ware, Warehouse, stock, allocation, and restock internals never reach Consumer applications
+  or Consumer-facing contracts.
+- Refer to `ARCHITECTURE.md` for repository structure and boundaries.
 
-Use:
+<!-- BEGIN SAFETY RULES (mirrored verbatim in AGENTS.md and CLAUDE.md) -->
+## Safety Rules (non-negotiable)
 
-* Direct Supabase + RLS for safe/user-owned data
-* Supabase RPC for transactional operations
-* Next Route Handlers for privileged credentials, orchestration, or external integrations
+### Working tree and scope
 
-Do not move transactional database logic into client code.
+- Before modifying any file, run `git status` and read the files you will change.
+- Preserve existing user changes. Never overwrite, revert, or reformat changes you did not make.
+- Modify only files required by the requested task.
+- Do not fix unrelated files or problems; report them instead.
+- Do not scan the whole repository unless the task requires it.
+  Avoid generated and dependency directories
+  (`node_modules/`, `.next/`, `dist/`, `build/`, `coverage/`, `.turbo/`).
 
-## Domain Boundaries
+### Git
 
-Consumer domains include Product/Post, Option/Variant, Cart, Order, History, Refund, and Wishlist.
+- Never run `git reset --hard`, `git clean -fd`, `git checkout -- .`, `git restore .`,
+  or any equivalent command that discards work.
+- Do not amend, squash, rebase, force-push, rewrite history, or create/move tags unless explicitly requested.
+- Commit or push only when the user asks, or when the task explicitly includes it.
+  Commit only task-related files.
+- A Git push does NOT authorize any database or Supabase operation.
 
-Internal-only domains include:
+### Database and migrations
 
-* Ware
-* Warehouse
-* `product_variant_wares`
-* `order_item_ware_allocations`
+- Never run `supabase db push` (including `pnpm supabase db push`) unless the user explicitly
+  instructs it in the current task.
+- Never run `supabase db reset --linked`, or any reset against a remote or linked database.
+- Any Supabase CLI command that targets the linked/remote project
+  (`--linked`, a remote `--db-url`, `link`, `migration repair`, `db pull`, `functions deploy`, ...)
+  requires an explicit instruction. If such a command is read-only, say so before running it.
+- Applying a migration to production requires an explicit instruction that names the migration(s).
+  Preparing and validating a migration locally is not an instruction to apply it.
+- A successful local result (`pnpm supabase db reset`, local tests) is NOT approval to apply anything to production.
+- Treat applied migrations as immutable. Make changes as a new forward migration,
+  validate the full local chain with `pnpm supabase db reset`, then report the migration as ready.
+- Use the local Docker Supabase (`pnpm supabase start|stop|status`, `db reset`, `migration new`)
+  with local credentials only. Do not use the Dashboard SQL editor as the development workflow.
 
-Never expose Ware/Warehouse internals to Consumer applications.
+### Production
 
-`apps/user-web` is the Admin application.
+- No destructive or mutating production operation (data or schema) without explicit authorization.
+  This includes deleting or updating rows, changing publication state, stock, user roles,
+  or payment/refund records.
+- Read-only production inspection only when requested. State what it reads.
+- For destructive SQL: explain what it changes, scope it narrowly, and wait for approval.
 
-Privileged operations must run in a trusted server context.
+### Secrets
 
-## Shared Contracts
+- Never invent, print, log, quote in reports, or commit secrets, keys, or tokens.
+- `NEXT_PUBLIC_*` variables hold browser-safe values only.
+  Privileged Supabase credentials are server-only.
+  Never create a privileged Supabase client in browser code.
+  Never copy production privileged credentials into local or browser-safe configuration.
 
-When contracts change:
+### Deployment
 
-* update `packages/types`
-* keep applications aligned with the confirmed SQL/RPC contract
-* update relevant existing documentation when needed
+- Do not trigger or modify production deployment settings unless the task requires it.
+<!-- END SAFETY RULES -->
 
-Do not modify unrelated applications.
+## Contracts and validation
 
-## Validation
+- When an approved contract changes, update `packages/types` and keep applications aligned
+  with the confirmed SQL/RPC contract. Do not add duplicate domain models.
+  Do not modify unrelated applications.
+- Run the narrowest useful verification first (targeted typecheck, lint, tests, SQL/RPC checks).
+  Do not run full-monorepo validation, browser automation, or Docker builds unless required.
+- Never claim a check passed unless it actually ran successfully.
+  Distinguish `production E2E observed` from `code-level verification only`.
 
-Run validation related to changed code only.
+## Documentation
 
-Prefer targeted typecheck, lint, tests, and package builds.
+Documentation must distinguish approved business policy, current implementation,
+observed E2E results, code-only inference, and unresolved policy.
+Do not mark a checkbox PASS from indirect evidence unless the document explicitly allows it.
 
-Do not run full monorepo validation, E2E, browser automation, or Docker builds unless required.
+## Versions and dependencies
 
-Never claim a check passed unless it actually ran successfully.
+- Use Semantic Versioning. Change versions or create release tags only when explicitly requested.
+- Use existing dependencies. Add, remove, or upgrade packages only when the task requires it.
 
-## Git and Deployment
+## Completion report
 
-Before modifying files, inspect `git status` and preserve existing changes.
+Keep it concise:
 
-For completed tasks:
-
-* commit only task-related changes
-* use a concise commit message
-* push the commit to the current branch
-* use the existing Git-based Vercel deployment flow
-
-Do not amend, squash, rebase, rewrite history, or create tags unless explicitly requested.
-
-Never use destructive repository-wide commands such as:
-
-```text
-git reset --hard
-git clean -fd
-git checkout -- .
-git restore .
-```
-
-Do not manually trigger or modify production deployment settings unless required by the task.
-
-## Versioning
-
-Use Semantic Versioning.
-
-* Production baseline: `v1.0.0`
-* Mall v2 target: `v2.0.0`
-
-Change versions or create release tags only when explicitly requested.
-
-## Secrets
-
-* Never invent, expose, or commit secrets.
-* `NEXT_PUBLIC_*` must contain only browser-safe values.
-* Supabase privileged credentials are server-only.
-* Never create a privileged Supabase client in browser code.
-* Do not print secrets during validation.
-
-## Dependencies
-
-Use existing dependencies where possible.
-
-Add, remove, or upgrade packages only when required.
-
-## Completion
-
-Keep the final report concise:
-
-* changed areas
-* validation performed
-* unresolved related issues
-* commit hash
-* push/deployment result
+- changed files and purpose
+- validation actually run (exact commands and results)
+- unresolved or unverified items
+- commit hash and push status (only if a commit or push was requested)
