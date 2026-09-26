@@ -343,12 +343,13 @@ Result: `PASS` (verified as a sequence: stock is restored only by the restock an
 
 ## 22. Wishlist
 
-- [ ] Add ProductPost to Wishlist.
-- [ ] Confirm it appears.
-- [ ] Remove it.
-- [ ] Duplicate add is safely handled.
+The Wishlist UI is a heart **toggle**: the first click adds, clicking the same heart again removes, clicking again re-adds. A separate "duplicate add" action does not exist in the UI contract, so it is not tested through the UI. DB reference only: `wishlist_items_client_post_unique` (`client_id`, `product_post_id`) prevents duplicate rows.
 
-Result: `PASS / FAIL`
+- [x] Add ProductPost to Wishlist. (`Phase8 Test Post`)
+- [x] Confirm it appears. (shown in the Wishlist list)
+- [x] Remove it. (clicking the same heart again removes it; it disappears from the list)
+
+Result: `PASS` (re-adding after removal was not individually reported)
 
 ## 23. Consumer Ware Non-Exposure
 
