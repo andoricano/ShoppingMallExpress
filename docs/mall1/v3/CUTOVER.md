@@ -17,7 +17,8 @@ change run only on the user's explicit instruction. Results are labelled
 | Production data precheck | **run 2026-09-27, `production read-only observed`; approved by the user**: BLOCKER 0, WARN 0, the v2 baseline is as expected (section 3.1) |
 | Decisions #1 to #3 (business/data) | **approved by the user (2026-09-27)**; #1 needs the target list shown before it is applied (`v3_preview_unpaid_legacy_orders.sql`) |
 | PG reversal adapter | **only the PG Test simulation exists.** Not a blocker for the PG test cutover; **a blocker for a real-money production release** (no real PG adapter) |
-| Scheduler for the reconcile job | not configured (deployment setting; needs the user) |
+| Scheduler for the reconcile job | **prepared, disabled**: `.github/workflows/reconcile.yml` (GitHub Actions, 5 minutes); skipped until the repository variable `RECONCILE_ENABLED` is `true` (section 3.3). Verified against a local mock only |
+| Backup gate (step 0) | **procedure verified** (`v3_backup_and_verify.sh`, `production read-only observed`: pg_dump of production, restore into a local scratch database, 53 tables with identical row counts, equal fingerprints). The Supabase platform has **no backup and PITR is off** (`supabase backups list`), so this dump is the only rollback data; it must be re-taken right before the window |
 
 Verdict: **the Phase 9 gate is not PASS.** Remaining production blockers before the PG test cutover (the production precheck and the unpaid-legacy-Order target check are done, section 3.1): the production environment variables, the reconcile scheduler, Supabase backup availability, the v3 deployment, and the user's explicit cutover approval. The exact read-only procedure is `docs/mall1/v3/PRECHECK.md`. A **real-money launch stays FAIL** until a real PG reversal adapter exists.
 
@@ -98,11 +99,18 @@ Never put `RECONCILE_JOB_SECRET` or `SUPABASE_SECRET_KEY` in a `NEXT_PUBLIC_*` v
 
 ### 3.3 Scheduler
 
-`POST /api/internal/reconcile` with `Authorization: Bearer <RECONCILE_JOB_SECRET>` every 5 minutes (a Vercel Cron or any external scheduler; a deployment setting, not created here). It reverses orphan payments and executes PENDING reversals. Not scheduled = orphan payments and unsettled reversals wait for a manual call.
+`POST /api/internal/reconcile` with `Authorization: Bearer <RECONCILE_JOB_SECRET>` every 5 minutes. It reverses orphan payments and executes PENDING reversals. Not scheduled = orphan payments and unsettled reversals wait for a manual call.
+
+Decided by the user (2026-09-27): **GitHub Actions `schedule`**, not Vercel Cron. Vercel Cron only sends GET with its own `CRON_SECRET`, while the route is POST with `RECONCILE_JOB_SECRET`; no GET handler is added.
+
+- Workflow: `.github/workflows/reconcile.yml` (`*/5 * * * *`, plus `workflow_dispatch`). GitHub runs schedules from the default branch on a best-effort clock, so a run can be a few minutes late.
+- **Disabled by default:** the job runs only when the repository variable `RECONCILE_ENABLED` is exactly `true`. It is enabled at step 8 of the cutover and nowhere before.
+- Secrets to set in the repository (values are never printed): `CLIENT_WEB_URL` (the client-web production base URL) and `RECONCILE_JOB_SECRET` (the same value as the server variable, at least 24 characters).
+- Verified locally only (`local rehearsal`): the workflow YAML parses; its `run` script, executed against a local mock, returns the counts with the right secret, fails on a 401 with a wrong secret, and refuses to run with a missing secret. It has not run on GitHub.
 
 ### 3.4 What cannot be audited from here
 
-Production row counts and anomalies (section 3.1), the Vercel project settings, the scheduler, backup availability (Supabase plan / PITR), and a real PG cancel API.
+Production row counts and anomalies are audited (section 3.1). Still not audited: the Vercel project settings (Vercel access is not yet authorized in this session), the GitHub repository secrets and variable, and a real PG cancel API. Supabase backup availability was read: no platform backup, PITR off.
 
 ---
 
@@ -113,7 +121,7 @@ Prepared in advance (no customer impact): the v3 deployment of `main` built with
 | Step | Action | Verify | Rehearsal time |
 |---|---|---|---|
 | T-1 | Read-only checks on production (`PRECHECK.md`: state, precheck, unpaid-Order preview); the scheduler and secrets are ready; the user approves the cutover | BLOCKER = 0; the unpaid-Order list is shown and accepted | |
-| 0 | Backup; restore it into a scratch database and compare counts | counts equal | ~2 s locally |
+| 0 | **Mandatory gate.** `bash supabase/cutover/v3_backup_and_verify.sh`: pg_dump of production (read only), restore into a local scratch database, compare the row counts of every `public`/`auth` table and the orders/payments/stock fingerprints. The dump stays local (`~/mall-v3-backups`, `*.dump` is gitignored, never committed) | any restore error, count or fingerprint mismatch **stops the cutover** | seconds (dump ~0.5 MB) |
 | 1 | Apply the additive migrations (v2 keeps working; can be done days earlier) | v2 smoke passes; `v3_phase*` object checks | ~2 s |
 | — | **Window opens.** Announce; no new v2 orders | | |
 | 2 | `v3_resolve_unpaid_legacy_orders.sql` (the target list and quantities were shown at T-1 and re-run just before) | unpaid count 0; stock restored | < 1 s |
@@ -178,12 +186,15 @@ Accounts: 1 Admin and 2 Clients (A, B). Data: a test Product with 2 Variants (Va
 
 Done (2026-09-27): the production precheck (BLOCKER 0, WARN 0) and the unpaid legacy Order target check (3 Orders, approved; section 3.1).
 
+Done (2026-09-27): the scheduler workflow is prepared and disabled (section 3.3); the backup gate procedure is verified (step 0; the platform itself has no backup and PITR is off, so the pre-window dump is the only rollback data).
+
 Before the PG test cutover (open; the procedure is `PRECHECK.md`):
-1. The production environment variables confirmed (section 3.2).
-2. The reconcile scheduler prepared (section 3.3).
-3. Supabase backup availability confirmed.
-4. The v3 deployment prepared, not promoted.
-5. The user's explicit cutover approval.
+1. The production environment variables confirmed (section 3.2): needs Vercel access (not yet authorized here) or the user's own check.
+2. The GitHub repository secrets `CLIENT_WEB_URL` and `RECONCILE_JOB_SECRET` set, and `RECONCILE_ENABLED` left unset.
+3. The v3 deployment (`NEXT_PUBLIC_MALL_V3=true`, not promoted) prepared: needs Vercel access.
+4. The user's explicit cutover approval.
+
+The Phase 9 status is **not** `READY FOR CUTOVER` until items 1 to 3 are confirmed.
 
 For a real-money production release only: **a real PG reversal adapter**. It is not a blocker for the PG test cutover.
 

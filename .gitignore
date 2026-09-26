@@ -40,3 +40,6 @@ yarn-error.log*
 
 # TypeScript incremental build info
 *.tsbuildinfo
+
+# database dumps (contain customer data; never commit)
+*.dump

@@ -97,9 +97,8 @@ Data (read-only SQL above)
 
 Backup (dashboard; not scripted here)
 
-- [ ] 6. Supabase backup available for the production project: the plan's daily backup, or PITR, and the newest restore point is recent
-- [ ] 7. Who runs the restore, and where (a scratch project), is agreed; a restore check is scheduled before step 1 of the cutover
-      (the cutover order in `CUTOVER.md` section 4)
+- [x] 6. Supabase backup: read on 2026-09-27: **no platform backup, PITR off**. The rollback data is the pg_dump of step 0 (`supabase/cutover/v3_backup_and_verify.sh`), taken right before the window
+- [x] 7. The restore check is the same script: pg_dump, restore into a local scratch database, count comparison (verified on 2026-09-27; `production read-only observed`). It runs again right before step 1 and any mismatch stops the cutover
 
 Environment (dashboard; names and presence only, never values)
 
@@ -113,7 +112,7 @@ Environment (dashboard; names and presence only, never values)
 
 Scheduler and deployment (dashboard / provider; nothing created by these scripts)
 
-- [ ] 11. The reconcile scheduler is prepared but **disabled**: `POST /api/internal/reconcile` with `Authorization: Bearer <RECONCILE_JOB_SECRET>` every 5 minutes, enabled at step 8 of the cutover
+- [ ] 11. The reconcile scheduler is prepared but **disabled**: `.github/workflows/reconcile.yml` (prepared 2026-09-27; skipped while the repository variable `RECONCILE_ENABLED` is not `true`); the repository secrets `CLIENT_WEB_URL` and `RECONCILE_JOB_SECRET` are set; enabled at step 8 of the cutover
 - [ ] 12. The v3 deployment exists and is not promoted; the current v2 deployment is identified as the rollback target
 - [ ] 13. A maintenance window and the announcement are agreed
 
