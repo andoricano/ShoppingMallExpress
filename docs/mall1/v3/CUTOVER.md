@@ -1,5 +1,7 @@
 # Mall v3 — Production cutover plan and release readiness
 
+> **On hold (V4-D03, 2026-09-27):** the v3 production cutover is **not executed** until V4 Phase 1 and the Phase 1.5 Data Protection Gate are complete. This plan is re-issued at V4 Phase 2 together with the Phase 1 migrations (`docs/mall1/v4/PHASES.md`). Everything below stays as the record of the v3 plan and of what was verified; nothing in it has been applied to production.
+
 Status: Phase 9, prepared 2026-09-27. **Nothing in this document has been applied
 to production.** Production DB migrations, the cutover, and the production flag
 change run only on the user's explicit instruction. Results are labelled

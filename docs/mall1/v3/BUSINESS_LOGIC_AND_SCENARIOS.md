@@ -4,6 +4,8 @@ Draft 0.13 · 2026-09-27 · Source of Truth candidate
 
 This document is analysis and policy capture only. It is not an implementation plan and it does not define phases.
 
+> **V4 note (2026-09-27):** this document stays the record of v3. Where a V4 decision (`docs/mall1/v4/DECISIONS.md`) extends or replaces a statement below, the statement carries a short `[superseded ...]` mark; nothing is deleted. Currently marked: the Admin-only `SHIPPED -> DELIVERED` transition (DN-14, section 3.4, the lifecycle diagram) by `V4-D23` / `V4-D31`.
+
 ---
 
 ## Contents
@@ -224,7 +226,7 @@ stock 10
 - While any OrderItem has unallocated quantity, the Order cannot proceed to a real fulfillment stage.
 - At minimum, full allocation must be complete before `PROCESSING` / `SHIPPED`.
 - Refund eligibility and the Refund/Restock rules rely on this gate (BR-37, BR-42).
-- The transition details are decided (former DN-14, Phase 6): Admin only, one step forward, `PROCESSING` needs full allocation and payment evidence.
+- The transition details are decided (former DN-14, Phase 6): Admin only, one step forward, `PROCESSING` needs full allocation and payment evidence. *[superseded in part by V4-D23 / V4-D31: `SHIPPED -> DELIVERED` can also be entered by the consumer's receipt confirmation and by an automatic completion 14 days after `shipped_at`; the Admin manual completion stays.]*
 
 ### 3.5 Cancel
 
@@ -808,7 +810,7 @@ PROCESSING entry                                                        [APPROVE
    no allocation decrease/release after entering
    no Cancel from here on                                            [APPROVED BR-35]
    PENDING -> PROCESSING -> SHIPPED -> DELIVERED
-   transition details: Admin only, one step forward, UNCHANGED on repeat   [decided in Phase 6]
+   transition details: Admin only, one step forward, UNCHANGED on repeat   [decided in Phase 6; SHIPPED -> DELIVERED extended by V4-D23 / V4-D31]
    seller must stop an Order after PROCESSING ................. [decided in Phase 9: Admin-created Refund request]
    v
 Refund track (Orders in PROCESSING / SHIPPED / DELIVERED; not PENDING / CANCELLED)   [APPROVED BR-37]
@@ -1322,7 +1324,7 @@ Resolved by approved rules and removed from the open registry.
 | ~~DN-43~~ | Whether Admin may approve only part of the requested Refund quantity. | User decision recorded with the Phase 7 implementation: partial approval is not supported; a request is approved or rejected as a whole | none |
 | ~~DN-44~~ | Whether the Client may withdraw a Refund request. | User decision recorded with the Phase 7 implementation: withdrawal is not supported in the initial v3, so there is no effect on the cumulative quantity of BR-38 | none |
 | ~~DN-45~~ | Idempotency of repeated Refund approval/rejection requests. | User decision recorded with the Phase 7 implementation: the same decision again returns `ALREADY_APPROVED` / `ALREADY_REJECTED` (no error) and creates no second reversal (the reversal key is unique per request, BR-32); the opposite decision on a decided request is refused | none |
-| ~~DN-14~~ | Remaining Order status transition details: who performs each transition, its conditions, and the fulfillment gate. | User decision recorded with the Phase 6 implementation: only the trusted server (Admin) performs the transitions; one step forward at a time (`PENDING` to `PROCESSING` to `SHIPPED` to `DELIVERED`); a request for the status the Order already has returns `UNCHANGED`; skipping a step, going back, `PAID`, and `CANCELLED` are refused (Cancel is its own path, BR-35); `PROCESSING` needs full allocation (BR-15) and payment evidence (BR-24), and consumes the reservation once (BR-43); `SHIPPED` and `DELIVERED` need no condition beyond the previous status | none |
+| ~~DN-14~~ | Remaining Order status transition details: who performs each transition, its conditions, and the fulfillment gate. | *[V4-D23 / V4-D31 supersede the actor rule for `SHIPPED -> DELIVERED`: the consumer's receipt confirmation and an automatic completion 14 days after `shipped_at` are added; the Admin manual completion stays.]* User decision recorded with the Phase 6 implementation: only the trusted server (Admin) performs the transitions; one step forward at a time (`PENDING` to `PROCESSING` to `SHIPPED` to `DELIVERED`); a request for the status the Order already has returns `UNCHANGED`; skipping a step, going back, `PAID`, and `CANCELLED` are refused (Cancel is its own path, BR-35); `PROCESSING` needs full allocation (BR-15) and payment evidence (BR-24), and consumes the reservation once (BR-43); `SHIPPED` and `DELIVERED` need no condition beyond the previous status | none |
 | ~~DN-02~~ | Admin additional-allocation workflow. | User decision recorded with the Phase 6 implementation: the Phase 2 allocation functions are reused; the Admin runs the allocation explicitly for an Order or one OrderItem; it takes what is currently available (possibly nothing, not an error), never takes stock held by another Order, and is never automatic (BR-13, BR-28) | The Admin screen is a Phase 8 surface item |
 | ~~DN-04~~ | `PENDING` expiration policy. | User decision recorded with the Phase 6 implementation: the initial v3 has no automatic `PENDING` expiry; a `PENDING` Order is an already-paid Order the seller processes or cancels | none |
 | ~~DN-12~~ | Seller rejection reason/state model: reason, actor recording, and which actor is kept when Client and Admin cancel concurrently. | User decision recorded with the Phase 5 implementation: who cancelled (`CLIENT` or `ADMIN`, and the user id) and an optional reason (at most 500 characters) are recorded in the internal table `order_cancellations`, one row per Order; the first cancel is kept and a later or concurrent cancel never overwrites it (BR-16, BR-17). The table has no Consumer access | What the Consumer sees of the reason or actor is decided in Phase 8 with DN-19; a structured rejection-reason code list is not part of the initial v3 |

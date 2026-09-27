@@ -24,6 +24,8 @@ Do not assume the current implementation is the desired v3 behavior.
 
 ## Required Reading Order
 
+**Current work is V4** (since 2026-09-27): before anything else read `docs/mall1/v4/HANDOFF.md`, then `docs/mall1/v4/DECISIONS.md` (approved V4 decisions, authority level 1) and `docs/mall1/v4/PHASES.md`. The v3 production cutover is on hold (`V4-D03`).
+
 Before any non-trivial v3 work, read in this order:
 
 1. `/AGENTS.md`
@@ -570,8 +572,11 @@ Do not decide these without explicit approval:
 - Admin additional-allocation workflow details (screen/RPC semantics, partial allocation,
   what happens when several Orders are short)
 - PENDING expiration policy
+  (superseded: decided in v3 DN-04 as "no automatic expiry" and kept for V4 by `V4-D22`, see `docs/mall1/v4/DECISIONS.md`)
 - seller rejection reason/state model
+  (superseded: v3 DN-12 records who cancelled and an optional reason; a structured reason-code model is not built in V4 and moves to V5, `V4-D33`)
 - remaining Order status transition details (the base lifecycle is approved in section 7 and Cancel is limited to `PENDING` in section 11)
+  (superseded: decided in v3 DN-14; `V4-D23` / `V4-D31` extend it: `DELIVERED` is also entered by the consumer's receipt confirmation and by an automatic completion 14 days after `shipped_at`)
 - Refund window after `DELIVERED`
 - whether the Admin may approve only part of the requested Refund quantity
 - whether the Client may withdraw a Refund request

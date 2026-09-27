@@ -2,7 +2,7 @@
 
 Status: recorded 2026-09-27. This file is the record of the **explicit user-approved decisions** for V4. It is authority level 1 in the CLAUDE.md source-of-truth order, and it sits on top of the v3 rules in `docs/mall1/v3/BUSINESS_LOGIC_AND_SCENARIOS.md`. Where a decision here extends or overrides a v3 statement, the row says so; the v3 document is not rewritten (it stays the record of v3).
 
-`docs/mall1/v4/PHASES.md` is derived from this file. A phase must not decide policy by accident: anything that is not decided here is listed in section 4 as `DECISION NEEDED`.
+`docs/mall1/v4/PHASES.md` is derived from this file. A phase must not decide policy by accident: anything that is not decided here is listed in section 4 as `DECISION NEEDED`. **As of 2026-09-27 no open item remains** (section 4). The state of the repository and of production, and where to start, is in `docs/mall1/v4/HANDOFF.md`.
 
 Nothing in this file has been implemented. It records decisions only.
 
@@ -34,26 +34,26 @@ Nothing in this file has been implemented. It records decisions only.
 | ID | Decision | Effect |
 |---|---|---|
 | V4-D20 | **V4 keeps the current PG Test structure.** Real PG vendor integration and real-money payment are **out of V4**. The real PG reversal adapter and the webhook productionization are **not** V4 completion conditions. A move to real payment is planned later as its own phase. | Phase 3 is reclassified (PHASES.md). Extends v3 section 14 (`authorize/capture` and Point stay excluded). |
-| V4-D21 | **No external carrier API** and no live delivery tracking in V4; they move to a later version. | Phase 4 |
-| V4-D22 | A `PENDING` Order **never expires automatically**. It stays until the seller confirms or processes it. The consumer can cancel it while it is `PENDING` (`PENDING -> CANCELLED`). After `PROCESSING` the ordinary Cancel stays refused, as in v3. | Resolves the open v3 decision "PENDING expiration policy". Consistent with v3 sections 5, 9, 11. |
-| V4-D23 | **Delivery completion.** The Admin moves an Order `PROCESSING -> SHIPPED`; the moment of that transition is recorded as the delivery start. The consumer confirms receipt: `SHIPPED -> DELIVERED` at once. If the consumer does not confirm, an Order becomes `DELIVERED` automatically **14 days after the `SHIPPED` transition** (not after the Order creation date). The automatic completion is designed to be **idempotent**: a repeated or concurrent run changes nothing more. | Completes the "remaining Order status transition details" left open in v3 section 7 |
-| V4-D24 | Fulfillment without a carrier is limited to: Admin `PROCESSING -> SHIPPED`, consumer receipt confirmation, and the 14-day automatic completion. | See open items O2 and O3 |
-| V4-D25 | **No paid Supabase backup / PITR plan is required for V4.** The current production safety gate stays: a fresh `pg_dump` right before an important migration or cutover, a restore into a local scratch database, a row-count and fingerprint comparison, and **stop when the restore check fails**. Supabase backup / PITR is re-reviewed **before any paid service or real-money PG** is introduced. | Phase 1.5 is designed to pass on this basis; the platform still has no backup and PITR is off (`CUTOVER.md` 1) |
+| V4-D21 | **No external carrier API** and no live delivery tracking in V4; they move to a later version. Carrier and tracking-number **entry by hand is not built either** (V4-D32). | Phase 4 |
+| V4-D22 | A `PENDING` Order **never expires automatically**. It stays until the seller confirms or processes it. The consumer can cancel it while it is `PENDING` (`PENDING -> CANCELLED`). After `PROCESSING` the ordinary Cancel stays refused, as in v3. | Keeps v3 DN-04 (no automatic `PENDING` expiry) for V4; the stale "PENDING expiration policy" line of `CLAUDE.md` is marked superseded. Consistent with v3 sections 5, 9, 11. |
+| V4-D23 | **Delivery completion.** The Admin moves an Order `PROCESSING -> SHIPPED`; the moment of that transition is recorded as the delivery start (`shipped_at`). The consumer confirms receipt: `SHIPPED -> DELIVERED` at once. If the consumer does not confirm, an Order becomes `DELIVERED` automatically **14 days after the `SHIPPED` transition** (not after the Order creation date). The automatic completion is designed to be **idempotent**: a repeated or concurrent run changes nothing more. | **Extends v3 DN-14** ("only the trusted server (Admin) performs the transitions"): for `SHIPPED -> DELIVERED` the consumer confirmation and the automatic completion are added (marked superseded in the v3 document). |
+| V4-D24 | Fulfillment without a carrier is limited to the order status and `shipped_at`: Admin `PROCESSING -> SHIPPED`, and the three `DELIVERED` paths of V4-D31. | V4-D31, V4-D32 |
+| V4-D25 | **No paid Supabase backup / PITR plan is required for V4.** The current production safety gate stays: a fresh `pg_dump` right before an important migration or cutover, a restore into a local scratch database, a row-count and fingerprint comparison, and **stop when the restore check fails**. Supabase backup / PITR is re-reviewed **before any paid service or real-money PG** is introduced (the trigger is fixed in V4-D35). | Phase 1.5 is designed to pass on this basis; the platform still has no backup and PITR is off (`CUTOVER.md` 1) |
 | V4-D26 | **Customer communication is not implemented in V4**: no notification channel (mail, SMS, push), no reviews, no inquiries. They move to V5. | Former Phase 7 moves to the V5 candidates |
 
-## 4. Open items (`DECISION NEEDED`, not decided)
+## 4. Resolutions of the former open items (2026-09-27)
 
-Do not implement these by choice. Each is answered before the phase that needs it starts.
+The six items that were `DECISION NEEDED` are decided. **No open item remains.** If a phase finds a new gap it records it here as a new `DECISION NEEDED` before implementing.
 
-| ID | Open item | Needed by | Note |
-|---|---|---|---|
-| O1 | `shipped_at` for Orders that are already `SHIPPED` when the timestamp column appears: what value do they get, and do they take part in the 14-day rule? | Phase 4 | The 14 days count from the `SHIPPED` transition, which is not recorded today (`orders` has no such column) |
-| O2 | The current v3 Admin can also move `SHIPPED -> DELIVERED` by hand (`admin_advance_order`). V4-D23 / D24 list only the consumer confirmation and the automatic completion. Is the Admin manual `DELIVERED` kept or removed? | Phase 4 | `CONFLICT` with the current implementation until answered |
-| O3 | Are a carrier name and a tracking number entered **by hand** by the Admin (no API)? | Phase 4 | V4-D21 excludes the API, not necessarily the fields |
-| O4 | Seller rejection reason / state model | Phase 4 | Open since v3 |
-| O5 | Error-tracking / monitoring service (a third party, or the platform logs only) | Phase 5 | |
-| O6 | The date and conditions for re-reviewing Supabase backup / PITR (V4-D25) | before a paid service or real-money PG | |
+| ID | Decision | Replaces |
+|---|---|---|
+| V4-D30 | **`shipped_at` of Orders that are already `SHIPPED`.** When the column is added, an existing Order gets a value **only if a trustworthy `SHIPPED` transition time exists** in the data; that value is backfilled. If only `updated_at` exists, it is **not** used as the start of the 14 days. An existing `SHIPPED` Order without a trustworthy time is **excluded from the automatic `DELIVERED` completion** and is completed by hand (V4-D31 path 3). From new Orders on, `shipped_at` is written explicitly at the `SHIPPED` transition. | former O1 |
+| V4-D31 | **The Admin `SHIPPED -> DELIVERED` stays.** `DELIVERED` is entered by exactly three paths: (1) the consumer confirms receipt, (2) the automatic completion 14 days after `shipped_at`, (3) the Admin completes it by hand. **All three are idempotent**: a repeated request, or two paths at the same time, ends in `DELIVERED` once, changes nothing more, and shows the caller no avoidable transition error. | former O2; resolves the conflict with `admin_advance_order` |
+| V4-D32 | **No carrier and no tracking number in V4, not even by hand, and no carrier API.** V4 manages the Order status `SHIPPED` and `shipped_at` only. Carrier and tracking number are V5 candidates. | former O3 |
+| V4-D33 | **The seller rejection reason is not built in V4** (V5 candidate). What v3 already records stays: who cancelled and an optional free-text reason in `order_cancellations` (v3 DN-12). A structured rejection-reason code list or state model is V5. | former O4 |
+| V4-D34 | **No external error-tracking SaaS is chosen in V4.** V4 delivers structured logs, stored failure states, and the minimum operational visibility an Admin can read (the failure signals of reconcile, reversal and cron, and the Phase 4 console). Choosing Sentry or a similar service is decided later. | former O5 |
+| V4-D35 | **Supabase backup / PITR is re-reviewed before real-money PG is introduced, or before external paying customers are accepted, whichever comes first.** Until then the fresh `pg_dump` + local restore verification stays a mandatory gate for every important migration or cutover (V4-D25). | former O6 |
 
 ## 5. Not in V4
 
-Real PG vendor and real-money payment, the real reversal adapter and webhook productionization, external carrier API and live tracking, notification channels, reviews and inquiries, buy-now, discounts / coupons / shipping fees, and multi-warehouse allocation priority with a stock history. They are recorded as V5 candidates in `PHASES.md` section 5.
+Real PG vendor and real-money payment, the real reversal adapter and webhook productionization, external carrier API and live tracking, carrier and tracking-number entry, the structured seller rejection reason, an external error-tracking service, notification channels, reviews and inquiries, buy-now, discounts / coupons / shipping fees, and multi-warehouse allocation priority with a stock history. They are recorded as V5 candidates in `PHASES.md` section 5.

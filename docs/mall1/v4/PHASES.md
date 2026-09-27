@@ -1,6 +1,6 @@
 # Mall V4 — Phases
 
-Status: planned 2026-09-27. **Nothing here is implemented.** The decisions this plan rests on are in `docs/mall1/v4/DECISIONS.md` (V4-D01 to V4-D26); anything not decided there is an open item (`DECISIONS.md` section 4) and is not decided by a phase.
+Status: planned 2026-09-27. **Nothing here is implemented.** The decisions this plan rests on are in `docs/mall1/v4/DECISIONS.md` (V4-D01 to V4-D26); there is **no open item** as of 2026-09-27 (`DECISIONS.md` section 4); a gap found later is recorded there as a `DECISION NEEDED` before a phase decides it. The repository and production state and the starting point are in `docs/mall1/v4/HANDOFF.md`.
 
 Evidence level of the findings below: `code-level verification only` (code and git history were read; the apps were not run and no production screen was observed). Findings that need a production read are marked in Phase 1.
 
@@ -22,8 +22,8 @@ V4 stays in **PG Test mode** (V4-D20): it does not move real money.
 | 1.5 | Data Protection Gate | MUST (gate) | new; the safety gate of V4-D25 as an explicit gate before Phase 2 |
 | 2 | Production Release of v3 + Phase 1 | MUST | unchanged; runs after Phase 1 and Phase 1.5 (V4-D03) |
 | 3 | Payment: PG Test mode retained | MUST (a constraint, no new build) | **reclassified**: was "Payment Productionization (MUST for real money)"; real PG work moved to V5 (V4-D20) |
-| 4 | Fulfillment & Operations Console | MUST | **scope narrowed** by V4-D21 to V4-D24 |
-| 5 | Reliability, Security & Audit | MUST | **narrowed**: no paid backup / PITR requirement (V4-D25) |
+| 4 | Fulfillment & Operations Console | MUST | **scope narrowed** by V4-D21 to V4-D24 and V4-D30 to V4-D33 |
+| 5 | Reliability, Security & Audit | MUST | **narrowed**: no paid backup / PITR requirement (V4-D25), no external error-tracking service (V4-D34) |
 | 6 | Storefront Discovery & Performance | SHOULD | unchanged |
 | 7 | Customer Communication & Support | **moved to V5** | **moved** (V4-D26) |
 | 8 | Pricing, Shipping Fee & Promotions | LATER (V5 candidate) | unchanged |
@@ -68,7 +68,7 @@ Dependencies: `1 -> 1.5 -> 2 -> {3, 4, 5} -> 10`; `6` starts after 2; 7, 8, 9 ar
 **Migration risk**: none by itself. The known limit is accepted for PG Test mode: the platform has no backup and PITR is off, so the dump is the only rollback data and everything after the dump is lost on a restore.
 **Automated validation**: the local rehearsal of the script.
 **Real production validation**: the read-only production dump and the restore check (already done once on 2026-09-27; it is repeated right before the window).
-**Next**: Phase 2. Before a paid service or real-money PG, Supabase backup / PITR is re-reviewed (V4-D25, open item O6).
+**Next**: Phase 2. Supabase backup / PITR is re-reviewed before real-money PG or before external paying customers (V4-D35; V4-D25 until then).
 
 ### Phase 2 — Production Release of v3 + Phase 1 (MUST)
 
@@ -92,26 +92,27 @@ Dependencies: `1 -> 1.5 -> 2 -> {3, 4, 5} -> 10`; `6` starts after 2; 7, 8, 9 ar
 
 **Purpose**: the operator finishes an order's life from the screens, without a carrier integration.
 **Scope**:
-- **Lifecycle** (V4-D22 to V4-D24): a `PENDING` Order never expires; the consumer can cancel it while `PENDING`; after `PROCESSING` the ordinary Cancel stays refused. The Admin moves `PROCESSING -> SHIPPED` and the transition time is recorded; the consumer confirms receipt (`SHIPPED -> DELIVERED` at once); **14 days after the `SHIPPED` transition** a still-`SHIPPED` Order becomes `DELIVERED` automatically. The automatic completion is one database function run by Supabase Cron (no HTTP call, no secret), **idempotent**: it only touches `SHIPPED` Orders past 14 days, skips locked rows, and a repeated, concurrent or already-confirmed case changes nothing and raises no user-visible error. The job is created by a separate activation script, like the reconcile jobs, and has a deactivation script.
+- **Lifecycle** (V4-D22 to V4-D24, V4-D30, V4-D31): a `PENDING` Order never expires; the consumer can cancel it while `PENDING`; after `PROCESSING` the ordinary Cancel stays refused. The Admin moves `PROCESSING -> SHIPPED` and `shipped_at` is written explicitly from that transition on. **`DELIVERED` has three entry paths, all idempotent**: the consumer's receipt confirmation (`SHIPPED -> DELIVERED` at once), the automatic completion **14 days after `shipped_at`**, and the Admin's manual completion (the existing action stays). A repeated request, or two paths at once, ends in one `DELIVERED` with no extra change and no avoidable user-visible error. The automatic completion is one database function run by Supabase Cron (no HTTP call, no secret): it only touches `SHIPPED` Orders with a `shipped_at` older than 14 days, skips locked rows, and never uses `updated_at`. The job is created by a separate activation script, like the reconcile jobs, and has a deactivation script.
+- **Existing `SHIPPED` Orders** (V4-D30): backfilled only from a trustworthy `SHIPPED` time; otherwise `shipped_at` stays empty, the Order is excluded from the automatic completion and is completed by hand.
 - **Operations**: order search, filter and pagination; a reversal and reconcile console for what `/api/admin/reversals` returns today (API only, no screen); the shortage screens tidied.
-- **Not in this phase**: carrier API and live tracking (V4-D21), PENDING expiry (V4-D22), notifications (V4-D26). Open items O1 to O4 are answered before implementation.
+- **Not in this phase**: carrier API, live tracking, carrier and tracking-number entry (V4-D21, V4-D32), the structured seller rejection reason (V4-D33), PENDING expiry (V4-D22), notifications (V4-D26). Nothing in this phase is left open.
 
-**Schema impact**: timestamps for `SHIPPED` and `DELIVERED` on the Order (form decided in the phase design), the cron job. **UI impact**: Admin order screens, a receipt-confirmation action and the shipped date on the consumer order detail (no internal stock or logistics detail, BR-20). **Backend impact**: a receipt-confirmation RPC (owner-scoped, idempotent), the automatic-completion function, changes to `admin_advance_order` according to O2.
-**Migration risk**: existing `SHIPPED` and `DELIVERED` Orders have no timestamp (O1); the Order status guard triggers and the allocation-freeze trigger stay as they are; Refund is unaffected (no Refund window after `DELIVERED`, v3 DN-42).
+**Schema impact**: `shipped_at` and a `DELIVERED` time on the Order (the exact form is a design detail of the phase, not a policy question), the cron job. No carrier or tracking columns. **UI impact**: Admin order screens, a receipt-confirmation action and the shipped date on the consumer order detail (no internal stock or logistics detail, BR-20). **Backend impact**: a receipt-confirmation RPC (owner-scoped, idempotent), the automatic-completion function, `admin_advance_order` keeps `SHIPPED -> DELIVERED` and writes `shipped_at` at the `SHIPPED` step (V4-D31).
+**Migration risk**: the schema has no reliable `SHIPPED` transition time for existing Orders (`orders` carries only `ordered_at`, `created_at`, `updated_at`), so most or all existing `SHIPPED` Orders are excluded from the automatic completion and handled by hand (V4-D30); the Order status guard triggers and the allocation-freeze trigger stay as they are; Refund is unaffected (no Refund window after `DELIVERED`, v3 DN-42).
 **Completion**: an order can go from received to delivered, cancelled, refunded or reversed using the screens only; the 14-day rule is proven at its boundary; the console shows every reversal that needs attention.
-**Automated validation**: a SQL suite for the transitions, double confirmation, a confirmation racing the automatic run, and the 14-day boundary measured from the `SHIPPED` time and not from the creation time; Playwright for the operator and consumer flows; the v3 regression.
+**Automated validation**: a SQL suite for the transitions, each of the three `DELIVERED` paths repeated, every pair of paths racing each other, the 14-day boundary measured from `shipped_at` and not from the creation time or `updated_at`, and an existing `SHIPPED` Order without `shipped_at` staying out of the automatic run; Playwright for the operator and consumer flows; the v3 regression.
 **Real production validation**: a test Order through receipt confirmation; that the automatic job is scheduled and runs empty. The 14-day boundary itself is verified locally; a time-shifted production test is not done without an explicit authorization.
 **Next**: 10.
 
 ### Phase 5 — Reliability, Security & Audit (MUST)
 
 **Purpose**: make failures and changes visible and keep the boundary tight, without a paid backup plan (V4-D25).
-**Scope**: an audit trail of Admin mutations (prices, stock, page-config, Post Variant selection, status changes); visibility of reconcile, reversal and cron failures (`cron.job_run_details`, `net._http_response`, the Phase 4 console); a review of RLS and RPC grants (the existing grants verification kept and extended to the new objects); request limiting on the Route Handlers; cleanup of privileged variables that a project does not use (client-pwa holds `SUPABASE_SECRET_KEY` and `PG_TEST_*` without reading them). An error-tracking service is open item O5.
+**Scope**: an audit trail of Admin mutations (prices, stock, page-config, Post Variant selection, status changes); visibility of reconcile, reversal and cron failures (`cron.job_run_details`, `net._http_response`, the Phase 4 console); a review of RLS and RPC grants (the existing grants verification kept and extended to the new objects); request limiting on the Route Handlers; cleanup of privileged variables that a project does not use (client-pwa holds `SUPABASE_SECRET_KEY` and `PG_TEST_*` without reading them). No external error-tracking service is chosen in V4 (V4-D34): the phase delivers structured logs, stored failure states and the Admin-readable minimum visibility only.
 **Schema impact**: an audit table. **UI impact**: an Admin audit view. **Backend impact**: audit writes in the mutating RPCs or Route Handlers.
 **Migration risk**: an audit write must not make a mutation fail or noticeably slower.
 **Completion**: every listed mutation is audited; failures are visible without database access; the grants verification is green.
 **Automated validation**: grants and RLS SQL suites, failure-injection tests. **Real production validation**: a real audited change and a real visible failure signal.
-**Next**: 10. Backup / PITR is **not** required here; it is re-reviewed before a paid service or real-money PG (O6).
+**Next**: 10. Backup / PITR is **not** required here; the re-review trigger is V4-D35.
 
 ### Phase 6 — Storefront Discovery & Performance (SHOULD)
 
@@ -134,7 +135,7 @@ Dependencies: `1 -> 1.5 -> 2 -> {3, 4, 5} -> 10`; `6` starts after 2; 7, 8, 9 ar
 2. No mock, placeholder or dev trace reaches a production surface (the repository search of Phase 1 F plus a browser walk).
 3. The v3 domain runs in production: the post-check is ok, the Supabase Cron jobs run, and the reconcile sweeper works.
 4. The operator manages the whole lifecycle from the screens without database access: catalog, stock, posts, orders, shipping, delivery completion, cancel, refund, restock, reversals.
-5. The delivery policy holds: no `PENDING` expiry, receipt confirmation, and the 14-day automatic completion, idempotent.
+5. The delivery policy holds: no `PENDING` expiry, `DELIVERED` reachable by the consumer's confirmation, the 14-day automatic completion and the Admin's manual completion, each idempotent, with existing `SHIPPED` Orders without a trustworthy time handled by hand (V4-D30 to V4-D32).
 6. Payment stays in PG Test mode and that is stated wherever a reader could assume otherwise; the real-money transition is not part of V4.
 7. The Phase 1.5 gate passes before each production migration; audit and failure visibility (Phase 5) work; the stock and payment invariants hold after the production E2E; the rollback was rehearsed.
 8. The SHOULD and LATER items are listed for V5.
@@ -144,7 +145,9 @@ Dependencies: `1 -> 1.5 -> 2 -> {3, 4, 5} -> 10`; `6` starts after 2; 7, 8, 9 ar
 | Candidate | Origin | Why it is not V4 |
 |---|---|---|
 | Customer Communication & Support: notification channels (mail, SMS, push), reviews, ratings, inquiries, a refund-window review | former Phase 7 | V4-D26 |
-| Real-money Payment Transition: PG vendor, real reversal adapter, webhook, orphan detection against the real PG, authorize / capture, Point; **prerequisite: the Supabase backup / PITR re-review (O6)** | former Phase 3 | V4-D20 |
-| Carrier integration and live delivery tracking | Phase 4 | V4-D21 |
+| Real-money Payment Transition: PG vendor, real reversal adapter, webhook, orphan detection against the real PG, authorize / capture, Point; **prerequisite: the Supabase backup / PITR re-review (V4-D35)** | former Phase 3 | V4-D20 |
+| Carrier integration, live delivery tracking, and carrier / tracking-number entry | Phase 4 | V4-D21, V4-D32 |
+| Seller rejection reason: a structured reason code list or state model (v3 records who and an optional free text) | Phase 4 | V4-D33 |
+| Choice of an external error-tracking service (Sentry or similar) | Phase 5 | V4-D34 |
 | Pricing, Shipping Fee & Promotions (discounts, coupons, shipping fee, refund-amount derivation, DN-27) | Phase 8 | not started; large schema impact on finalize and refund |
 | Multi-Warehouse & Inventory Intelligence (stock history, warehouse transfer UI over the existing `transfer_ware_stock`, allocation priority) | Phase 9 | not started; touches allocation |
