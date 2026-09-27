@@ -7,7 +7,6 @@ import { runPaymentReversal } from "@/lib/payment/checkout";
 
 /** A PENDING reversal that keeps having no definitive PG answer needs an Admin (see /api/admin/reversals). */
 const MAX_AUTOMATIC_ATTEMPTS = 5;
-const ORPHAN_LIMIT = 100;
 const REVERSAL_BATCH = 50;
 
 function authorized(request: Request) {
@@ -25,12 +24,15 @@ function authorized(request: Request) {
 }
 
 /**
- * Mall v3 reconcile job (docs/mall1/v3/CUTOVER.md), called by a scheduler:
- *   1. an Order-less SUCCEEDED Payment older than the window (default 30
- *      minutes, ORPHAN_MIN_AGE_MINUTES) gets its ORPHAN_PAYMENT reversal;
- *   2. PENDING reversals are executed (the reversal lease keeps concurrent runs
- *      and request-time executions from calling the PG twice); a reversal with
- *      MAX_AUTOMATIC_ATTEMPTS attempts is left for an Admin.
+ * Mall v3 reversal sweeper (docs/mall1/v3/CUTOVER.md 3.3), called by Supabase
+ * Cron through pg_net (public.call_reconcile_sweeper, secret from Vault):
+ * PENDING reversals are executed (the reversal lease keeps concurrent runs and
+ * request-time executions from calling the PG twice); a reversal with
+ * MAX_AUTOMATIC_ATTEMPTS attempts is left for an Admin. The PG adapter and the
+ * reversal execution stay here, in the Next server.
+ * Orphan Payments are NOT handled here: their reversals are created inside the
+ * database (public.reconcile_orphan_payments, also Supabase Cron) and executed by
+ * the next run of this sweeper.
  * FAILED reversals are never retried here: an Admin retries them (actor
  * recorded). Protected by the server-only RECONCILE_JOB_SECRET; without it the
  * job is disabled (503). The response carries counts only.
@@ -47,16 +49,6 @@ export async function POST(request: Request) {
     }
 
     const supabase = createServiceRoleClient();
-    const minutes = Math.max(0, Number(process.env.ORPHAN_MIN_AGE_MINUTES ?? 30) || 30);
-
-    const { data: orphans, error: orphanError } = await supabase.rpc("reverse_orphan_payments", {
-        p_min_age: `${minutes} minutes`,
-        p_limit: ORPHAN_LIMIT,
-    });
-
-    if (orphanError) {
-        return NextResponse.json({ message: "Orphan scan failed." }, { status: 500 });
-    }
 
     const { data: pending, error: pendingError } = await supabase
         .from("payment_reversals")
@@ -79,7 +71,6 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
         data: {
-            orphansReversed: Array.isArray(orphans) ? orphans.length : 0,
             reversalsScanned: pending?.length ?? 0,
             executed,
         },

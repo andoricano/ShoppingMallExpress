@@ -10,12 +10,13 @@ rehearsal `supabase/rehearsal/v3_cutover_rehearsal.sh` (local database only).
 |---|---|---|---|
 | 0 | Read-only checks of production (v2 schema), in a read-only session (docs/mall1/v3/PRECHECK.md): schema state, precheck (every BLOCKER must be 0), and the preview of the unpaid legacy Orders to be shown to the user | `v3_precheck_state.sql`, `v3_precheck_v2_baseline.sql`, `v3_preview_unpaid_legacy_orders.sql` | rehearsal step 2 |
 | 1 | **Mandatory gate:** backup with pg_dump and verify it by restoring into a local scratch database and comparing counts; any mismatch stops the cutover | `v3_backup_and_verify.sh` | rehearsal step 3 (local), and run against production read-only on 2026-09-27 |
-| 2 | Additive migrations `20260926130000` to `20260927100000` (v2 keeps working) | `supabase/migrations/` | `pnpm supabase db reset --local` + all `v3_phase*` scripts, rehearsal step 4 |
+| 2 | Additive migrations `20260926130000` to `20260927110000` (v2 keeps working; the last one prepares pg_cron / pg_net and schedules nothing) | `supabase/migrations/` | `pnpm supabase db reset --local` + all `v3_phase*` scripts, rehearsal step 4 |
 | 3 | Resolve unpaid legacy Orders (cancel, v2 stock semantics) | `v3_resolve_unpaid_legacy_orders.sql` | rehearsal step 6 |
 | 4 | Stock conversion and sellability switch (check: `v3_stock_consistency_check.sql`) | `v3_stock_and_sellability.sql` | `v3_phase2_cutover.sh`, rehearsal step 6 |
 | 5 | Legacy contraction (PAID, v2 order paths, Refund status set) | `v3_legacy_contraction.sql` | `v3_phase8_contraction.sh`, rehearsal steps 5-6 |
 | 6 | Read-only post-check; every row must be ok | `v3_postcheck.sql` | rehearsal step 7 |
 | 7 | Promote the v3 application deployment (`NEXT_PUBLIC_MALL_V3=true`) and set the server environment | | rehearsal step 9 (E2E on the cut-over database) |
+| 8 | Enable the reconcile scheduler, after the production E2E: `v3_reconcile_scheduler_vault.sql` (Vault entries, values from the shell environment), then `v3_reconcile_scheduler_activate.sql`. Undo: `v3_reconcile_scheduler_deactivate.sql`. Read-only prerequisite check before the window: `v3_precheck_scheduler_extensions.sql` | `v3_phase9_reconcile.sh` (rehearsal step 9) |
 
 Steps 3 to 5 are single-transaction scripts with guards: they refuse to run,
 and change nothing, when their preconditions fail. After step 5 the v2

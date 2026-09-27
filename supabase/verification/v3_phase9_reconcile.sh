@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ============================================================
-# Local verification: Mall v3 reconcile job (apps/client-web/app/api/internal/reconcile) over HTTP
+# Local verification: Mall v3 reconcile scheduler (sweeper route over HTTP, Vault-backed pg_net call, Supabase Cron)
 #
 #   bash supabase/verification/v3_phase9_reconcile.sh
 #
@@ -95,4 +95,4 @@ fi
 echo "PASS  the user-web and client-web reversal executors are identical"
 
 cd "$ROOT" && LOCAL_API_URL="$LOCAL_API_URL" LOCAL_ANON_KEY="$LOCAL_ANON_KEY" LOCAL_SERVICE_KEY="$LOCAL_SERVICE_KEY" \
-  FX="$FX" node --no-warnings supabase/verification/v3_phase9_reconcile.mts
+  DB_CONTAINER="$DB_CONTAINER" FX="$FX" node --no-warnings supabase/verification/v3_phase9_reconcile.mts

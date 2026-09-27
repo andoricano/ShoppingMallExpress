@@ -66,6 +66,9 @@ WRITE="$(mktemp)"; echo "create table public._must_not_exist(i int);" > "$WRITE"
 check "the read-only wrapper refuses a write" "$(ro "$WRITE" 2>&1 | grep -c 'read-only transaction')" 1
 check "the read-only wrapper left no table behind" "$(val "select count(*) from pg_tables where tablename = '_must_not_exist'")" 0
 rm -f "$WRITE"
+EXT="$(ro supabase/cutover/v3_precheck_scheduler_extensions.sql)"
+check "scheduler prerequisites: pg_cron, pg_net and supabase_vault are available (read-only)" "$(echo "$EXT" | grep -E '^(pg_cron|pg_net|supabase_vault)\|' | awk -F'|' '$4=="t"' | wc -l | tr -d ' ')" 3
+check "scheduler prerequisites: nothing is installed or scheduled on the v2 baseline (pg_cron / pg_net)" "$(val "select count(*) from pg_extension where extname in ('pg_cron','pg_net')")" 0
 check "precheck: the wrapper runs it (4 BLOCKER rows)" "$(ro supabase/cutover/v3_precheck_v2_baseline.sql | grep -c BLOCKER)" 4
 
 step "3. backup and verify it by restoring into a scratch database"
@@ -83,6 +86,8 @@ pnpm --silent supabase migration up --local 2>&1 | grep -E "Applying|ERROR|error
 check "the v3 objects exist" "$(val "select to_regprocedure('public.finalize_order(uuid, uuid, jsonb, jsonb)') is not null and to_regprocedure('public.admin_create_refund_request(uuid, jsonb, text, uuid)') is not null")" t
 check "the v2 order paths still exist (additive only)" "$(val "select to_regprocedure('public.create_order_from_cart(jsonb, text)') is not null")" t
 check "existing data untouched by the migrations (stock total)" "$(val "select sum(current_stock) from public.wares")" "$STOCK_BEFORE"
+check "the scheduler migration prepared pg_cron, pg_net and the support functions" "$(val "select (select count(*) from pg_extension where extname in ('pg_cron','pg_net')) || '/' || (to_regprocedure('public.call_reconcile_sweeper()') is not null and to_regprocedure('public.reconcile_orphan_payments()') is not null)")" "2/true"
+check "the scheduler migration scheduled NOTHING (no cron job, no Vault entry)" "$(val "select (select count(*) from cron.job) || '/' || (select count(*) from vault.secrets where name in ('reconcile_endpoint_url','reconcile_job_secret'))")" "0/0"
 
 step "5. the contraction must REFUSE while unpaid legacy Orders exist"
 psqlf --single-transaction -q < supabase/cutover/v3_legacy_contraction.sql >/dev/null 2>&1 \
@@ -113,6 +118,7 @@ if [ "$SKIP_E2E" -eq 0 ]; then
     OUT="$(timeout 590 bash "supabase/verification/$s.sh" 2>&1)"; RC=$?
     if [ "$RC" -eq 0 ] && ! echo "$OUT" | grep -q "^FAIL"; then pass "$s"; else fail "$s (rc=$RC)"; echo "$OUT" | grep -E "^FAIL" | head -3; fi
   done
+  check "the suites left no reconcile cron job and no Vault entry behind (scheduler stays disabled)" "$(val "select (select count(*) from cron.job) || '/' || (select count(*) from vault.secrets where name in ('reconcile_endpoint_url','reconcile_job_secret'))")" "0/0"
   check "post-check still all ok after the suites" "$(psqlf -qtA < supabase/cutover/v3_postcheck.sql | awk -F'|' '$2=="f"' | wc -l | tr -d ' ')" 0
 fi
 

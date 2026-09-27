@@ -39,6 +39,7 @@ ro() { { echo "begin read only;"; cat "$1"; echo "commit;"; } | psql "$PROD_DB_U
 | 1 | `ro supabase/cutover/v3_precheck_state.sql` | the migration history, the existence of v3 objects, `reserved_stock` | last version `20260925150000`; every v3 object `f`; `wares_with_reserved_stock` = 0 |
 | 2 | `ro supabase/cutover/v3_precheck_v2_baseline.sql` | v2 tables only (Orders, OrderItems, Payments, Refunds, Wares, Points): counts, no personal data | every BLOCKER row count `0`; ACTION rows listed; read every WARN |
 | 3 | `ro supabase/cutover/v3_preview_unpaid_legacy_orders.sql` | the unpaid legacy PENDING/PAID Orders: order number, status, product and variant snapshot, ordered and allocated quantity, the Ware and the stock that would return | the list and quantities are **shown to the user and accepted** before the resolve script is ever run |
+| 4 | `ro supabase/cutover/v3_precheck_scheduler_extensions.sql` | catalogs only: whether `pg_cron`, `pg_net`, `supabase_vault` are available or installed, and `cron.database_name`. No Vault entry is read | all three available (`available = t`); `cron_database_name` equals the production database name. A missing one means the scheduler migration would fail: stop and report |
 
 If step 1 shows a v3 object or a non-zero `reserved_stock`, stop: production is not
 at the expected v2 baseline, and the rest is not valid.
@@ -106,13 +107,13 @@ Environment (dashboard; names and presence only, never values)
 - [ ] 9. The v3 deployment (a build of `main`, not promoted) has, per `CUTOVER.md` 3.2:
       `NEXT_PUBLIC_MALL_V3=true` (all three apps), `NEXT_PUBLIC_CLIENT_WEB_URL` (client-pwa),
       `PG_REVERSAL_ADAPTER=simulated` (client-web and user-web),
-      `RECONCILE_JOB_SECRET` (client-web, server-only, at least 24 characters, not `NEXT_PUBLIC_*`),
+      `RECONCILE_JOB_SECRET` (client-web, server-only, at least 24 characters, not `NEXT_PUBLIC_*`; the same value is later stored in Supabase Vault by the scheduler script),
       and the existing `SUPABASE_SECRET_KEY` and `PG_TEST_*` unchanged
 - [ ] 10. Nothing privileged is in a `NEXT_PUBLIC_*` variable
 
 Scheduler and deployment (dashboard / provider; nothing created by these scripts)
 
-- [ ] 11. The reconcile scheduler is prepared but **disabled**: `.github/workflows/reconcile.yml` (prepared 2026-09-27; skipped while the repository variable `RECONCILE_ENABLED` is not `true`); the repository secrets `CLIENT_WEB_URL` and `RECONCILE_JOB_SECRET` are set; enabled at step 8 of the cutover
+- [ ] 11. The reconcile scheduler (Supabase Cron, `CUTOVER.md` 3.3) is prepared but **not scheduled**: the migration `20260927110000` creates only the extensions and owner-only functions; the Vault entries and the two cron jobs are created at step 8 by `v3_reconcile_scheduler_vault.sql` and `v3_reconcile_scheduler_activate.sql` on your instruction (undo: `v3_reconcile_scheduler_deactivate.sql`). Command 4 above was read on production. No GitHub Actions secret or variable is used
 - [ ] 12. The v3 deployment exists and is not promoted; the current v2 deployment is identified as the rollback target
 - [ ] 13. A maintenance window and the announcement are agreed
 
@@ -124,9 +125,9 @@ None is given by these scripts; each is an explicit instruction in the current t
 2. The unpaid legacy Order list and quantities (decision #1: cancel, v2 stock semantics, no Payment created), accepted **after** seeing the list.
 3. The backup and its restore check, accepted.
 4. The environment variables and the prepared v3 deployment, accepted.
-5. The reconcile scheduler configuration and its enabling time, accepted.
+5. The reconcile scheduler configuration (Supabase Cron + Vault, `CUTOVER.md` 3.3) and its enabling time, accepted.
 6. The maintenance window (announced).
-7. **The cutover itself**, naming what is applied: the additive migrations (`20260926130000` to `20260927100000`), the cutover scripts in the order of `supabase/cutover/ORDER.md`, then the promotion of the v3 deployment. Applying the migrations, running the cutover SQL, and turning `NEXT_PUBLIC_MALL_V3` on in production are three separate instructions unless the user says they are one.
+7. **The cutover itself**, naming what is applied: the additive migrations (`20260926130000` to `20260927110000`), the cutover scripts in the order of `supabase/cutover/ORDER.md`, then the promotion of the v3 deployment. Applying the migrations, running the cutover SQL, and turning `NEXT_PUBLIC_MALL_V3` on in production are three separate instructions unless the user says they are one.
 8. The rollback criteria (`CUTOVER.md` section 5), including that the point of no return is the first real v3 order.
 
 Not part of this checklist, and not a blocker for the PG test cutover: the real PG

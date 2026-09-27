@@ -17,10 +17,10 @@ change run only on the user's explicit instruction. Results are labelled
 | Production data precheck | **run 2026-09-27, `production read-only observed`; approved by the user**: BLOCKER 0, WARN 0, the v2 baseline is as expected (section 3.1) |
 | Decisions #1 to #3 (business/data) | **approved by the user (2026-09-27)**; #1 needs the target list shown before it is applied (`v3_preview_unpaid_legacy_orders.sql`) |
 | PG reversal adapter | **only the PG Test simulation exists.** Not a blocker for the PG test cutover; **a blocker for a real-money production release** (no real PG adapter) |
-| Scheduler for the reconcile job | **prepared, disabled**: `.github/workflows/reconcile.yml` (GitHub Actions, 5 minutes); skipped until the repository variable `RECONCILE_ENABLED` is `true` (section 3.3). Verified against a local mock only |
+| Scheduler for the reconcile job | **prepared, not scheduled**: Supabase Cron (`pg_cron`) runs the orphan job in the database and, through `pg_net` with the secret in Supabase Vault, calls the reversal sweeper route (section 3.3). The migration schedules nothing; the jobs are created by a separate cutover script (step 8). Verified on the local stack only (`local rehearsal`); GitHub Actions and Vercel Cron are not used |
 | Backup gate (step 0) | **procedure verified** (`v3_backup_and_verify.sh`, `production read-only observed`: pg_dump of production, restore into a local scratch database, 53 tables with identical row counts, equal fingerprints). The Supabase platform has **no backup and PITR is off** (`supabase backups list`), so this dump is the only rollback data; it must be re-taken right before the window |
 
-Verdict: **the Phase 9 gate is not PASS.** Remaining production blockers before the PG test cutover (the production precheck and the unpaid-legacy-Order target check are done, section 3.1): the production environment variables, the reconcile scheduler, Supabase backup availability, the v3 deployment, and the user's explicit cutover approval. The exact read-only procedure is `docs/mall1/v3/PRECHECK.md`. A **real-money launch stays FAIL** until a real PG reversal adapter exists.
+Verdict: **the Phase 9 gate is not PASS.** Remaining production blockers before the PG test cutover (the production precheck and the unpaid-legacy-Order target check are done, section 3.1): the production environment variables, the v3 deployment, the production Supabase Cron / Vault prerequisites (section 3.3), and the user's explicit cutover approval. The exact read-only procedure is `docs/mall1/v3/PRECHECK.md`. A **real-money launch stays FAIL** until a real PG reversal adapter exists.
 
 ---
 
@@ -31,8 +31,8 @@ Verdict: **the Phase 9 gate is not PASS.** Remaining production blockers before 
 | 1 | Legacy PENDING/PAID Orders without payment evidence (unpaid v2 Orders, hand-marked PAID) are **cancelled** at the cutover with the v2 stock semantics (the allocated quantity returns to `current_stock`) and an internal note; **no Payment is created**. The target Orders and quantities are **shown to the user before anything is applied** (`v3_preview_unpaid_legacy_orders.sql`) | **approved 2026-09-27** | `v3_resolve_unpaid_legacy_orders.sql` |
 | 2 | DN-42 Refund window: **none** in the initial v3 (as in v2); re-reviewed after operation as a separate policy | **approved 2026-09-27** | no code |
 | 3 | DN-46 seller-initiated Refund: the **Admin creates the Refund request on behalf of the Client** (any status from PROCESSING on), then the ordinary approval + reversal + explicit restock. Cancel stays refused after PROCESSING. No separate seller-failure workflow. The Admin-initiated fact is kept (`refund_requests.initiated_by = 'ADMIN'`) | **approved 2026-09-27; implemented** | `admin_create_refund_request`, `POST /api/admin/orders/[id]/refund`, Admin panel button |
-| 4 | Orphan window: **30 minutes** (`ORPHAN_MIN_AGE_MINUTES`, default 30) | decided (operational) | reconcile job |
-| 5 | Reversal reprocessing: a **PENDING** reversal is executed automatically by the reconcile job (lease-guarded, at most 5 automatic attempts); a **FAILED** reversal is never retried automatically — an Admin retries it (actor recorded); reversals that need attention are listed by `GET /api/admin/reversals` | decided (operational); implemented | `POST /api/internal/reconcile` |
+| 4 | Orphan window: **30 minutes**, fixed in the database function `reconcile_orphan_payments()` (no environment variable) | decided (operational) | reconcile scheduler migration |
+| 5 | Reversal reprocessing: a **PENDING** reversal is executed automatically by the reversal sweeper (lease-guarded, at most 5 automatic attempts); a **FAILED** reversal is never retried automatically — an Admin retries it (actor recorded); reversals that need attention are listed by `GET /api/admin/reversals` | decided (operational); implemented | `POST /api/internal/reconcile` (called by Supabase Cron, section 3.3) |
 | 6 | Production PG reversal adapter: the only PG today is the **PG Test recorder** (no cancel API). The adapter is chosen by `PG_REVERSAL_ADAPTER`: `simulated` (PG test mode) settles reversals locally; **unset** selects the production placeholder, whose outcome is unknown, so reversals stay PENDING and nothing is marked settled by mistake. A real PG adapter is a prerequisite for real money | decided; **real adapter: not ready** | `lib/payment/reversal.ts` |
 | 7 | Point: the UI stays hidden; the tables, `create_payment` / `complete_payment` (POINT_TOPUP only after the contraction), and existing balances are **kept**. Removal is decided after the release (not before 30 days of stability) | decided | contraction SQL |
 | 8 | `payments.order_id`: **kept** as the mirrored direction of `orders.payment_id` (both are set in one transaction and a trigger forbids disagreement). Removal is a post-release migration, not part of the cutover | decided | migrations |
@@ -91,26 +91,50 @@ An earlier attempt failed on authentication because it used a credential from be
 | client-web, user-web, client-pwa | `NEXT_PUBLIC_MALL_V3` | `true` **only in the prepared v3 deployment**; unset in the current production | build-time |
 | client-pwa | `NEXT_PUBLIC_CLIENT_WEB_URL` | the client-web production URL | order hand-off |
 | client-web, user-web | `PG_REVERSAL_ADAPTER` | `simulated` (PG test mode) | unset = reversals stay PENDING |
-| client-web | `RECONCILE_JOB_SECRET` | a random secret of at least 24 characters, server-only | unset = the job returns 503 |
-| client-web | `ORPHAN_MIN_AGE_MINUTES` | optional, default 30 | |
-| client-web, user-web | existing `SUPABASE_SECRET_KEY`, `PG_TEST_*` | unchanged | |
+| client-web | `RECONCILE_JOB_SECRET` | a random secret of at least 24 characters, server-only; **the same value as the Vault entry `reconcile_job_secret`** (section 3.3) | unset = the sweeper route returns 503 |
+| client-web | existing `SUPABASE_SECRET_KEY`, `PG_TEST_ENDPOINT_URL`, `PG_TEST_API_KEY` | unchanged | |
+| user-web | existing `SUPABASE_SECRET_KEY` | unchanged (user-web does not read `PG_TEST_*`; checked in the code) | |
 
 Never put `RECONCILE_JOB_SECRET` or `SUPABASE_SECRET_KEY` in a `NEXT_PUBLIC_*` variable.
 
-### 3.3 Scheduler
+**Vercel state (2026-09-27, names and scopes only, values never read; `production Vercel observed` through the Vercel MCP).** A Preview deployment that is later promoted is not rebuilt, so its Preview-scope variables are what production will run: every variable of the table must exist in the **Preview** scope.
 
-`POST /api/internal/reconcile` with `Authorization: Bearer <RECONCILE_JOB_SECRET>` every 5 minutes. It reverses orphan payments and executes PENDING reversals. Not scheduled = orphan payments and unsettled reversals wait for a manual call.
+Preview scope, re-read after the user entered the secrets: **all required variables have the Preview scope** (client-web: `RECONCILE_JOB_SECRET`, `NEXT_PUBLIC_MALL_V3`, `PG_REVERSAL_ADAPTER`, `SUPABASE_SECRET_KEY`, `PG_TEST_ENDPOINT_URL`, `PG_TEST_API_KEY`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`; client-pwa: `NEXT_PUBLIC_CLIENT_WEB_URL`, `NEXT_PUBLIC_MALL_V3`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`; user-web: `NEXT_PUBLIC_MALL_V3`, `PG_REVERSAL_ADAPTER`, `SUPABASE_SECRET_KEY`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`). The Preview env blocker is resolved.
 
-Decided by the user (2026-09-27): **GitHub Actions `schedule`**, not Vercel Cron. Vercel Cron only sends GET with its own `CRON_SECRET`, while the route is POST with `RECONCILE_JOB_SECRET`; no GET handler is added.
+**Finding, fixed the same day: the Production scope had been extended on the v3 switches.** `NEXT_PUBLIC_MALL_V3=true` (all three projects), `PG_REVERSAL_ADAPTER` (client-web, user-web) and client-pwa `NEXT_PUBLIC_CLIENT_WEB_URL` briefly had the Production scope. `NEXT_PUBLIC_MALL_V3` is read at build time, so a production build made before the cutover (a push to `main` deploys to production automatically, or a redeploy) would have compiled the v3 code paths against the still-v2 database. On the user's instruction only the Production scope of those six variables was removed (values untouched, no other variable edited) and the state was re-read: **the six are Preview-only, and `NEXT_PUBLIC_MALL_V3` has no Production scope in any of the three projects** (`production Vercel observed`). No production build was made in between. `NEXT_PUBLIC_MALL_V3` is added to production only at the cutover, by decision; until then a production build stays v2. (`RECONCILE_JOB_SECRET` with Production scope is expected: it is the server secret and has no effect until the sweeper is scheduled.)
 
-- Workflow: `.github/workflows/reconcile.yml` (`*/5 * * * *`, plus `workflow_dispatch`). GitHub runs schedules from the default branch on a best-effort clock, so a run can be a few minutes late.
-- **Disabled by default:** the job runs only when the repository variable `RECONCILE_ENABLED` is exactly `true`. It is enabled at step 8 of the cutover and nowhere before.
-- Secrets to set in the repository (values are never printed): `CLIENT_WEB_URL` (the client-web production base URL) and `RECONCILE_JOB_SECRET` (the same value as the server variable, at least 24 characters).
-- Verified locally only (`local rehearsal`): the workflow YAML parses; its `run` script, executed against a local mock, returns the counts with the right secret, fails on a 401 with a wrong secret, and refuses to run with a missing secret. It has not run on GitHub.
+No Preview deployment exists yet (every deployment so far is a Git `main` production deployment); creating one is a separate approval. The production `*.vercel.app` URL of client-web is publicly reachable (the reconcile route answers 405 to a GET), so `pg_net` can call it; Preview URLs are behind Vercel Authentication.
+
+**Cleanup candidates (recorded, not done):** the client-pwa project holds `SUPABASE_SECRET_KEY`, `PG_TEST_API_KEY`, `PG_TEST_ENDPOINT_URL` in Production, although client-pwa reads none of them (code check); `PG_TEST_API_KEY` there is an `encrypted`-type variable that Vercel flags `readable-secret`. Decide after the release; nothing is deleted in this phase.
+
+### 3.3 Scheduler (Supabase Cron)
+
+Decided by the user (2026-09-27): **Supabase `pg_cron` + `pg_net` + Vault**. GitHub Actions and Vercel Cron are not used, and the earlier GitHub Actions workflow is removed. The reconcile work is two jobs of different kinds:
+
+| Job (every 5 minutes) | What it runs | Where the work happens |
+|---|---|---|
+| `mall-v3-reconcile-orphans` | `select public.reconcile_orphan_payments()`: an Order-less SUCCEEDED `ORDER_PAYMENT` older than 30 minutes gets its full `ORPHAN_PAYMENT` reversal (`reverse_orphan_payments`) | the database only; no HTTP, no secret |
+| `mall-v3-reconcile-sweeper` | `select public.call_reconcile_sweeper()`: `pg_net` POST to `<client-web base URL>/api/internal/reconcile` with `Authorization: Bearer <secret>` | the Next server executes PENDING reversals (lease-guarded, at most 5 automatic attempts). The PG adapter and the reversal logic stay in the Next server; nothing PG-related moves into the database |
+
+`/api/internal/reconcile` is therefore kept: executing a reversal is a PG call, which must not live in a database function. The route no longer creates orphan reversals; the orphan job creates them and the next sweeper run executes them. The response carries counts only (`reversalsScanned`, `executed`).
+
+**Secret handling.** The endpoint URL and the secret are Supabase Vault entries (`reconcile_endpoint_url`, `reconcile_job_secret`). The cron commands contain no secret; `call_reconcile_sweeper()` reads Vault inside the function, and the migration stores nothing. The secret is stored by `supabase/cutover/v3_reconcile_scheduler_vault.sql`, which reads `RECONCILE_ENDPOINT_URL` and `RECONCILE_JOB_SECRET` from the operator's shell environment (`\getenv`) and sends them as bind parameters (psql 16 or later): the values are not in a file, on a command line, echoed, or in a statement text that a server error log could hold. The same secret value is set as the `RECONCILE_JOB_SECRET` server variable of client-web; a mismatch makes the sweeper get 401 and execute nothing (verified locally). Rotation: run the Vault script again with the new value and update the Vercel variable; a run in between gets 401 and is retried by the next tick.
+
+**Disabled until the cutover.** The migration `20260927110000_v3_phase9_reconcile_scheduler.sql` only creates the extensions (`pg_cron`, `pg_net`, `supabase_vault`) and three owner-only support functions (`reconcile_orphan_payments`, `call_reconcile_sweeper`, `reconcile_scheduler_status`; nothing is granted to `anon`, `authenticated`, or `service_role`). It calls `cron.schedule` nowhere. At step 8, on the user's instruction:
+
+1. `v3_reconcile_scheduler_vault.sql` stores the two Vault entries.
+2. `v3_reconcile_scheduler_activate.sql` refuses (and schedules nothing) unless `reconcile_scheduler_status()` is all ok and the endpoint is https, then creates the two jobs (`*/5 * * * *`; re-running replaces them, never duplicates).
+3. Undo / rollback: `v3_reconcile_scheduler_deactivate.sql` calls `cron.unschedule` for both jobs (idempotent; Vault entries are kept, `-v drop_secrets=1` also deletes them).
+
+Observability after activation: `select * from public.reconcile_scheduler_status();` (booleans and schedules, never a value); `cron.job_run_details` for the run outcome of each job; `net._http_response` for the HTTP status of each sweeper call (a 401 = the secrets differ, a 503 = `RECONCILE_JOB_SECRET` is not set on the server). pg_net keeps responses for a limited time.
+
+**Verified locally (`local rehearsal`, the real scripts on the local stack, `v3_phase9_reconcile.sh` and the rehearsal):** the migration schedules nothing; missing Vault entries make the call raise and send nothing; the status function shows booleans only; the sweeper call through `pg_net` reaches the real route with the Vault secret, and a stuck PENDING reversal becomes SUCCEEDED; a wrong Vault secret gets 401 and executes nothing; the activate script refuses an http endpoint and (with the local-only `allow_http=1`) creates exactly the two jobs at `*/5 * * * *` without duplicating on a re-run; a temporary Supabase Cron job (5 seconds) ran the real sweeper function by itself; deactivate removes both jobs and is idempotent; the orphan job creates one full `ORPHAN_PAYMENT` reversal only after the window and is idempotent.
+
+**Local versus production.** Locally the stack has pg_cron 1.6.4 and pg_net 0.20.4 (the `*/5 * * * *` schedule is accepted), and `pg_net` reaches the dev server through `host.docker.internal`. The differences are not rehearsable here: on the Supabase platform the extensions must be creatable by the migration role (read-only check: `supabase/cutover/v3_precheck_scheduler_extensions.sql`), `cron.database_name` must be the production database, and `pg_net` needs the public https URL of client-web. **Production read-only check (2026-09-27, `production read-only observed`, `v3_precheck_scheduler_extensions.sql` plus catalog and privilege reads in a `begin read only` session; nothing created):** `pg_cron` 1.6.4 and `pg_net` 0.20.4 are **available and not installed** (the scheduler migration creates them); `supabase_vault` 0.3.1 is installed (schema `vault`); `pg_cron` and `pg_net` are in `shared_preload_libraries`; `cron.database_name` = `postgres` = the production database; PostgreSQL 17.6. The connecting role is `postgres` (not a superuser, member of the `postgres` role, `CREATE` on the database), the same kind of role the local rehearsal uses (non-superuser `postgres`). Vault: `vault.decrypted_secrets` is readable by that role (what `call_reconcile_sweeper()` needs), `vault.create_secret` / `vault.update_secret` are executable, `DELETE` on `vault.secrets` is allowed (what the Vault script's replace step uses). The `cron` and `net` schemas do not exist yet, as expected. **Not provable by a read:** that `create extension pg_cron` / `pg_net` and `cron.schedule` succeed for this role on the platform. That is only observable by executing the migration and the activate script, so it stays a step-1 / step-8 verification (a failure at step 1 leaves v2 untouched; a failure at step 8 leaves the scheduler off). Nothing was scheduled, stored in Vault, or migrated in production.
 
 ### 3.4 What cannot be audited from here
 
-Production row counts and anomalies are audited (section 3.1). Still not audited: the Vercel project settings (Vercel access is not yet authorized in this session), the GitHub repository secrets and variable, and a real PG cancel API. Supabase backup availability was read: no platform backup, PITR off.
+Production row counts and anomalies are audited (section 3.1). Still not audited: the Vercel project settings (Vercel access is not yet authorized in this session), and a real PG cancel API. (Production `pg_cron` / `pg_net` / Vault availability was read on 2026-09-27: section 3.3.) Supabase backup availability was read: no platform backup, PITR off.
 
 ---
 
@@ -120,9 +144,9 @@ Prepared in advance (no customer impact): the v3 deployment of `main` built with
 
 | Step | Action | Verify | Rehearsal time |
 |---|---|---|---|
-| T-1 | Read-only checks on production (`PRECHECK.md`: state, precheck, unpaid-Order preview); the scheduler and secrets are ready; the user approves the cutover | BLOCKER = 0; the unpaid-Order list is shown and accepted | |
+| T-1 | Read-only checks on production (`PRECHECK.md`: state, precheck, unpaid-Order preview); the scheduler prerequisites are read (`v3_precheck_scheduler_extensions.sql`); the user approves the cutover | BLOCKER = 0; the unpaid-Order list is shown and accepted | |
 | 0 | **Mandatory gate.** `bash supabase/cutover/v3_backup_and_verify.sh`: pg_dump of production (read only), restore into a local scratch database, compare the row counts of every `public`/`auth` table and the orders/payments/stock fingerprints. The dump stays local (`~/mall-v3-backups`, `*.dump` is gitignored, never committed) | any restore error, count or fingerprint mismatch **stops the cutover** | seconds (dump ~0.5 MB) |
-| 1 | Apply the additive migrations (v2 keeps working; can be done days earlier) | v2 smoke passes; `v3_phase*` object checks | ~2 s |
+| 1 | Apply the additive migrations `20260926130000` to `20260927110000` (v2 keeps working; can be done days earlier). The last one creates `pg_cron` / `pg_net` and schedules nothing | v2 smoke passes; `v3_phase*` object checks; `cron.job` has no reconcile job | ~2 s |
 | — | **Window opens.** Announce; no new v2 orders | | |
 | 2 | `v3_resolve_unpaid_legacy_orders.sql` (the target list and quantities were shown at T-1 and re-run just before) | unpaid count 0; stock restored | < 1 s |
 | 3 | `v3_stock_and_sellability.sql`, then `v3_stock_consistency_check.sql` | the check returns no row | < 1 s |
@@ -130,7 +154,7 @@ Prepared in advance (no customer impact): the v3 deployment of `main` built with
 | 5 | `v3_postcheck.sql` | every row ok | < 1 s |
 | 6 | Promote the prepared v3 deployment (all three apps) | pages load; `NEXT_PUBLIC_MALL_V3` is on | minutes |
 | 7 | Production E2E (section 7), smoke set first | | |
-| 8 | Enable the scheduler | first run returns counts | |
+| 8 | Enable the scheduler: `v3_reconcile_scheduler_vault.sql`, then `v3_reconcile_scheduler_activate.sql` (section 3.3) | `reconcile_scheduler_status()` all ok; the first sweeper call returns 200 in `net._http_response` | |
 | — | **Window closes.** | | |
 
 Steps 2 to 4 are single-transaction scripts; each refuses and changes nothing when a guard fails. From step 4 the v2 apps are broken until step 6, so the gap between them is the ordering downtime.
@@ -140,6 +164,7 @@ Steps 2 to 4 are single-transaction scripts; each refuses and changes nothing wh
 **Before step 2** (only additive migrations applied): nothing to roll back; v2 keeps working. Leave the objects in place.
 
 **Point of no return: the first real v3 order (or refund) after step 6.** Before it, a rollback is clean:
+0. If the scheduler was enabled: `v3_reconcile_scheduler_deactivate.sql` (unschedule both jobs).
 1. Promote the previous v2 deployment (Vercel rollback).
 2. Restore the verified backup (Supabase restore / PITR to the time before step 2).
 3. Re-run the v2 smoke set.
@@ -151,15 +176,15 @@ Rollback criteria (any one, during the window or the first hour):
 - any smoke E2E step in section 7 fails on a core path (checkout, finalize, cancel, PROCESSING, refund);
 - the Consumer boundary check (BR-20) finds stock, allocation, shortage, Ware, or reversal detail in a Consumer response;
 - a stock invariant breaks (`reserved > current`, negative stock, a Payment reversed above its amount);
-- the reconcile job or executor errors repeatedly (5xx) or settles a reversal in a mode that was not intended.
+- the reversal sweeper or executor errors repeatedly (5xx) or settles a reversal in a mode that was not intended.
 
 ## 6. Local rehearsal (`local rehearsal`)
 
 `bash supabase/rehearsal/v3_cutover_rehearsal.sh` — local database only (`--local`; nothing can reach a linked project). Result: **PASSED**.
 
-Order rehearsed: v2 baseline reset → seed through the real v2 RPCs (a delivered + refunded Order, a paid Order in PROCESSING with an open Refund request, a cancelled Order, an unpaid PENDING Order, a hand-marked PAID Order, Point top-up, payments in every status) → precheck (0 BLOCKER, 2 ACTION) → backup + restore into a scratch database (counts equal) → additive migrations (existing data untouched) → the contraction refuses while unpaid Orders exist (nothing changed) → resolve → stock conversion (consistency check empty) → contraction → post-check (all rows ok) → the legacy data through the v3 paths (12 scenarios) → the v3 suites on the cut-over database (checkout flow, Phase 4/5/7 HTTP routes, the reconcile job, Phase 4 to 7 concurrency).
+Order rehearsed: v2 baseline reset → seed through the real v2 RPCs (a delivered + refunded Order, a paid Order in PROCESSING with an open Refund request, a cancelled Order, an unpaid PENDING Order, a hand-marked PAID Order, Point top-up, payments in every status) → precheck (0 BLOCKER, 2 ACTION) → backup + restore into a scratch database (counts equal) → additive migrations (existing data untouched) → the contraction refuses while unpaid Orders exist (nothing changed) → resolve → stock conversion (consistency check empty) → contraction → post-check (all rows ok) → the legacy data through the v3 paths (12 scenarios) → the v3 suites on the cut-over database (checkout flow, Phase 4/5/7 HTTP routes, the reconcile scheduler (sweeper route, Vault + pg_net, Supabase Cron), Phase 4 to 7 concurrency).
 
-Not rehearsable locally: a Supabase platform restore (only the backup's validity is checked), Vercel promotion, the scheduler, a real PG.
+The scheduler is rehearsed on the local stack as described in section 3.3 (extensions prepared and nothing scheduled after the migrations, the Vault -> pg_net -> route path, activation and deactivation, a real Supabase Cron run). Not rehearsable locally: a Supabase platform restore (only the backup's validity is checked), Vercel promotion, the production Supabase Cron / pg_net / Vault environment, a real PG.
 
 ## 7. Production E2E checklist (to run after step 6; PG test mode)
 
@@ -180,22 +205,22 @@ Accounts: 1 Admin and 2 Clients (A, B). Data: a test Product with 2 Variants (Va
 | 9 | Consumer network check | no stock / Ware / allocation / shortage / reversal fields in any Client response (BR-20) |
 | 10 | Client B cannot read or cancel Client A's Order | 404 / empty |
 
-**Full set**: S-03 (Ware-less Variant orders, full shortage), S-04 / S-07 (sold-out before and after PG success: refused, then reversed), S-06 (price changed after payment: no Order, full reversal), S-08 (PG failure then retry as a new Payment), S-10 / S-11 (double click / reload: one Order), S-14 (Client and Admin cancel together: one cancel), S-19 (partial refunds and the cumulative limit), S-26 (orphan: stop after PG success, the reconcile job reverses it after 30 minutes), S-27 (reversal failure and Admin retry), the seller-initiated Refund on a `SHIPPED` Order, PWA hand-off and lookup by order number, Admin overview counts.
+**Full set**: S-03 (Ware-less Variant orders, full shortage), S-04 / S-07 (sold-out before and after PG success: refused, then reversed), S-06 (price changed after payment: no Order, full reversal), S-08 (PG failure then retry as a new Payment), S-10 / S-11 (double click / reload: one Order), S-14 (Client and Admin cancel together: one cancel), S-19 (partial refunds and the cumulative limit), S-26 (orphan: stop after PG success, the orphan job creates the reversal after 30 minutes and the sweeper executes it), S-27 (reversal failure and Admin retry), the seller-initiated Refund on a `SHIPPED` Order, PWA hand-off and lookup by order number, Admin overview counts.
 
 ## 8. Remaining blockers
 
 Done (2026-09-27): the production precheck (BLOCKER 0, WARN 0) and the unpaid legacy Order target check (3 Orders, approved; section 3.1).
 
-Done (2026-09-27): the scheduler workflow is prepared and disabled (section 3.3); the backup gate procedure is verified (step 0; the platform itself has no backup and PITR is off, so the pre-window dump is the only rollback data).
+Done (2026-09-27): the backup gate procedure is verified (step 0; the platform itself has no backup and PITR is off, so the pre-window dump is the only rollback data).
+
+Done (2026-09-27, `local rehearsal` only): the scheduler is redesigned onto Supabase Cron, implemented, and verified on the local stack (section 3.3). The GitHub Actions workflow and its secrets/variable are removed from the plan; there is no GitHub blocker any more.
 
 Before the PG test cutover (open; the procedure is `PRECHECK.md`):
-1. The production environment variables confirmed (section 3.2): needs Vercel access (not yet authorized here) or the user's own check.
-2. The GitHub repository secrets `CLIENT_WEB_URL` and `RECONCILE_JOB_SECRET` set, and `RECONCILE_ENABLED` left unset.
-3. The v3 deployment (`NEXT_PUBLIC_MALL_V3=true`, not promoted) prepared: needs Vercel access.
-4. The user's explicit cutover approval.
+1. ~~The Preview environment variables~~ **done 2026-09-27** (section 3.2): every required variable has the Preview scope, and the Production scope of the six Preview-only variables was removed again (verified by a re-read). `RECONCILE_JOB_SECRET` is also the source value of the Vault entry.
+2. The v3 Preview deployment (`NEXT_PUBLIC_MALL_V3=true`, not promoted) created: a separate approval, and it needs a non-`main` branch (a push) or a direct deployment.
+3. ~~Production scheduler prerequisites~~ **done 2026-09-27 (`production read-only observed`)**: `pg_cron` and `pg_net` available (not installed), Vault installed, `cron.database_name` is the production database (section 3.3). No DB scheduler blocker remains; that the extensions can actually be created and scheduled by the role is verified when the migration (step 1) and the activate script (step 8) run.
+4. The user's explicit cutover approval (which also names the scheduler activation time, step 8).
 
-The Phase 9 status is **not** `READY FOR CUTOVER` until items 1 to 3 are confirmed.
+The Phase 9 status is **not** `READY FOR CUTOVER` until item 2 is done and the user approves the cutover.
 
 For a real-money production release only: **a real PG reversal adapter**. It is not a blocker for the PG test cutover.
-
-Decisions #1 to #3 are approved (2026-09-27).
