@@ -171,7 +171,7 @@ Prepared in advance (no customer impact): the three v3 **Preview** deployments o
 | 6a | **Production environment, only now (after step 5 passes).** Add to the **Production** scope: `NEXT_PUBLIC_MALL_V3=true` (client-web, user-web, client-pwa), `PG_REVERSAL_ADAPTER=simulated` (client-web, user-web), `NEXT_PUBLIC_CLIENT_WEB_URL` (client-pwa). Already in Production and unchanged: `RECONCILE_JOB_SECRET`, `SUPABASE_SECRET_KEY`, `PG_TEST_*`, `NEXT_PUBLIC_SUPABASE_*`. An environment edit builds nothing | re-read names and scopes: the three `NEXT_PUBLIC_MALL_V3` have the Production scope (section 4.1) | seconds |
 | 6b | Promote the prepared v3 Preview deployments (all three apps), the fast switch. Record the promoted deployment ids | pages load; the v3 flag is on (bundle check on the production domains) | minutes |
 | 6c | Fast-forward `main` to `v3-preview` and push `main` (Vercel then builds production automatically from `main`, with the Production scope of 6a). Never before 6a | each new production deployment is READY and has the flag (bundle check); the auto-assigned build replaces the promoted one | minutes |
-| 7 | Production E2E (section 7), smoke set first | | |
+| 7 | Production verification (section 7): read-only / safe smoke first (7.1), then the write smoke one scenario at a time on an explicit go (7.2) | 7.1 all as expected; each 7.2 scenario: before/after and I1 to I7 | |
 | 8 | Enable the scheduler: `v3_reconcile_scheduler_vault.sql`, then `v3_reconcile_scheduler_activate.sql` (section 3.3) | `reconcile_scheduler_status()` all ok; the first sweeper call returns 200 in `net._http_response` | |
 | — | **Window closes.** | | |
 
@@ -210,7 +210,7 @@ Action on a stop: do not redeploy. Re-promote the prepared v3 deployment of that
 
 Rollback criteria (any one, during the window or the first hour):
 - a guard refuses, or any `v3_postcheck.sql` row is false;
-- any smoke E2E step in section 7 fails on a core path (checkout, finalize, cancel, PROCESSING, refund);
+- a read-only smoke R1 to R4 of section 7.1 fails, or a write smoke of section 7.2 fails on a core path (checkout, finalize, cancel, PROCESSING, refund) or breaks an invariant I1 to I7;
 - the Consumer boundary check (BR-20) finds stock, allocation, shortage, Ware, or reversal detail in a Consumer response;
 - a stock invariant breaks (`reserved > current`, negative stock, a Payment reversed above its amount);
 - the reversal sweeper or executor errors repeatedly (5xx) or settles a reversal in a mode that was not intended.
@@ -235,24 +235,58 @@ Order rehearsed: v2 baseline reset → seed through the real v2 RPCs (a delivere
 
 The scheduler is rehearsed on the local stack as described in section 3.3 (extensions prepared and nothing scheduled after the migrations, the Vault -> pg_net -> route path, activation and deactivation, a real Supabase Cron run). Not rehearsable locally: a Supabase platform restore (only the backup's validity is checked), Vercel promotion, the production Supabase Cron / pg_net / Vault environment, a real PG.
 
-## 7. Production E2E checklist (to run after step 6; PG test mode)
+## 7. Production verification (after step 6; PG test mode)
 
-Accounts: 1 Admin and 2 Clients (A, B). Data: a test Product with 2 Variants (Variant 1 linked to a Ware with stock 10, Variant 2 with no Ware), a published ProductPost. Record the Ware's `current/reserved` before and after every step. Mark each result `production E2E observed`.
+Strategy (decided 2026-09-27): production is the verification target, not Preview. Only a function that **actually fails on production** is a blocker. Verification is split in two, and the second part is never started implicitly.
 
-**Smoke set (run first; any failure is a rollback signal)**
+**Rules**
 
-| # | Step | Expected |
+- Read-only and safe smoke first. A write smoke is run only after its scenario, the expected database before/after, and the invariants are written down, one scenario at a time, on the user's explicit go. A failure goes: cause analysis, fix, `main` (the fixed commit through the normal `main` -> production build of section 4.1), production re-verification.
+- Test data is a production write too (a dedicated Admin, two Clients A and B, a test Product with 2 Variants: Variant 1 linked to a Ware with stock 10, Variant 2 with no Ware, a published ProductPost). Creating it needs its own explicit authorization that names it.
+- Results are labelled `production E2E observed` (never `production read-only observed` for a write).
+
+### 7.1 READ-ONLY / SAFE SMOKE (no write of any kind)
+
+`POST /api/internal/reconcile` is **not** in this part: the route claims and executes a PENDING reversal when one exists, so it can write. It is in 7.2.
+
+| # | Check | Expected |
 |---|---|---|
-| 1 | Client A: Cart 2 × Variant 1, checkout, pay (test success), finalize | Order `PENDING`, order number `ORD-…`, Ware `10/2`; Cart line removed |
-| 2 | Client A: reload `/payment` before finalize (repeat once with a paid Payment) | resumes; still one Order |
-| 3 | Client A: cancel that Order | `CANCELLED`; Ware `10/0`; one `ORDER_CANCEL` reversal reaches `SUCCEEDED` (simulated), Payment still `SUCCEEDED` |
-| 4 | Client B: order 6, Client A: order 6 on a Ware of 10 | both `PENDING`; second has shortage 2 (Admin sees it), Ware `10/10` |
-| 5 | Admin: `PROCESSING` on the shortage Order | refused; on the full Order accepted: Ware `4/4` |
-| 6 | Admin: additional allocation after restock/adjust | shortage 0; then `PROCESSING` |
-| 7 | Client: refund 2 of 6 after `PROCESSING`; Admin approves | request `REQUESTED`→`APPROVED`, one `REFUND` reversal, Order status unchanged, Ware unchanged until the explicit restock |
-| 8 | Admin: restock 2 into the original Ware | `current` +2 only; a third restock refused |
-| 9 | Consumer network check | no stock / Ware / allocation / shortage / reversal fields in any Client response (BR-20) |
-| 10 | Client B cannot read or cancel Client A's Order | 404 / empty |
+| R1 | The three production deployments: state READY, the production aliases point to the promoted / built deployment, the v3 flag is inlined in the public bundle (client-web and client-pwa: public URL; user-web: as far as its access allows) | READY; aliases as recorded at 6b/6c; no v2 order text in the PWA bundle |
+| R2 | `v3_postcheck.sql` in a `begin read only` session (`PRECHECK.md` wrapper) | every row ok |
+| R3 | `select * from public.reconcile_scheduler_status();` and the read of `cron.job` / `net._http_response` (before step 8: extensions ok, no reconcile job; after: two jobs) | booleans and schedules only; no value; the Vault checks match the step (fail before step 8) |
+| R4 | Public product list and detail (the Consumer network responses) | works; **no** `current_stock`, `reserved_stock`, Ware, allocation, shortage, or reversal field in any Consumer response (BR-20) |
+| R5 | client-pwa order lookup by order number (with an existing order, or the empty state) | works; the v3 wording; no internal field |
+| R6 | user-web access without authentication | redirect to the login / authentication page (a 302 is the expected state); no Admin data without a session |
+
+A failure of R1 to R3 is a stop condition of section 4.1 or a rollback criterion of section 5. A failure of R4 (Consumer boundary) is a rollback criterion.
+
+### 7.2 WRITE SMOKE (one at a time, on an explicit go)
+
+Before every scenario: record the "before" (read-only SQL: Ware `current/reserved`, counts of orders, payments, payment_reversals, order_cancellations, refund_requests, refund_items, restock rows). After every scenario: check the "after" and the invariants I1 to I7 **immediately**, before the next scenario.
+
+Invariants (read-only SQL, after every scenario):
+
+- I1: for every Ware `0 <= reserved_stock <= current_stock`; `current_stock` is never negative
+- I2: for every Ware `reserved_stock` = the sum of the allocation quantities of its `PENDING` Orders
+- I3: exactly one Order per `payment_id`
+- I4: per Payment, the sum of its `PENDING` + `SUCCEEDED` reversals is at most `payments.amount`; `payments.status` never leaves `SUCCEEDED`
+- I5: per OrderItem, the cumulative valid Refund quantity is at most the ordered quantity
+- I6: no Consumer response of the scenario carried stock, Ware, allocation, shortage, or reversal detail
+- I7: `v3_postcheck.sql`, every row ok
+
+Numbers below assume the test Ware starts at `current/reserved` = `10/0` with no `PENDING` reversal, and there is no other production traffic on the test Product.
+
+| # | Scenario | Expected before -> after | Notes |
+|---|---|---|---|
+| W1 | `POST /api/internal/reconcile` with the server secret, operator only, **before any test Order exists** and after checking `count(*) from payment_reversals where status = 'PENDING'` (expected 0) | before: 0 PENDING reversals. After: response `reversalsScanned` 0, `executed` `{}`; every count and every Ware unchanged. If the count before was not 0: stop, the call would claim and execute those reversals (`attempt_count` +1, `SUCCEEDED` under the simulated adapter): decide first | needs the secret; the two cron jobs are not active yet (step 8 comes after this) |
+| W2 | Client A: Cart 2 x Variant 1, checkout, PG test success, finalize (smoke 1, 2) | Ware `10/0` -> `10/2`; payments +1 (`SUCCEEDED`); orders +1 (`PENDING`, `payment_id` set); allocation rows sum 2, shortage 0; reversals unchanged; Cart line removed; a reload before finalize resumes and still yields one Order | I1 to I3, I6 |
+| W3 | Read-only allocation check on the W2 Order | `allocated_quantity` = 2 = `OrderItem.quantity`; `reserved` 2 = the allocation sum | no write |
+| W4 | Client A: cancel the W2 Order; then cancel it again (double click) | Ware `10/2` -> `10/0`; order `CANCELLED`; `order_cancellations` +1 (not +2); exactly one `ORDER_CANCEL` reversal, `PENDING` -> `SUCCEEDED` (simulated); payment still `SUCCEEDED`; the second cancel returns the final state with no new row and no stock change | I1, I2, I4 |
+| W5 | Client B orders 6, Client A orders 6 (Ware 10); Admin `PROCESSING` on A's Order (refused: shortage 2), then on B's (accepted) | after the two orders `10/0` -> `10/10`; A's Order allocation 4, shortage 2, both `PENDING`. After B's `PROCESSING`: `10/10` -> `4/4` (both decrease by 6); A's Order stays `PENDING` | I1, I2; the refused transition changes nothing |
+| W6 | Client: refund 2 of 6 on B's `PROCESSING` Order; Admin approves | `refund_requests` +1 `REQUESTED` -> `APPROVED`; `refund_items` qty 2 at the snapshot unit price; one `REFUND` reversal linked, `PENDING` -> `SUCCEEDED`; Order status unchanged; Ware unchanged `4/4` | I4, I5 |
+| W7 | Admin: explicit restock of 2 into the original Ware; then a third restock attempt | Ware `4/4` -> `6/4` (`current` +2, `reserved` unchanged); one restock row of 2; the third attempt is refused and changes nothing | I1, I5 |
+
+The remaining smoke items of the earlier list run in the same way when needed: additional allocation after restock (shortage to 0, then `PROCESSING`), and ownership (Client B cannot read or cancel Client A's Order: 404 / empty).
 
 **Full set**: S-03 (Ware-less Variant orders, full shortage), S-04 / S-07 (sold-out before and after PG success: refused, then reversed), S-06 (price changed after payment: no Order, full reversal), S-08 (PG failure then retry as a new Payment), S-10 / S-11 (double click / reload: one Order), S-14 (Client and Admin cancel together: one cancel), S-19 (partial refunds and the cumulative limit), S-26 (orphan: stop after PG success, the orphan job creates the reversal after 30 minutes and the sweeper executes it), S-27 (reversal failure and Admin retry), the seller-initiated Refund on a `SHIPPED` Order, PWA hand-off and lookup by order number, Admin overview counts.
 
