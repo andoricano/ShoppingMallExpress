@@ -156,7 +156,7 @@ Production row counts and anomalies are audited (section 3.1). Still not audited
 
 ## 4. Cutover order (a maintenance window)
 
-Prepared in advance (no customer impact): the v3 deployment of `main` built with `NEXT_PUBLIC_MALL_V3=true` and the server variables above, **not promoted**; the current v2 deployment stays live and is the rollback target.
+Prepared in advance (no customer impact): the three v3 **Preview** deployments of commit `f8a6ccb` on the branch `v3-preview` (client-web `dpl_CcNxX6fCUg2EKnFQQYizMZn5adGC`, client-pwa `dpl_FDY1tBc5BRximZ6Cs9HbgLrXD1ED`, user-web `dpl_mACbFTcssbSeZbk3YGZWvuVAj5Cp`), built with the Preview-scope variables of section 3.2, **not promoted**; the current v2 production deployments stay live and are the rollback targets (section 5.1). `v3-preview` is a strict fast-forward descendant of the local `main`, and `origin/main` is still at the older `c69891f`: **`main` is not pushed before step 6c.**
 
 | Step | Action | Verify | Rehearsal time |
 |---|---|---|---|
@@ -168,12 +168,33 @@ Prepared in advance (no customer impact): the v3 deployment of `main` built with
 | 3 | `v3_stock_and_sellability.sql`, then `v3_stock_consistency_check.sql` | the check returns no row | < 1 s |
 | 4 | `v3_legacy_contraction.sql` | refuses on any guard | < 1 s |
 | 5 | `v3_postcheck.sql` | every row ok | < 1 s |
-| 6 | Promote the prepared v3 deployment (all three apps) | pages load; `NEXT_PUBLIC_MALL_V3` is on | minutes |
+| 6a | **Production environment, only now (after step 5 passes).** Add to the **Production** scope: `NEXT_PUBLIC_MALL_V3=true` (client-web, user-web, client-pwa), `PG_REVERSAL_ADAPTER=simulated` (client-web, user-web), `NEXT_PUBLIC_CLIENT_WEB_URL` (client-pwa). Already in Production and unchanged: `RECONCILE_JOB_SECRET`, `SUPABASE_SECRET_KEY`, `PG_TEST_*`, `NEXT_PUBLIC_SUPABASE_*`. An environment edit builds nothing | re-read names and scopes: the three `NEXT_PUBLIC_MALL_V3` have the Production scope (section 4.1) | seconds |
+| 6b | Promote the prepared v3 Preview deployments (all three apps), the fast switch. Record the promoted deployment ids | pages load; the v3 flag is on (bundle check on the production domains) | minutes |
+| 6c | Fast-forward `main` to `v3-preview` and push `main` (Vercel then builds production automatically from `main`, with the Production scope of 6a). Never before 6a | each new production deployment is READY and has the flag (bundle check); the auto-assigned build replaces the promoted one | minutes |
 | 7 | Production E2E (section 7), smoke set first | | |
 | 8 | Enable the scheduler: `v3_reconcile_scheduler_vault.sql`, then `v3_reconcile_scheduler_activate.sql` (section 3.3) | `reconcile_scheduler_status()` all ok; the first sweeper call returns 200 in `net._http_response` | |
 | — | **Window closes.** | | |
 
-Steps 2 to 4 are single-transaction scripts; each refuses and changes nothing when a guard fails. From step 4 the v2 apps are broken until step 6, so the gap between them is the ordering downtime.
+Steps 2 to 4 are single-transaction scripts; each refuses and changes nothing when a guard fails. From step 4 the v2 apps are broken until step 6b, so the gap between them is the ordering downtime.
+
+### 4.1 Production environment and `main` auto-deploy: order and stop conditions
+
+Every push to `main` builds production automatically, and a production build reads only the **Production** scope. `NEXT_PUBLIC_MALL_V3` is inlined at build time, so the flag of a production build is decided by the Production scope at the moment the build starts. (Learned on 2026-09-27: a production redeploy made while the flag had the Production scope shipped the v3 UI of the PWA; see section 3.2.)
+
+Order, without exception:
+
+1. Until step 5 has passed, `NEXT_PUBLIC_MALL_V3` has **no Production scope** in any project (the database is v2, or is being converted), and nothing is pushed to `main`, redeployed, or promoted.
+2. The Production scope of step 6a is set only after step 5 (post-check all ok), before any new production build.
+3. `main` is pushed (step 6c) only after 6a has been re-read. The push is a fast-forward to `v3-preview`: every commit between `origin/main` (`c69891f`) and the head of `v3-preview` (`39ea298`, `5fbd1fd`, `f8a6ccb`, and the documentation commits after them) goes together, so that `5fbd1fd` (which still holds the old workflow) never lands without `f8a6ccb` (which removes it).
+4. After 6a the Production scope of `NEXT_PUBLIC_MALL_V3` **stays on**: every later fix reaches production through `main` and the automatic build, and must carry the flag. Removing it is a return to v2 and is only valid together with the database rollback of section 5.
+
+**Stop conditions** (any one: stop the window, do not continue with the next step):
+
+- a production build or deployment (automatic, manual redeploy, or a redeploy of an older deployment) is created from step 2 on while any of the three projects lacks the Production `NEXT_PUBLIC_MALL_V3`, or while the database is still v2 and the flag is on: a flag-less build on the v3 database (or a flagged build on the v2 database) is wrong;
+- a production deployment that is live after step 4 was built without the flag (bundle check: the flag expression is still evaluated at run time, or the v2 order text is present, instead of the flag being inlined);
+- the environment edit of 6a is not visible in the re-read.
+
+Action on a stop: do not redeploy. Re-promote the prepared v3 deployment of that project (its id is recorded at 6b; before 6b, the ids of section 4), correct the Production scope, re-read it, and only then let a new build happen. Do not roll back to a v2 deployment for this: after step 4 the v2 apps do not work on the v3 database.
 
 ## 5. Rollback
 
@@ -181,8 +202,8 @@ Steps 2 to 4 are single-transaction scripts; each refuses and changes nothing wh
 
 **Point of no return: the first real v3 order (or refund) after step 6.** Before it, a rollback is clean:
 0. If the scheduler was enabled: `v3_reconcile_scheduler_deactivate.sql` (unschedule both jobs).
-1. Promote the previous v2 deployment (Vercel rollback).
-2. Restore the verified backup (Supabase restore / PITR to the time before step 2).
+1. Promote the previous v2 deployments of section 5.1 (Vercel rollback), and remove the Production `NEXT_PUBLIC_MALL_V3` again *before* anything can rebuild them.
+2. Restore the verified backup (the pg_dump of step 0 restored into production; the platform has no backup and PITR is off).
 3. Re-run the v2 smoke set.
 
 **After it**, restoring would lose real v3 orders; rollback then means a forward fix, decided by the user.
@@ -193,6 +214,18 @@ Rollback criteria (any one, during the window or the first hour):
 - the Consumer boundary check (BR-20) finds stock, allocation, shortage, Ware, or reversal detail in a Consumer response;
 - a stock invariant breaks (`reserved > current`, negative stock, a Payment reversed above its amount);
 - the reversal sweeper or executor errors repeatedly (5xx) or settles a reversal in a mode that was not intended.
+
+### 5.1 Rollback deployments (recorded 2026-09-27)
+
+The current live v2 production deployments, the targets of step 1 above. Only valid together with the database rollback (step 2 above) once step 4 has run, because the v2 apps do not work on the contracted v3 database. Read the production aliases again at T-1: this table is the state of 2026-09-27.
+
+| Project | Rollback deployment | Notes |
+|---|---|---|
+| client-pwa | `dpl_5w35LXi6xoamjrYBXpFxSymzispr` | Git build of `c69891f`, built before any v3 variable existed. It is the deployment the production PWA was rolled back to on 2026-09-27 (aliased, v2 bundle re-verified) |
+| client-web | `dpl_5Q77pdp2Uz5kddN8a9jdnRYBgzqG` | Production redeploy of `c69891f`, aliased to the production domains; built before client-web had the Production `NEXT_PUBLIC_MALL_V3` (env timeline; not bundle-verified). It carries `RECONCILE_JOB_SECRET` |
+| user-web | `dpl_Geax8YwckyrWaU2gbYp9sjHv5gbU` | Latest production deployment, Git build of `c69891f`; no user-web variable of the v3 switch existed at its build. Its production alias was not re-read on 2026-09-27 |
+
+Not a rollback target: `dpl_EJnE6sjYm5dvFoy3wEc2sXGpjtkk` (client-pwa, built with the v3 flag on).
 
 ## 6. Local rehearsal (`local rehearsal`)
 
